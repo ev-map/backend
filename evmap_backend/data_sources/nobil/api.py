@@ -19,7 +19,7 @@ class RealtimeStatusSchema(Schema):
 @api.get("/realtime/{nobil_id}", response=List[RealtimeStatusSchema])
 def realtime(request, nobil_id: str):
     latest_data_per_evse = distinct_on(
-        NobilRealtimeData.objects.filter(nobil_id=nobil_id), "evse_uid", "timestamp"
+        NobilRealtimeData.objects.filter(nobil_id=nobil_id), ["evse_uid"], "timestamp"
     )
     print(latest_data_per_evse.query)
     print(latest_data_per_evse.explain())
