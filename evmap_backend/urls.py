@@ -18,6 +18,6 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-urlpatterns = [
-    path("admin/", admin.site.urls),
-]
+from evmap_backend.data_sources.nobil.api import api as nobil_api
+
+urlpatterns = [path("admin/", admin.site.urls), path("nobil/api/", nobil_api.urls)]
