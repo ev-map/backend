@@ -1,13 +1,12 @@
 import datetime as dt
 from typing import List
 
-from django.db.models import Max, OuterRef, Subquery
-from ninja import ModelSchema, NinjaAPI, Schema
+from ninja import NinjaAPI, Schema
 
 from evmap_backend.data_sources.nobil.models import NobilRealtimeData
 from evmap_backend.helpers.database import distinct_on
 
-api = NinjaAPI()
+api = NinjaAPI(urls_namespace="nobil")
 
 
 class RealtimeStatusSchema(Schema):

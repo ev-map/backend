@@ -37,7 +37,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.gis",
     "evmap_backend.data_sources.nobil",
+    "evmap_backend.data_sources.openstreetmap",
 ]
 
 MIDDLEWARE = [
@@ -76,7 +78,7 @@ WSGI_APPLICATION = "evmap_backend.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
+        "ENGINE": "django.contrib.gis.db.backends.spatialite",
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
