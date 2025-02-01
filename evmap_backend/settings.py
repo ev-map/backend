@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "django.contrib.gis",
     "evmap_backend.data_sources.nobil",
     "evmap_backend.data_sources.openstreetmap",
+    "solo",
 ]
 
 MIDDLEWARE = [

@@ -4,3 +4,4 @@ aiohttp==3.11.*
 requests==2.32.*
 django-ninja==1.3.*
 python-dotenv==1.0.1
+django-solo==2.4.0
