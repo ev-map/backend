@@ -1,0 +1,85 @@
+from xml.etree.ElementTree import Element
+
+from django.contrib.gis.geos import Point
+from django.db import transaction
+from tqdm import tqdm
+
+from evmap_backend.data_sources.datex2.models import (
+    Datex2Connector,
+    Datex2EnergyInfrastructureSite,
+    Datex2RefillPoint,
+)
+
+ns = {
+    "com": "http://datex2.eu/schema/3/common",
+    "egi": "http://datex2.eu/schema/3/energyInfrastructure",
+    "loc": "http://datex2.eu/schema/3/locationReferencing",
+    "locx": "http://datex2.eu/schema/3/locationExtension",
+    "fac": "http://datex2.eu/schema/3/facilities",
+}
+
+
+def parse_datex2_data(elem: Element, source: str):
+    table = elem.find("egi:energyInfrastructureTable", ns)
+    for site in tqdm(table.findall("egi:energyInfrastructureSite", ns)):
+        with transaction.atomic():
+            parse_energy_infrastructure_site(site, source)
+
+
+def parse_multilingual_string(elem: Element) -> str:
+    # TODO: this simply returns the first available value. We should rather parse to an I18nField.
+    return elem.find("com:values", ns).find("com:value", ns).text
+
+
+def parse_point_coordinates(elem: Element) -> Point:
+    return Point(
+        float(elem.find("loc:longitude", ns).text),
+        float(elem.find("loc:latitude", ns).text),
+    )
+
+
+def parse_connector(elem, refill_point: Datex2RefillPoint):
+    Datex2Connector(
+        refill_point=refill_point,
+        connector_type=elem.find("egi:connectorType", ns).text,
+        charging_mode=elem.find("egi:chargingMode", ns).text,
+        max_power=int(elem.find("egi:maxPowerAtSocket", ns).text),
+    ).save()
+
+
+def parse_refill_point(elem: Element, site: Datex2EnergyInfrastructureSite):
+    point = Datex2RefillPoint(
+        site=site,
+        externalIdentifier=elem.find("fac:externalIdentifier", ns).text,
+        id_from_source=elem.attrib["id"],
+    )
+    point.save()
+    for connector in elem.findall("egi:connector", ns):
+        parse_connector(connector, point)
+
+
+def parse_energy_infrastructure_site(elem: Element, source: str):
+    site, created = Datex2EnergyInfrastructureSite.objects.update_or_create(
+        source=source,
+        id_from_source=elem.attrib["id"],
+        defaults=dict(
+            name=parse_multilingual_string(elem.find("fac:name", ns)),
+            location=parse_point_coordinates(
+                elem.find("fac:locationReference", ns)
+                .find("loc:pointByCoordinates", ns)
+                .find("loc:pointCoordinates", ns)
+            ),
+            operatorName=parse_multilingual_string(
+                elem.find("fac:operator", ns).find("fac:name", ns)
+            ),
+            operatorPhone=elem.find("fac:operator", ns)
+            .find("fac:organisationUnit", ns)
+            .find("fac:contactInformation", ns)
+            .find("fac:telephoneNumber", ns)
+            .text,
+        ),
+    )
+    Datex2RefillPoint.objects.filter(site=site).delete()
+    for station in elem.findall("egi:energyInfrastructureStation", ns):
+        for refill_point in station.findall("egi:refillPoint", ns):
+            parse_refill_point(refill_point, site=site)
