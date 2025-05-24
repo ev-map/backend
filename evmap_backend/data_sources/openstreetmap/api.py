@@ -25,7 +25,7 @@ class DumpSchema(Schema):
 
 
 @api.get("/dump", response=DumpSchema)
-def realtime(request):
+def dump(request):
     elements = OsmNode.objects.all()
     return {
         "count": elements.count(),
