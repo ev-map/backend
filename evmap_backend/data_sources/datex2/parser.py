@@ -12,6 +12,7 @@ from evmap_backend.data_sources.datex2.models import (
 
 ns = {
     "com": "http://datex2.eu/schema/3/common",
+    "con": "http://datex2.eu/schema/3/messageContainer",
     "egi": "http://datex2.eu/schema/3/energyInfrastructure",
     "loc": "http://datex2.eu/schema/3/locationReferencing",
     "locx": "http://datex2.eu/schema/3/locationExtension",
@@ -20,7 +21,7 @@ ns = {
 
 
 def parse_datex2_data(elem: Element, source: str):
-    table = elem.find("egi:energyInfrastructureTable", ns)
+    table = elem.find("con:payload", ns).find("egi:energyInfrastructureTable", ns)
     for site in tqdm(table.findall("egi:energyInfrastructureSite", ns)):
         with transaction.atomic():
             parse_energy_infrastructure_site(site, source)
@@ -59,6 +60,16 @@ def parse_refill_point(elem: Element, site: Datex2EnergyInfrastructureSite):
 
 
 def parse_energy_infrastructure_site(elem: Element, source: str):
+    phone = (
+        elem.find("fac:operator", ns)
+        .find("fac:organisationUnit", ns)
+        .find("fac:contactInformation", ns)
+        .find("fac:telephoneNumber", ns)
+        .text
+    )
+    if phone is None:
+        phone = ""
+
     site, created = Datex2EnergyInfrastructureSite.objects.update_or_create(
         source=source,
         id_from_source=elem.attrib["id"],
@@ -72,11 +83,7 @@ def parse_energy_infrastructure_site(elem: Element, source: str):
             operatorName=parse_multilingual_string(
                 elem.find("fac:operator", ns).find("fac:name", ns)
             ),
-            operatorPhone=elem.find("fac:operator", ns)
-            .find("fac:organisationUnit", ns)
-            .find("fac:contactInformation", ns)
-            .find("fac:telephoneNumber", ns)
-            .text,
+            operatorPhone=phone,
         ),
     )
     Datex2RefillPoint.objects.filter(site=site).delete()
