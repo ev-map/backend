@@ -19,8 +19,8 @@ class NobilChargerStationAdmin(admin.ModelAdmin):
 
 
 class NobilConnectorAdmin(admin.ModelAdmin):
-    list_display = ["connector_id"]
-    list_filter = [("connector_id", admin.EmptyFieldListFilter)]
+    list_display = ["evse_id", "connector", "charging_capacity"]
+    list_filter = [("evse_id", admin.EmptyFieldListFilter), "connector"]
 
 
 # Register your models here.
