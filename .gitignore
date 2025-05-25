@@ -6,3 +6,4 @@ db.sqlite3-journal
 
 __pycache__/
 *.py[cod]
+*.pem

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "evmap_backend.data_sources.nobil",
     "evmap_backend.data_sources.openstreetmap",
     "evmap_backend.data_sources.datex2",
+    "evmap_backend.data_sources.goingelectric",
     "solo",
 ]
 
