@@ -26,6 +26,17 @@ class Datex2RefillPointAdmin(admin.ModelAdmin):
     inlines = [Datex2ConnectorInline]
 
 
+class Datex2ConnectorAdmin(admin.ModelAdmin):
+    list_display = [
+        "refill_point__site__operatorName",
+        "refill_point__externalIdentifier",
+        "connector_type",
+        "max_power",
+    ]
+    list_filter = ["connector_type", "refill_point__site__operatorName"]
+
+
 # Register your models here.
 admin.site.register(Datex2EnergyInfrastructureSite, Datex2EnergyInfrastructureSiteAdmin)
 admin.site.register(Datex2RefillPoint, Datex2RefillPointAdmin)
+admin.site.register(Datex2Connector, Datex2ConnectorAdmin)
