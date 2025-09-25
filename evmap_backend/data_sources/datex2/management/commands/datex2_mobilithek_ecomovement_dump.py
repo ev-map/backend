@@ -1,7 +1,7 @@
 import os
-from xml.etree import ElementTree
 
 import requests
+from defusedxml import ElementTree
 from django.core.management import BaseCommand
 
 from evmap_backend.data_sources.datex2.parser import parse_datex2_data
