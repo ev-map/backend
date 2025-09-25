@@ -11,7 +11,7 @@ class Datex2EnergyInfrastructureSite(models.Model):
     location = models.PointField()
     # TODO: address
     operatorName = models.CharField(max_length=255)
-    operatorPhone = models.CharField(max_length=255)
+    operatorPhone = models.CharField(max_length=255, blank=True)
 
 
 class Datex2RefillPoint(models.Model):
