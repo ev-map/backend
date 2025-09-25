@@ -1,8 +1,8 @@
-Django==5.1.*
+Django==5.2.*
 pre-commit
 aiohttp==3.11.*
 requests==2.32.*
-django-ninja==1.3.*
+django-ninja==1.4.*
 python-dotenv==1.0.1
 django-solo==2.4.0
 python-dateutil
