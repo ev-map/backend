@@ -2,6 +2,8 @@ import uuid
 
 from django.contrib.gis.db import models
 
+from evmap_backend.aggregator.models import ChargeLocation
+
 
 class Datex2EnergyInfrastructureSite(models.Model):
     id_from_source = models.CharField(max_length=255)
@@ -12,6 +14,9 @@ class Datex2EnergyInfrastructureSite(models.Model):
     # TODO: address
     operatorName = models.CharField(max_length=255)
     operatorPhone = models.CharField(max_length=255)
+    aggregated_location = models.ForeignKey(
+        ChargeLocation, on_delete=models.CASCADE, related_name="source_datex2"
+    )
 
 
 class Datex2RefillPoint(models.Model):
