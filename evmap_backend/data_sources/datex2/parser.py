@@ -11,6 +11,7 @@ from evmap_backend.data_sources.datex2.models import (
 )
 
 ns = {
+    "d2p": "http://datex2.eu/schema/3/d2Payload",
     "com": "http://datex2.eu/schema/3/common",
     "con": "http://datex2.eu/schema/3/messageContainer",
     "egi": "http://datex2.eu/schema/3/energyInfrastructure",
@@ -20,11 +21,24 @@ ns = {
 }
 
 
+def tag(qname: str):
+    namespace, tag = qname.split(":", 1)
+    return f"{{{ns[namespace]}}}{tag}"
+
+
 def parse_datex2_data(elem: Element, source: str):
-    table = elem.find("con:payload", ns).find("egi:energyInfrastructureTable", ns)
-    for site in tqdm(table.findall("egi:energyInfrastructureSite", ns)):
-        with transaction.atomic():
-            parse_energy_infrastructure_site(site, source)
+    if elem.tag not in [tag("con:payload"), tag("d2p:payload")]:
+        if (result := elem.find("con:payload", ns)) is not None:
+            elem = result
+        elif (result := elem.find("d2p:payload", ns)) is not None:
+            elem = result
+        else:
+            raise ValueError("payload not found")
+
+    for table in elem.findall("egi:energyInfrastructureTable", ns):
+        for site in tqdm(table.findall("egi:energyInfrastructureSite", ns)):
+            with transaction.atomic():
+                parse_energy_infrastructure_site(site, source)
 
 
 def parse_multilingual_string(elem: Element) -> str:
@@ -40,11 +54,17 @@ def parse_point_coordinates(elem: Element) -> Point:
 
 
 def parse_connector(elem, refill_point: Datex2RefillPoint):
+    max_power = elem.find("egi:maxPowerAtSocket", ns).text
+    try:
+        max_power = int(max_power)
+    except ValueError:
+        max_power = int(float(max_power))
+
     Datex2Connector(
         refill_point=refill_point,
         connector_type=elem.find("egi:connectorType", ns).text,
         charging_mode=elem.find("egi:chargingMode", ns).text,
-        max_power=int(elem.find("egi:maxPowerAtSocket", ns).text),
+        max_power=max_power,
     ).save()
 
 

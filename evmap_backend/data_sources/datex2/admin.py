@@ -16,8 +16,8 @@ class Datex2ConnectorInline(admin.StackedInline):
 
 
 class Datex2EnergyInfrastructureSiteAdmin(admin.ModelAdmin):
-    list_display = ["name", "operatorName"]
-    list_filter = ["operatorName"]
+    list_display = ["name", "source", "operatorName"]
+    list_filter = ["source", "operatorName"]
     inlines = [Datex2RefillPointInline]
 
 
