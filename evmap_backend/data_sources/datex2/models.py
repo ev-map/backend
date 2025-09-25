@@ -17,7 +17,7 @@ class Datex2EnergyInfrastructureSite(models.Model):
 class Datex2RefillPoint(models.Model):
     site = models.ForeignKey(Datex2EnergyInfrastructureSite, on_delete=models.CASCADE)
     id_from_source = models.CharField(max_length=255)
-    externalIdentifier = models.CharField(max_length=255)  # EVSEID
+    externalIdentifier = models.CharField(max_length=255, blank=True)  # EVSEID
 
 
 class Datex2Connector(models.Model):
@@ -76,5 +76,5 @@ class Datex2Connector(models.Model):
         Datex2RefillPoint, on_delete=models.CASCADE, related_name="connectors"
     )
     connector_type = models.CharField(max_length=255, choices=ConnectorTypes)
-    charging_mode = models.CharField(max_length=255, choices=ChargingModes)
+    charging_mode = models.CharField(max_length=255, choices=ChargingModes, blank=True)
     max_power = models.IntegerField()

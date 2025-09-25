@@ -53,6 +53,14 @@ def parse_point_coordinates(elem: Element) -> Point:
     )
 
 
+def text_if_exists(elem: Element, tag: str):
+    found = elem.find(tag, ns)
+    if found is not None:
+        return found.text
+    else:
+        return ""
+
+
 def parse_connector(elem, refill_point: Datex2RefillPoint):
     max_power = elem.find("egi:maxPowerAtSocket", ns).text
     try:
@@ -63,7 +71,7 @@ def parse_connector(elem, refill_point: Datex2RefillPoint):
     Datex2Connector(
         refill_point=refill_point,
         connector_type=elem.find("egi:connectorType", ns).text,
-        charging_mode=elem.find("egi:chargingMode", ns).text,
+        charging_mode=text_if_exists(elem, "egi:chargingMode"),
         max_power=max_power,
     ).save()
 
@@ -71,7 +79,7 @@ def parse_connector(elem, refill_point: Datex2RefillPoint):
 def parse_refill_point(elem: Element, site: Datex2EnergyInfrastructureSite):
     point = Datex2RefillPoint(
         site=site,
-        externalIdentifier=elem.find("fac:externalIdentifier", ns).text,
+        externalIdentifier=text_if_exists(elem, "fac:externalIdentifier"),
         id_from_source=elem.attrib["id"],
     )
     point.save()
@@ -80,16 +88,12 @@ def parse_refill_point(elem: Element, site: Datex2EnergyInfrastructureSite):
 
 
 def parse_energy_infrastructure_site(elem: Element, source: str):
-    phone = (
-        elem.find("fac:operator", ns)
-        .find("fac:organisationUnit", ns)
-        .find("fac:contactInformation", ns)
-        .find("fac:telephoneNumber", ns)
-        .text
+    operator = elem.find("fac:operator", ns)
+    contactInfo = operator.find("fac:organisationUnit", ns).find(
+        "fac:contactInformation", ns
     )
-    if phone is None:
-        phone = ""
 
+    phone = text_if_exists(contactInfo, "fac:telephoneNumber")
     site, created = Datex2EnergyInfrastructureSite.objects.update_or_create(
         source=source,
         id_from_source=elem.attrib["id"],
@@ -100,9 +104,7 @@ def parse_energy_infrastructure_site(elem: Element, source: str):
                 .find("loc:pointByCoordinates", ns)
                 .find("loc:pointCoordinates", ns)
             ),
-            operatorName=parse_multilingual_string(
-                elem.find("fac:operator", ns).find("fac:name", ns)
-            ),
+            operatorName=parse_multilingual_string(operator.find("fac:name", ns)),
             operatorPhone=phone,
         ),
     )
