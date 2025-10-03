@@ -38,11 +38,13 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.gis",
+    "evmap_backend.chargers",
     "evmap_backend.data_sources.nobil",
     "evmap_backend.data_sources.openstreetmap",
     "evmap_backend.data_sources.datex2",
     "evmap_backend.data_sources.goingelectric",
     "solo",
+    "django_countries",
 ]
 
 MIDDLEWARE = [
