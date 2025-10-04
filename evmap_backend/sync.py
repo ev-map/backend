@@ -1,22 +1,25 @@
-from typing import Iterable
+from typing import Iterable, List, Tuple
 
 from django.db import transaction
 from django.forms import model_to_dict
 
-from evmap_backend.chargers.models import Chargepoint, ChargingSite
-from evmap_backend.data_sources.datex2.parser import Datex2EnergyInfrastructureSite
+from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
 
 
-def sync_chargers(sites_datex: Iterable[Datex2EnergyInfrastructureSite], source: str):
+def sync_chargers(
+    data_source: str,
+    sites: Iterable[Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]],
+):
     sites_created = 0
     with transaction.atomic():
         site_ids_to_delete = set(
-            ChargingSite.objects.filter(data_source=source).values_list("id", flat=True)
+            ChargingSite.objects.filter(data_source=data_source).values_list(
+                "id", flat=True
+            )
         )
-        for site_datex in sites_datex:
-            site = site_datex.convert(source)
+        for site, chargepoints in sites:
             site, created = ChargingSite.objects.update_or_create(
-                data_source=source,
+                data_source=data_source,
                 id_from_source=site.id_from_source,
                 defaults=model_to_dict(
                     site, exclude=["data_source", "id_from_source", "id"]
@@ -30,8 +33,7 @@ def sync_chargers(sites_datex: Iterable[Datex2EnergyInfrastructureSite], source:
             chargepoint_ids_to_delete = set(
                 Chargepoint.objects.filter(site=site).values_list("id", flat=True)
             )
-            for chargepoint_datex in site_datex.refill_points:
-                chargepoint = chargepoint_datex.convert()
+            for chargepoint, connectors in chargepoints:
                 chargepoint, created = Chargepoint.objects.update_or_create(
                     site=site,
                     id_from_source=chargepoint.id_from_source,
@@ -44,26 +46,23 @@ def sync_chargers(sites_datex: Iterable[Datex2EnergyInfrastructureSite], source:
                     chargepoint_ids_to_delete.remove(chargepoint.id)
 
                     # check if the existing connectors match the updated ones
-                    connectors = [
-                        model_to_dict(
-                            connector.convert(), exclude=["chargepoint", "id"]
-                        )
-                        for connector in chargepoint_datex.connectors
+                    new_connectors = [
+                        model_to_dict(connector, exclude=["chargepoint", "id"])
+                        for connector in connectors
                     ]
                     existing_connectors = [
                         model_to_dict(conn, exclude=["chargepoint", "id"])
                         for conn in chargepoint.connectors.all()
                     ]
-                    if len(connectors) == len(existing_connectors) and all(
-                        conn in existing_connectors for conn in connectors
+                    if len(new_connectors) == len(existing_connectors) and all(
+                        conn in existing_connectors for conn in new_connectors
                     ):
                         continue
 
                 # delete all connectors and save the new ones to the DB
                 chargepoint.connectors.all().delete()
 
-                for connector_datex in chargepoint_datex.connectors:
-                    connector = connector_datex.convert()
+                for connector in connectors:
                     connector.chargepoint = chargepoint
                     connector.save()
 

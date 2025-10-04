@@ -4,7 +4,7 @@ import requests
 from django.core.management import BaseCommand
 
 from evmap_backend.data_sources.datex2.parser.xml import Datex2XmlParser
-from evmap_backend.data_sources.datex2.sync import sync_chargers
+from evmap_backend.sync import sync_chargers
 
 API_URL = "https://mobilithek.info:8443/mobilithek/api/v1.0/subscription"
 SOURCE = "mobilithek_ulm"
@@ -19,7 +19,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         root = get_mobilithek_data()
         sites_datex = Datex2XmlParser().parse(root)
-        sync_chargers(sites_datex, SOURCE)
+        sync_chargers(SOURCE, (site.convert(SOURCE) for site in sites_datex))
 
 
 def get_mobilithek_data():

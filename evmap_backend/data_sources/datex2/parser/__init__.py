@@ -139,8 +139,10 @@ class Datex2EnergyInfrastructureSite:
     refill_points: List[Datex2RefillPoint]
     additional_information: Datex2MultilingualString = None
 
-    def convert(self, data_source: str) -> ChargingSite:
-        return ChargingSite(
+    def convert(
+        self, data_source: str
+    ) -> Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]:
+        site = ChargingSite(
             data_source=data_source,
             id_from_source=self.id,
             name=(
@@ -155,3 +157,8 @@ class Datex2EnergyInfrastructureSite:
             location=Point(*self.location),
             operator=self.operator_name.first(),
         )
+        chargepoints = [
+            (rp.convert(), [con.convert() for con in rp.connectors])
+            for rp in self.refill_points
+        ]
+        return site, chargepoints
