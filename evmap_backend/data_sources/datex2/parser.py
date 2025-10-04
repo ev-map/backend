@@ -4,11 +4,7 @@ from django.contrib.gis.geos import Point
 from django.db import transaction
 from tqdm import tqdm
 
-from evmap_backend.data_sources.datex2.models import (
-    Datex2Connector,
-    Datex2EnergyInfrastructureSite,
-    Datex2RefillPoint,
-)
+from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
 
 ns = {
     "d2p": "http://datex2.eu/schema/3/d2Payload",
@@ -18,6 +14,46 @@ ns = {
     "loc": "http://datex2.eu/schema/3/locationReferencing",
     "locx": "http://datex2.eu/schema/3/locationExtension",
     "fac": "http://datex2.eu/schema/3/facilities",
+}
+
+connectors = {
+    "chademo": Connector.ConnectorTypes.CHADEMO,
+    "cee3": Connector.ConnectorTypes.OTHER,
+    "cee5": Connector.ConnectorTypes.OTHER,
+    "yazaki": Connector.ConnectorTypes.OTHER,
+    "domestic": Connector.ConnectorTypes.OTHER,
+    "domesticA": Connector.ConnectorTypes.OTHER,
+    "domesticB": Connector.ConnectorTypes.OTHER,
+    "domesticC": Connector.ConnectorTypes.OTHER,
+    "domesticD": Connector.ConnectorTypes.OTHER,
+    "domesticE": Connector.ConnectorTypes.OTHER,
+    "domesticF": Connector.ConnectorTypes.SCHUKO,
+    "domesticG": Connector.ConnectorTypes.OTHER,
+    "domesticH": Connector.ConnectorTypes.OTHER,
+    "domesticI": Connector.ConnectorTypes.OTHER,
+    "domesticJ": Connector.ConnectorTypes.OTHER,
+    "domesticK": Connector.ConnectorTypes.OTHER,
+    "domesticL": Connector.ConnectorTypes.OTHER,
+    "domesticM": Connector.ConnectorTypes.OTHER,
+    "domesticN": Connector.ConnectorTypes.OTHER,
+    "domesticO": Connector.ConnectorTypes.OTHER,
+    "iec60309x2single16": Connector.ConnectorTypes.CEE_SINGLE_16,
+    "iec60309x2three16": Connector.ConnectorTypes.CEE_THREE_16,
+    "iec60309x2three32": Connector.ConnectorTypes.CEE_THREE_32,
+    "iec60309x2three64": Connector.ConnectorTypes.CEE_THREE_64,
+    "iec62196T1": Connector.ConnectorTypes.TYPE_1,
+    "iec62196T1COMBO": Connector.ConnectorTypes.CCS_TYPE_1,
+    "iec62196T2": Connector.ConnectorTypes.TYPE_2,
+    "iec62196T2COMBO": Connector.ConnectorTypes.CCS_TYPE_2,
+    "iec62196T3A": Connector.ConnectorTypes.TYPE_3A,
+    "iec62196T3C": Connector.ConnectorTypes.TYPE_3C,
+    "pantographBottomUp": Connector.ConnectorTypes.OTHER,
+    "pantographTopDown": Connector.ConnectorTypes.OTHER,
+    "teslaConnectorEurope": Connector.ConnectorTypes.TESLA_SUPERCHARGER_EU,
+    "teslaConnectorAmerica": Connector.ConnectorTypes.NACS,
+    "teslaR": Connector.ConnectorTypes.TESLA_ROADSTER_HPC,
+    "teslaS": Connector.ConnectorTypes.OTHER,
+    "other": Connector.ConnectorTypes.OTHER,
 }
 
 
@@ -61,25 +97,18 @@ def text_if_exists(elem: Element, tag: str):
         return ""
 
 
-def parse_connector(elem, refill_point: Datex2RefillPoint):
-    max_power = elem.find("egi:maxPowerAtSocket", ns).text
-    try:
-        max_power = int(max_power)
-    except ValueError:
-        max_power = int(float(max_power))
-
-    Datex2Connector(
-        refill_point=refill_point,
-        connector_type=elem.find("egi:connectorType", ns).text,
-        charging_mode=text_if_exists(elem, "egi:chargingMode"),
-        max_power=max_power,
+def parse_connector(elem, chargepoint: Chargepoint):
+    Connector(
+        chargepoint=chargepoint,
+        connector_type=connectors[elem.find("egi:connectorType", ns).text],
+        max_power=float(elem.find("egi:maxPowerAtSocket", ns).text),
     ).save()
 
 
-def parse_refill_point(elem: Element, site: Datex2EnergyInfrastructureSite):
-    point = Datex2RefillPoint(
+def parse_refill_point(elem: Element, site: ChargingSite):
+    point = Chargepoint(
         site=site,
-        externalIdentifier=text_if_exists(elem, "fac:externalIdentifier"),
+        evseid=text_if_exists(elem, "fac:externalIdentifier"),
         id_from_source=elem.attrib["id"],
     )
     point.save()
@@ -92,10 +121,10 @@ def parse_energy_infrastructure_site(elem: Element, source: str):
     contactInfo = operator.find("fac:organisationUnit", ns).find(
         "fac:contactInformation", ns
     )
+    # phone = text_if_exists(contactInfo, "fac:telephoneNumber")
 
-    phone = text_if_exists(contactInfo, "fac:telephoneNumber")
-    site, created = Datex2EnergyInfrastructureSite.objects.update_or_create(
-        source=source,
+    site, created = ChargingSite.objects.update_or_create(
+        data_source=source,
         id_from_source=elem.attrib["id"],
         defaults=dict(
             name=parse_multilingual_string(elem.find("fac:name", ns)),
@@ -104,11 +133,11 @@ def parse_energy_infrastructure_site(elem: Element, source: str):
                 .find("loc:pointByCoordinates", ns)
                 .find("loc:pointCoordinates", ns)
             ),
-            operatorName=parse_multilingual_string(operator.find("fac:name", ns)),
-            operatorPhone=phone,
+            operator=parse_multilingual_string(operator.find("fac:name", ns)),
+            # operatorPhone=phone,
         ),
     )
-    Datex2RefillPoint.objects.filter(site=site).delete()
+    Chargepoint.objects.filter(site=site).delete()
     for station in elem.findall("egi:energyInfrastructureStation", ns):
         for refill_point in station.findall("egi:refillPoint", ns):
             parse_refill_point(refill_point, site=site)
