@@ -1,10 +1,10 @@
 import os
 
 import requests
-from defusedxml import ElementTree
 from django.core.management import BaseCommand
 
-from evmap_backend.data_sources.datex2.parser import parse_datex2_data
+from evmap_backend.data_sources.datex2.parser.xml import Datex2XmlParser
+from evmap_backend.data_sources.datex2.sync import sync_chargers
 
 API_URL = "https://api.e-control.at/charge/1.0/datex2/v3.5/energy-infrastructure-table-publication"
 SOURCE = "e-control_austria"
@@ -18,7 +18,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         root = get_econtrol_data()
-        parse_datex2_data(root, SOURCE)
+        sites_datex = Datex2XmlParser().parse(root)
+        sync_chargers(sites_datex, SOURCE)
 
 
 def get_econtrol_data():
@@ -30,4 +31,4 @@ def get_econtrol_data():
             "Referer": "https://ev-map.app",
         },
     )
-    return ElementTree.fromstring(response.text)
+    return response.text

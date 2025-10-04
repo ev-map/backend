@@ -1,10 +1,10 @@
 import os
 
 import requests
-from defusedxml import ElementTree
 from django.core.management import BaseCommand
 
-from evmap_backend.data_sources.datex2.parser import parse_datex2_data
+from evmap_backend.data_sources.datex2.parser.xml import Datex2XmlParser
+from evmap_backend.data_sources.datex2.sync import sync_chargers
 
 API_URL = "https://mobilithek.info:8443/mobilithek/api/v1.0/subscription"
 SOURCE = "mobilithek_ecomovement"
@@ -18,7 +18,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         root = get_mobilithek_data()
-        parse_datex2_data(root, SOURCE)
+        sites_datex = Datex2XmlParser().parse(root)
+        sync_chargers(sites_datex, SOURCE)
 
 
 def get_mobilithek_data():
@@ -31,4 +32,4 @@ def get_mobilithek_data():
         },
         cert=os.environ["MOBILITHEK_CERTIFICATE"],
     )
-    return ElementTree.fromstring(response.text)
+    return response.text
