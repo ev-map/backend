@@ -3,7 +3,9 @@ from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
 from django.contrib.gis.geos import Point
+from django.core.exceptions import ValidationError
 
+from evmap_backend.chargers.fields import EVSEIDType, normalize_evseid, validate_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
 
 
@@ -69,8 +71,8 @@ class Datex2Connector:
         UNKNOWN = "unknown"
 
     connector_type: ConnectorType
-    charging_mode: ChargingMode
     max_power: float
+    charging_mode: ChargingMode = None
 
     def convert(self) -> Connector:
         return Connector(
@@ -103,11 +105,26 @@ connector_mapping = {
 @dataclass
 class Datex2RefillPoint:
     id: str
-    external_identifier: str  # EVSEID
     connectors: List[Datex2Connector]
+    external_identifier: str = None
 
     def convert(self) -> Chargepoint:
-        return Chargepoint(id_from_source=self.id, evseid=self.external_identifier)
+        evseid = ""
+        try:
+            id = normalize_evseid(
+                self.external_identifier if self.external_identifier else ""
+            )
+            validate_evseid(id, EVSEIDType.EVSE)
+            evseid = id
+        except ValidationError:
+            try:
+                id = normalize_evseid(self.id)
+                validate_evseid(id, EVSEIDType.EVSE)
+                evseid = id
+            except ValidationError:
+                pass
+
+        return Chargepoint(id_from_source=self.id, evseid=evseid)
 
 
 @dataclass
@@ -120,12 +137,21 @@ class Datex2EnergyInfrastructureSite:
     operator_name: Datex2MultilingualString
     operator_phone: str
     refill_points: List[Datex2RefillPoint]
+    additional_information: Datex2MultilingualString = None
 
     def convert(self, data_source: str) -> ChargingSite:
         return ChargingSite(
             data_source=data_source,
             id_from_source=self.id,
-            name=self.name.first(),
+            name=(
+                self.name.first()
+                if self.name
+                else (
+                    self.additional_information.first()
+                    if self.additional_information
+                    else ""
+                )
+            ),
             location=Point(*self.location),
             operator=self.operator_name.first(),
         )

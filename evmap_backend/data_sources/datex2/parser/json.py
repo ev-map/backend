@@ -1,0 +1,75 @@
+import json
+from typing import Iterable, Tuple
+
+from defusedxml import ElementTree
+from tqdm import tqdm
+
+from evmap_backend.data_sources.datex2.parser import (
+    Datex2Connector,
+    Datex2EnergyInfrastructureSite,
+    Datex2MultilingualString,
+    Datex2RefillPoint,
+)
+
+
+def parse_multilingual_string(elem) -> Datex2MultilingualString:
+    if isinstance(elem, list):
+        values = {value["lang"]: value["value"] for value in elem}
+    else:
+        values = {elem["lang"]: elem["value"]}
+
+    return Datex2MultilingualString(values=values)
+
+
+def parse_point_coordinates(elem: dict) -> Tuple[float, float]:
+    return (elem["longitude"], elem["latitude"])
+
+
+def parse_connector(elem) -> Datex2Connector:
+    return Datex2Connector(
+        connector_type=Datex2Connector.ConnectorType(elem["connectorType"]["value"]),
+        max_power=elem["maxPowerAtSocket"],
+    )
+
+
+def parse_refill_point(elem) -> Datex2RefillPoint:
+    return Datex2RefillPoint(
+        # external_identifier=
+        id=elem["idG"],
+        connectors=[parse_connector(connector) for connector in elem["connector"]],
+    )
+
+
+def parse_energy_infrastructure_site(elem: dict) -> Datex2EnergyInfrastructureSite:
+    operator = elem["operator"]["afacAnOrganisation"]
+
+    refill_points = []
+    for station in elem["energyInfrastructureStations"]:
+        for refill_point in station["refillPoint"]:
+            refill_points.append(
+                parse_refill_point(refill_point["aegiElectricChargingPoint"])
+            )
+
+    return Datex2EnergyInfrastructureSite(
+        id=elem["idG"],
+        name=parse_multilingual_string(elem["name"]) if "name" in elem else None,
+        additional_information=parse_multilingual_string(elem["additionalInformation"]),
+        location=parse_point_coordinates(
+            elem["locationReference"]["locAreaLocation"]["coordinatesForDisplay"]
+        ),
+        operator_name=parse_multilingual_string(operator["name"]),
+        refill_points=refill_points,
+        operator_phone=None,
+    )
+
+
+class Datex2JsonParser:
+    def parse(self, data) -> Iterable[Datex2EnergyInfrastructureSite]:
+        root = json.loads(data)
+        root = root["payload"]
+
+        for table in root["aegiEnergyInfrastructureTablePublication"][
+            "energyInfrastructureTable"
+        ]:
+            for site in tqdm(table["energyInfrastructureSite"]):
+                yield parse_energy_infrastructure_site(site)
