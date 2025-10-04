@@ -3,6 +3,7 @@ env/
 .idea/
 db.sqlite3
 db.sqlite3-journal
+/dbdata
 
 __pycache__/
 *.py[cod]
