@@ -21,8 +21,13 @@ from django.urls import path
 from evmap_backend.data_sources.nobil.api import api as nobil_api
 from evmap_backend.data_sources.openstreetmap.api import api as osm_api
 
+from . import views
+from .api import api as main_api
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("nobil/api/", nobil_api.urls),
     path("osm/api/", osm_api.urls),
+    path("api/", main_api.urls),
+    path("playground/", views.playground),
 ]

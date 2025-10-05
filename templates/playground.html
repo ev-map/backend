@@ -1,0 +1,70 @@
+<html>
+<head>
+    <title>EVMap Backend Playground</title>
+    <style>
+        #map {
+            height: 100%;
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    <link href='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css' rel='stylesheet'/>
+</head>
+<body>
+<div id="map"></div>
+<script src='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.js'></script>
+<script>
+    var map = new maplibregl.Map({
+        container: 'map',
+        style: 'https://tiles.openfreemap.org/styles/bright', // stylesheet location
+        center: [9.5, 51.0], // starting position [lng, lat]
+        zoom: 10 // starting zoom
+    });
+
+    const markers = new Map();
+
+    async function updateMap() {
+        const bounds = map.getBounds();
+        const params = new URLSearchParams();
+        params.append("sw_lng", bounds.getWest());
+        params.append("sw_lat", bounds.getSouth());
+        params.append("ne_lng", bounds.getEast());
+        params.append("ne_lat", bounds.getNorth());
+        const response = await fetch(`/api/sites?${params}`);
+        const chargers = await response.json();
+        const idsToDelete = new Set(markers.keys());
+        chargers.forEach((charger) => {
+            if (!markers.has(charger.id)) {
+                const popup = new maplibregl.Popup().setHTML(charger.name + "<br>" + charger.operator);
+                const marker = new maplibregl.Marker()
+                    .setLngLat(charger.location)
+                    .setPopup(popup)
+                    .addTo(map);
+                markers.set(charger.id, marker);
+            }
+            idsToDelete.delete(charger.id);
+        });
+        idsToDelete.forEach((id) => {
+            const marker = markers.get(id);
+            marker.remove();
+            markers.delete(id);
+        })
+    }
+
+    map.on("moveend", () => {
+        updateMap();
+    });
+
+    map.on("load", () => {
+        updateMap();
+    })
+
+
+</script>
+</body>
+</html>
