@@ -16,7 +16,7 @@ def parse_multilingual_string(elem) -> Datex2MultilingualString:
     if isinstance(elem, list):
         values = {value["lang"]: value["value"] for value in elem}
     else:
-        values = {elem["lang"]: elem["value"]}
+        values = {elem["lang"]: elem["value"] if "value" in elem else ""}
 
     return Datex2MultilingualString(values=values)
 
@@ -40,6 +40,16 @@ def parse_refill_point(elem) -> Datex2RefillPoint:
     )
 
 
+def parse_address(address_lines: list) -> str:
+    address_lines = sorted(address_lines, key=lambda line: line["order"])
+    texts = []
+    for line in address_lines:
+        text = line["text"]
+        texts.append(parse_multilingual_string(text).first())
+
+    return " ".join(texts)
+
+
 def parse_energy_infrastructure_site(elem: dict) -> Datex2EnergyInfrastructureSite:
     operator = elem["operator"]["afacAnOrganisation"]
 
@@ -50,6 +60,9 @@ def parse_energy_infrastructure_site(elem: dict) -> Datex2EnergyInfrastructureSi
                 parse_refill_point(refill_point["aegiElectricChargingPoint"])
             )
 
+    address = elem["locationReference"]["locLocationExtensionG"]["facilityLocation"][
+        "address"
+    ]
     return Datex2EnergyInfrastructureSite(
         id=elem["idG"],
         name=parse_multilingual_string(elem["name"]) if "name" in elem else None,
@@ -57,6 +70,10 @@ def parse_energy_infrastructure_site(elem: dict) -> Datex2EnergyInfrastructureSi
         location=parse_point_coordinates(
             elem["locationReference"]["locAreaLocation"]["coordinatesForDisplay"]
         ),
+        zipcode=address["postcode"],
+        city=parse_multilingual_string(address["city"]["value"]).first(),
+        street=parse_address(address["addressLine"]),
+        country=address["countryCode"],
         operator_name=parse_multilingual_string(operator["name"]),
         refill_points=refill_points,
         operator_phone=None,

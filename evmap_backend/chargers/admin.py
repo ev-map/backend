@@ -13,8 +13,8 @@ class ConnectorInline(admin.StackedInline):
 
 
 class ChargingSiteAdmin(admin.ModelAdmin):
-    list_display = ["name", "data_source", "operator"]
-    list_filter = ["data_source", "operator"]
+    list_display = ["name", "data_source", "operator", "city", "country"]
+    list_filter = ["data_source", "operator", "country"]
     inlines = [ChargepointInline]
 
 

@@ -133,7 +133,13 @@ class Datex2EnergyInfrastructureSite:
     name: Datex2MultilingualString
     # TODO: operatingHours
     location: Tuple[float, float]
-    # TODO: address
+
+    # address
+    street: str
+    zipcode: str
+    city: str
+    country: str
+
     operator_name: Datex2MultilingualString
     operator_phone: str
     refill_points: List[Datex2RefillPoint]
@@ -156,6 +162,10 @@ class Datex2EnergyInfrastructureSite:
             ),
             location=Point(*self.location),
             operator=self.operator_name.first(),
+            street=self.street,
+            zipcode=self.zipcode,
+            city=self.city,
+            country=self.country,
         )
         chargepoints = [
             (rp.convert(), [con.convert() for con in rp.connectors])

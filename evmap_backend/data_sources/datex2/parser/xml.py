@@ -43,6 +43,13 @@ def parse_multilingual_string(elem: Element) -> Datex2MultilingualString:
     return Datex2MultilingualString(values=values)
 
 
+def parse_single_or_multilingual_string(elem: Element) -> str:
+    if elem.text is not None:
+        return elem.text
+    else:
+        return parse_multilingual_string(elem).first()
+
+
 def parse_point_coordinates(elem: Element) -> Tuple[float, float]:
     return (
         float(elem.find("loc:longitude", ns).text),
@@ -74,6 +81,17 @@ def parse_refill_point(elem: Element) -> Datex2RefillPoint:
     )
 
 
+def parse_address(address: Element) -> str:
+    address_lines = address.findall("locx:addressLine", ns)
+    address_lines = sorted(address_lines, key=lambda line: int(line.attrib["order"]))
+    texts = []
+    for line in address_lines:
+        text = line.find("locx:text", ns)
+        texts.append(parse_single_or_multilingual_string(text))
+
+    return " ".join(texts)
+
+
 def parse_energy_infrastructure_site(elem: Element) -> Datex2EnergyInfrastructureSite:
     operator = elem.find("fac:operator", ns)
     contactInfo = operator.find("fac:organisationUnit", ns).find(
@@ -86,14 +104,24 @@ def parse_energy_infrastructure_site(elem: Element) -> Datex2EnergyInfrastructur
         for refill_point in station.findall("egi:refillPoint", ns):
             refill_points.append(parse_refill_point(refill_point))
 
+    location = elem.find("fac:locationReference", ns)
+    loc_extension = location.find("loc:_pointLocationExtension", ns)
+    if loc_extension is None:
+        loc_extension = location.find("loc:_locationReferenceExtension", ns)
+        facility_location = loc_extension.find("loc:facilityLocation", ns)
+    else:
+        facility_location = loc_extension.find("locx:facilityLocation", ns)
+    address = facility_location.find("locx:address", ns)
     return Datex2EnergyInfrastructureSite(
         id=elem.attrib["id"],
         name=parse_multilingual_string(elem.find("fac:name", ns)),
         location=parse_point_coordinates(
-            elem.find("fac:locationReference", ns)
-            .find("loc:pointByCoordinates", ns)
-            .find("loc:pointCoordinates", ns)
+            location.find("loc:pointByCoordinates", ns).find("loc:pointCoordinates", ns)
         ),
+        zipcode=address.find("locx:postcode", ns).text,
+        city=parse_single_or_multilingual_string(address.find("locx:city", ns)),
+        street=parse_address(address),
+        country=address.find("locx:countryCode", ns).text,
         operator_name=parse_multilingual_string(operator.find("fac:name", ns)),
         operator_phone=phone,
         refill_points=refill_points,
