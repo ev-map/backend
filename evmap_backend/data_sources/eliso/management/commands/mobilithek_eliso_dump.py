@@ -61,7 +61,7 @@ def parse_eliso_chargers(
             connectors = [
                 Connector(
                     connector_type=connector_mapping[connector["type_of_connector"]],
-                    max_power=connector["maxPower"],
+                    max_power=connector["maxPower"] * 1000,
                 )
                 for connector in evse["connectors"]
             ]

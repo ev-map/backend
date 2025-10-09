@@ -143,7 +143,7 @@ def convert_monta_data(chargers_by_location):
             connectors = [
                 Connector(
                     connector_type=connector_mapping[connector["identifier"]],
-                    max_power=evse["maxKw"],
+                    max_power=evse["maxKw"] * 1000,
                 )
                 for connector in evse["connectors"]
             ]
