@@ -7,10 +7,12 @@ from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
 # Register your models here.
 class ChargepointInline(admin.StackedInline):
     model = Chargepoint
+    show_change_link = True
 
 
 class ConnectorInline(admin.StackedInline):
     model = Connector
+    show_change_link = True
 
 
 class ChargingSiteAdmin(GISModelAdmin):
