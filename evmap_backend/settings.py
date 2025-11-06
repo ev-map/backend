@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "evmap_backend.data_sources.goingelectric",
     "evmap_backend.data_sources.monta",
     "evmap_backend.data_sources.eliso",
+    "evmap_backend.data_sources.ocpi",
     "solo",
     "django_countries",
 ]

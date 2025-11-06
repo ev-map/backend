@@ -66,6 +66,7 @@ class Connector(models.Model):
     chargepoint = models.ForeignKey(
         Chargepoint, on_delete=models.CASCADE, related_name="connectors"
     )
+    id_from_source = models.CharField(max_length=255, blank=True)
     connector_type = models.CharField(max_length=255, choices=ConnectorTypes)
     connector_format = models.CharField(
         max_length=255, choices=ConnectorFormats, blank=True
