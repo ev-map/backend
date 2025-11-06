@@ -28,7 +28,12 @@ def sync_chargers(
             if created:
                 sites_created += 1
             else:
-                site_ids_to_delete.remove(site.id)
+                try:
+                    site_ids_to_delete.remove(site.id)
+                except KeyError:
+                    raise ValueError(
+                        f"ID {site.id_from_source} seems to appear more than once in DATEX2 data!"
+                    )
 
             chargepoint_ids_to_delete = set(
                 Chargepoint.objects.filter(site=site).values_list("id", flat=True)

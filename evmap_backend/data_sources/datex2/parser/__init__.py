@@ -1,6 +1,6 @@
 import enum
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from django.contrib.gis.geos import Point
 from django.core.exceptions import ValidationError
@@ -13,8 +13,8 @@ from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
 class Datex2MultilingualString:
     values: Dict[str, str]
 
-    def first(self) -> str:
-        return next(iter(self.values.values()))
+    def first(self) -> Optional[str]:
+        return next(iter(self.values.values())) if len(self.values) > 0 else None
 
 
 @dataclass
@@ -162,9 +162,9 @@ class Datex2EnergyInfrastructureSite:
             ),
             location=Point(*self.location),
             operator=self.operator_name.first(),
-            street=self.street,
-            zipcode=self.zipcode,
-            city=self.city,
+            street=self.street if self.street is not None else "",
+            zipcode=self.zipcode if self.zipcode is not None else "",
+            city=self.city if self.city is not None else "",
             country=self.country,
         )
         chargepoints = [

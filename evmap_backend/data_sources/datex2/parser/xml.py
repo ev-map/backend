@@ -1,4 +1,4 @@
-from typing import Iterable, Tuple
+from typing import Iterable, Optional, Tuple
 from xml.etree.ElementTree import Element
 
 from defusedxml import ElementTree
@@ -35,15 +35,17 @@ def text_if_exists(elem: Element, tag: str):
         return None
 
 
-def parse_multilingual_string(elem: Element) -> Datex2MultilingualString:
+def parse_multilingual_string(elem: Element) -> Optional[Datex2MultilingualString]:
+    values_elem = elem.find("com:values", ns)
     values = {}
-    for value in elem.find("com:values", ns).findall("com:value", ns):
-        values[value.attrib["lang"]] = value.text
+    if values_elem is not None:
+        for value in values_elem.findall("com:value", ns):
+            values[value.attrib["lang"]] = value.text
 
     return Datex2MultilingualString(values=values)
 
 
-def parse_single_or_multilingual_string(elem: Element) -> str:
+def parse_single_or_multilingual_string(elem: Element) -> Optional[str]:
     if elem.text is not None:
         return elem.text
     else:
@@ -87,7 +89,9 @@ def parse_address(address: Element) -> str:
     texts = []
     for line in address_lines:
         text = line.find("locx:text", ns)
-        texts.append(parse_single_or_multilingual_string(text))
+        text = parse_single_or_multilingual_string(text)
+        if text is not None:
+            texts.append(text)
 
     return " ".join(texts)
 
