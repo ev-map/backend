@@ -50,7 +50,12 @@ def sync_chargers(
                 )
 
                 if not created:
-                    chargepoint_ids_to_delete.remove(chargepoint.id)
+                    try:
+                        chargepoint_ids_to_delete.remove(chargepoint.id)
+                    except KeyError:
+                        logging.warning(
+                            f"ID {chargepoint.id_from_source} seems to appear more than once in input data!"
+                        )
 
                 if all(conn.id_from_source != "" for conn in connectors):
                     connector_ids_to_delete = set(
