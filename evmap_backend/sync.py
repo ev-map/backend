@@ -1,3 +1,4 @@
+import logging
 from typing import Iterable, List, Tuple
 
 from django.db import transaction
@@ -32,7 +33,7 @@ def sync_chargers(
                 try:
                     site_ids_to_delete.remove(site.id)
                 except KeyError:
-                    raise ValueError(
+                    logging.warning(
                         f"ID {site.id_from_source} seems to appear more than once in input data!"
                     )
 
