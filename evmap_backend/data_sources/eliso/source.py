@@ -3,32 +3,19 @@ from typing import Iterable, List, Tuple
 
 import requests
 from django.contrib.gis.geos import Point
-from django.core.management import BaseCommand
 from tqdm import tqdm
 
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
+from evmap_backend.data_sources import DataSource, DataType
 from evmap_backend.sync import sync_chargers
 
 API_URL = "https://mobilithek.info:8443/mobilithek/api/v1.0/subscription"
 SOURCE = "mobilithek_eliso"
 
-
 connector_mapping = {
     "Type 2 (AC)": Connector.ConnectorTypes.TYPE_2,
     "Combo2/CCS (DC)": Connector.ConnectorTypes.CCS_TYPE_2,
 }
-
-
-class Command(BaseCommand):
-    help = "Connects to Mobilithek API to extract static charger information for Germany provided by Eliso"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def handle(self, *args, **options):
-        root = get_mobilithek_data()
-        eliso_chargers = parse_eliso_chargers(root)
-        sync_chargers(SOURCE, eliso_chargers)
 
 
 def parse_eliso_chargers(
@@ -78,3 +65,22 @@ def get_mobilithek_data():
         cert=os.environ["MOBILITHEK_CERTIFICATE"],
     )
     return response.json()
+
+
+class ElisoDataSource(DataSource):
+    @property
+    def id(self) -> str:
+        return "mobilithek_eliso"
+
+    @property
+    def supported_data_types(self) -> List[DataType]:
+        return [DataType.STATIC]
+
+    @property
+    def supports_push(self) -> bool:
+        return False
+
+    def load_data(self):
+        root = get_mobilithek_data()
+        eliso_chargers = parse_eliso_chargers(root)
+        sync_chargers(SOURCE, eliso_chargers)

@@ -1,15 +1,15 @@
 import datetime as dt
 import os
 from collections import defaultdict
+from typing import List
 
 import requests
 from django.contrib.gis.geos import Point
-from django.core.management import BaseCommand
-from django_countries.fields import Country
 from tqdm import tqdm
 
 from evmap_backend.chargers.fields import normalize_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
+from evmap_backend.data_sources import DataSource, DataType
 from evmap_backend.data_sources.monta.models import MontaTokens
 from evmap_backend.sync import sync_chargers
 
@@ -29,46 +29,6 @@ connector_mapping = {
 }
 
 country_map = {"Germany": "DE"}
-
-
-class Command(BaseCommand):
-    help = "Connects to Monta AFIR API to extract static charger information"
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def handle(self, *args, **options):
-        tokens = MontaTokens.get_solo()
-        now = dt.datetime.now().astimezone()
-        if tokens.refresh_token_expires <= now:
-            response = get_monta_token()
-            tokens.access_token = response["accessToken"]
-            tokens.refresh_token = response["refreshToken"]
-            tokens.access_token_expires = dt.datetime.fromisoformat(
-                response["accessTokenExpirationDate"]
-            )
-            tokens.refresh_token_expires = dt.datetime.fromisoformat(
-                response["refreshTokenExpirationDate"]
-            )
-            tokens.save()
-        elif tokens.access_token_expires <= now:
-            response = refresh_monta_token(tokens.refresh_token)
-            tokens.access_token = response["accessToken"]
-            tokens.refresh_token = response["refreshToken"]
-            tokens.access_token_expires = dt.datetime.fromisoformat(
-                response["accessTokenExpirationDate"]
-            )
-            tokens.refresh_token_expires = dt.datetime.fromisoformat(
-                response["refreshTokenExpirationDate"]
-            )
-            tokens.save()
-
-        chargers_by_location = defaultdict(list)
-        for charger in tqdm(get_all_monta_chargers(access_token=tokens.access_token)):
-            chargers_by_location[charger["location"]["addressLabel"]].append(charger)
-
-        sites = convert_monta_data(chargers_by_location)
-        sync_chargers(SOURCE, sites)
 
 
 def get_monta_token():
@@ -150,3 +110,50 @@ def convert_monta_data(chargers_by_location):
             chargepoints.append((chargepoint, connectors))
 
         yield site, chargepoints
+
+
+class MontaDataSource(DataSource):
+    @property
+    def id(self) -> str:
+        return "monta"
+
+    @property
+    def supported_data_types(self) -> List[DataType]:
+        return [DataType.STATIC]
+
+    @property
+    def supports_push(self) -> bool:
+        return False
+
+    def load_data(self):
+        tokens = MontaTokens.get_solo()
+        now = dt.datetime.now().astimezone()
+        if tokens.refresh_token_expires <= now:
+            response = get_monta_token()
+            tokens.access_token = response["accessToken"]
+            tokens.refresh_token = response["refreshToken"]
+            tokens.access_token_expires = dt.datetime.fromisoformat(
+                response["accessTokenExpirationDate"]
+            )
+            tokens.refresh_token_expires = dt.datetime.fromisoformat(
+                response["refreshTokenExpirationDate"]
+            )
+            tokens.save()
+        elif tokens.access_token_expires <= now:
+            response = refresh_monta_token(tokens.refresh_token)
+            tokens.access_token = response["accessToken"]
+            tokens.refresh_token = response["refreshToken"]
+            tokens.access_token_expires = dt.datetime.fromisoformat(
+                response["accessTokenExpirationDate"]
+            )
+            tokens.refresh_token_expires = dt.datetime.fromisoformat(
+                response["refreshTokenExpirationDate"]
+            )
+            tokens.save()
+
+        chargers_by_location = defaultdict(list)
+        for charger in tqdm(get_all_monta_chargers(access_token=tokens.access_token)):
+            chargers_by_location[charger["location"]["addressLabel"]].append(charger)
+
+        sites = convert_monta_data(chargers_by_location)
+        sync_chargers(SOURCE, sites)
