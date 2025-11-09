@@ -1,5 +1,5 @@
 import json
-from typing import Iterable, Tuple
+from typing import Iterable, Optional, Tuple
 
 from defusedxml import ElementTree
 from tqdm import tqdm
@@ -13,6 +13,9 @@ from evmap_backend.data_sources.datex2.parser import (
 
 
 def parse_multilingual_string(elem) -> Datex2MultilingualString:
+    if isinstance(elem, dict) and "values" in elem:
+        elem = elem["values"]
+
     if isinstance(elem, list):
         values = {value["lang"]: value["value"] for value in elem}
     else:
@@ -50,28 +53,35 @@ def parse_address(address_lines: list) -> str:
     return " ".join(texts)
 
 
-def parse_energy_infrastructure_site(elem: dict) -> Datex2EnergyInfrastructureSite:
+def parse_energy_infrastructure_site(
+    elem: dict,
+) -> Optional[Datex2EnergyInfrastructureSite]:
     operator = elem["operator"]["afacAnOrganisation"]
 
     refill_points = []
-    for station in elem["energyInfrastructureStations"]:
+    if not "energyInfrastructureStation" in elem:
+        return None
+
+    for station in elem["energyInfrastructureStation"]:
         for refill_point in station["refillPoint"]:
             refill_points.append(
                 parse_refill_point(refill_point["aegiElectricChargingPoint"])
             )
 
-    address = elem["locationReference"]["locLocationExtensionG"]["facilityLocation"][
-        "address"
-    ]
+    address = elem["locationReference"]["locPointLocation"]["locLocationExtensionG"][
+        "facilityLocation"
+    ]["address"]
     return Datex2EnergyInfrastructureSite(
         id=elem["idG"],
         name=parse_multilingual_string(elem["name"]) if "name" in elem else None,
-        additional_information=parse_multilingual_string(elem["additionalInformation"]),
+        additional_information=parse_multilingual_string(
+            elem["additionalInformation"][0]
+        ),
         location=parse_point_coordinates(
             elem["locationReference"]["locAreaLocation"]["coordinatesForDisplay"]
         ),
         zipcode=address["postcode"],
-        city=parse_multilingual_string(address["city"]["value"]).first(),
+        city=parse_multilingual_string(address["city"]["value"][0]).first(),
         street=parse_address(address["addressLine"]),
         country=address["countryCode"],
         operator_name=parse_multilingual_string(operator["name"]),
@@ -89,4 +99,6 @@ class Datex2JsonParser:
             "energyInfrastructureTable"
         ]:
             for site in tqdm(table["energyInfrastructureSite"]):
-                yield parse_energy_infrastructure_site(site)
+                site = parse_energy_infrastructure_site(site)
+                if site is not None:
+                    yield site
