@@ -56,7 +56,23 @@ def parse_address(address_lines: list) -> str:
 def parse_energy_infrastructure_site(
     elem: dict,
 ) -> Optional[Datex2EnergyInfrastructureSite]:
-    operator = elem["operator"]["afacAnOrganisation"]
+    operator = (
+        elem["operator"]["afacAnOrganisation"]
+        if "operator" in elem
+        else elem["energyInfrastructureStation"][0]["operator"]["afacOrganisation"]
+    )
+
+    if "locationReference" in elem:
+        location_reference = elem["locationReference"]
+    else:
+        location_reference = elem["energyInfrastructureStation"][0]["locationReference"]
+    location_extension = location_reference["locPointLocation"]["locLocationExtensionG"]
+    facility_location = (
+        location_extension["facilityLocation"]
+        if "facilityLocation" in location_reference
+        else location_extension["FacilityLocation"]
+    )
+    address = facility_location["address"]
 
     refill_points = []
     if not "energyInfrastructureStation" in elem:
@@ -68,20 +84,24 @@ def parse_energy_infrastructure_site(
                 parse_refill_point(refill_point["aegiElectricChargingPoint"])
             )
 
-    address = elem["locationReference"]["locPointLocation"]["locLocationExtensionG"][
-        "facilityLocation"
-    ]["address"]
+    area_location = (
+        location_reference["locAreaLocation"]
+        if "locAreaLocation" in location_reference
+        else location_reference["locPointLocation"]
+    )
+    coordinates = parse_point_coordinates(area_location["coordinatesForDisplay"])
+
     return Datex2EnergyInfrastructureSite(
         id=elem["idG"],
         name=parse_multilingual_string(elem["name"]) if "name" in elem else None,
-        additional_information=parse_multilingual_string(
-            elem["additionalInformation"][0]
+        additional_information=(
+            parse_multilingual_string(elem["additionalInformation"][0])
+            if "additionalInformation" in elem
+            else None
         ),
-        location=parse_point_coordinates(
-            elem["locationReference"]["locAreaLocation"]["coordinatesForDisplay"]
-        ),
+        location=coordinates,
         zipcode=address["postcode"],
-        city=parse_multilingual_string(address["city"]["value"][0]).first(),
+        city=parse_multilingual_string(address["city"]).first(),
         street=parse_address(address["addressLine"]),
         country=address["countryCode"],
         operator_name=parse_multilingual_string(operator["name"]),

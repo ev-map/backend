@@ -87,7 +87,6 @@ class Datex2MobilithekEnbwDataSource(BaseDatex2DataSource):
         return response.text
 
     def get_parser(self):
-        """EnBW uses JSON format, not XML like other Datex2 sources"""
         return Datex2JsonParser()
 
 
@@ -142,8 +141,10 @@ class Datex2MobilithekWirelaneDataSource(BaseDatex2DataSource):
             },
             cert=os.environ["MOBILITHEK_CERTIFICATE"],
         )
-        response.encoding = response.apparent_encoding
         return response.text
+
+    def get_parser(self):
+        return Datex2JsonParser()
 
 
 class Datex2LuxembourgEcoMovementDataSource(BaseDatex2DataSource):
