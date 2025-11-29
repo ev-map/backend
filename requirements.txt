@@ -12,3 +12,5 @@ python-dateutil
 pytz
 tqdm
 defusedxml
+pytest==9.0.*
+pytest-django==4.11.*
