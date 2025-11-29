@@ -66,13 +66,21 @@ def parse_energy_infrastructure_site(
         location_reference = elem["locationReference"]
     else:
         location_reference = elem["energyInfrastructureStation"][0]["locationReference"]
-    location_extension = location_reference["locPointLocation"]["locLocationExtensionG"]
-    facility_location = (
-        location_extension["facilityLocation"]
-        if "facilityLocation" in location_reference
-        else location_extension["FacilityLocation"]
-    )
-    address = facility_location["address"]
+    if "locPointLocation" in location_reference:
+        location_extension = location_reference["locPointLocation"][
+            "locLocationExtensionG"
+        ]
+        facility_location = (
+            location_extension["facilityLocation"]
+            if "facilityLocation" in location_extension
+            else location_extension["FacilityLocation"]
+        )
+        address = facility_location["address"]
+        city = address["city"]
+        if "value" in city:
+            city = city["value"][0]
+    else:
+        address = None
 
     refill_points = []
     if not "energyInfrastructureStation" in elem:
@@ -100,10 +108,10 @@ def parse_energy_infrastructure_site(
             else None
         ),
         location=coordinates,
-        zipcode=address["postcode"],
-        city=parse_multilingual_string(address["city"]).first(),
+        zipcode=address["postcode"] if address else None,
+        city=parse_multilingual_string(city).first() if address else None,
         street=parse_address(address["addressLine"]),
-        country=address["countryCode"],
+        country=address["countryCode"] if address else "DE",
         operator_name=parse_multilingual_string(operator["name"]),
         refill_points=refill_points,
         operator_phone=None,

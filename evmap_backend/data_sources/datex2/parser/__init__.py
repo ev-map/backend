@@ -165,7 +165,8 @@ class Datex2EnergyInfrastructureSite:
             street=self.street if self.street is not None else "",
             zipcode=self.zipcode if self.zipcode is not None else "",
             city=self.city if self.city is not None else "",
-            country=self.country,
+            # TODO: get country code based on coordinates if address not available
+            country=self.country if self.country is not None else "DE",
         )
         chargepoints = [
             (rp.convert(), [con.convert() for con in rp.connectors])
