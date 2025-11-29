@@ -5,6 +5,11 @@ from evmap_backend.chargers.fields import EVSEIDField, EVSEIDType, OpeningHoursF
 
 
 class ChargingSite(models.Model):
+    class Meta:
+        indexes = [
+            models.Index(fields=["data_source", "id_from_source"]),
+        ]
+
     data_source = models.CharField(max_length=255)
     id_from_source = models.CharField(max_length=255)
     name = models.TextField()
@@ -25,6 +30,11 @@ class ChargingSite(models.Model):
 
 
 class Chargepoint(models.Model):
+    class Meta:
+        indexes = [
+            models.Index(fields=["site", "id_from_source"]),
+        ]
+
     site = models.ForeignKey(
         ChargingSite, on_delete=models.CASCADE, related_name="chargepoints"
     )
@@ -33,6 +43,11 @@ class Chargepoint(models.Model):
 
 
 class Connector(models.Model):
+    class Meta:
+        indexes = [
+            models.Index(fields=["chargepoint", "id_from_source"]),
+        ]
+
     class ConnectorTypes(models.TextChoices):
         TYPE_1 = "Type 1", "Type 1"
         CCS_TYPE_1 = "CCS Type 1", "CCS Type 1"
