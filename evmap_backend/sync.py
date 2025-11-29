@@ -211,7 +211,7 @@ def _sync_connectors_batch(
     for cp_key, connectors_data, is_new_chargepoint in all_connectors_data:
         chargepoint = chargepoint_mapping[cp_key]
 
-        if all(conn.id_from_source != "" for conn in connectors_data):
+        if all(conn.id_from_source is not None for conn in connectors_data):
             connectors_with_ids.append((chargepoint, connectors_data))
         else:
             connectors_without_ids.append(
@@ -262,14 +262,6 @@ def _sync_connectors_batch(
                 ]:
                     connector_ids_to_delete.discard(conn_id)
                 continue
-            else:
-                # Delete existing connectors for this chargepoint
-                for conn_id in [
-                    c.id
-                    for c in all_existing_connectors
-                    if c.chargepoint_id == chargepoint.id
-                ]:
-                    connector_ids_to_delete.discard(conn_id)
 
         # Add new connectors to create list
         for connector in connectors_data:
