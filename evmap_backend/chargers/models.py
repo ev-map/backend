@@ -9,6 +9,12 @@ class ChargingSite(models.Model):
         indexes = [
             models.Index(fields=["data_source", "id_from_source"]),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["data_source", "id_from_source"],
+                name="unique_site_per_source",
+            ),
+        ]
 
     data_source = models.CharField(max_length=255)
     id_from_source = models.CharField(max_length=255)
@@ -34,11 +40,17 @@ class Chargepoint(models.Model):
         indexes = [
             models.Index(fields=["site", "id_from_source"]),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["site", "id_from_source"],
+                name="unique_chargepoint_per_site",
+            ),
+        ]
 
     site = models.ForeignKey(
         ChargingSite, on_delete=models.CASCADE, related_name="chargepoints"
     )
-    id_from_source = models.CharField(max_length=255, blank=True)
+    id_from_source = models.CharField(max_length=255)
     evseid = EVSEIDField(evseid_type=EVSEIDType.EVSE, blank=True)
 
 
@@ -46,6 +58,13 @@ class Connector(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["chargepoint", "id_from_source"]),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["chargepoint", "id_from_source"],
+                name="unique_connector_per_chargepoint",
+                nulls_distinct=True,
+            ),
         ]
 
     class ConnectorTypes(models.TextChoices):
@@ -81,7 +100,9 @@ class Connector(models.Model):
     chargepoint = models.ForeignKey(
         Chargepoint, on_delete=models.CASCADE, related_name="connectors"
     )
-    id_from_source = models.CharField(max_length=255, blank=True)
+    id_from_source = models.CharField(
+        max_length=255, blank=True, null=True, default=None
+    )
     connector_type = models.CharField(max_length=255, choices=ConnectorTypes)
     connector_format = models.CharField(
         max_length=255, choices=ConnectorFormats, blank=True
