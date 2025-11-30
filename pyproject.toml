@@ -25,11 +25,6 @@ dev = [
     "pytest-django==4.11.*",
 ]
 
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["evmap_backend"]
-namespaces = false
-
 [tool.isort]
 profile = "black"
 
