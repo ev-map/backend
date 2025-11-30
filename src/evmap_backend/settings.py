@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 
 from django.utils.crypto import get_random_string
@@ -36,10 +37,9 @@ else:
             pass  # os.chown is not available on Windows
         f.write(SECRET_KEY)
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = "runserver" in sys.argv
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [os.environ.get("ALLOWED_HOSTS", "api.ev-map.app")] if not DEBUG else []
 
 
 # Application definition
