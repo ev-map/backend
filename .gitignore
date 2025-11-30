@@ -4,6 +4,7 @@ env/
 db.sqlite3
 db.sqlite3-journal
 /dbdata
+/data
 
 __pycache__/
 *.py[cod]

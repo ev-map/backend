@@ -13,15 +13,28 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 
+from django.utils.crypto import get_random_string
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+DATA_DIR = Path(os.environ.get("DATA_DIR", "data"))
+DATA_DIR.mkdir(parents=False, exist_ok=True)
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-jbqcz_)q*4-v6&-0nq7ulo%xz$m!=2i#$qi$c90wm%ok_#%2xh"
+SECRET_FILE = DATA_DIR / ".secret"
+if os.path.exists(SECRET_FILE):
+    with open(SECRET_FILE, "r") as f:
+        SECRET_KEY = f.read().strip()
+else:
+    chars = "abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)"
+    SECRET_KEY = get_random_string(50, chars)
+    with open(SECRET_FILE, "w") as f:
+        os.chmod(SECRET_FILE, 0o600)
+        try:
+            os.chown(SECRET_FILE, os.getuid(), os.getgid())
+        except AttributeError:
+            pass  # os.chown is not available on Windows
+        f.write(SECRET_KEY)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
