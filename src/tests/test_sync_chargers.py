@@ -2,8 +2,6 @@
 Tests for the sync_chargers bulk operations.
 """
 
-from unittest.mock import patch
-
 import pytest
 
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector

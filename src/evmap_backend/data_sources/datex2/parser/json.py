@@ -1,7 +1,6 @@
 import json
 from typing import Iterable, Optional, Tuple
 
-from defusedxml import ElementTree
 from tqdm import tqdm
 
 from evmap_backend.data_sources.datex2.parser import (

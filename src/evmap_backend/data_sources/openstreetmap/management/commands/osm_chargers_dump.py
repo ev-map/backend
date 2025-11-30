@@ -4,8 +4,7 @@ import requests
 from django.contrib.gis.geos import Point
 from django.core.management import BaseCommand
 
-from evmap_backend.data_sources.openstreetmap.models import (OsmNode,
-                                                             OsmUpdateState)
+from evmap_backend.data_sources.openstreetmap.models import OsmNode, OsmUpdateState
 
 OVERPASS_INTERPRETER = "https://overpass-api.de/api/interpreter"
 TIMEOUT_SECONDS = 900  # 15m
