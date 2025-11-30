@@ -12,7 +12,7 @@ COPY pyproject.toml ./
 COPY src/ ./src/
 
 # Install dependencies
-RUN pip install --no-cache-dir .
+RUN pip install -e . uvicorn[standard]
 
 ENV DJANGO_SETTINGS_MODULE=evmap_backend.settings
 
