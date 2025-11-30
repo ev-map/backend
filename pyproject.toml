@@ -10,7 +10,7 @@ dependencies = [
     "django-countries==7.6.*",
     "django-ninja==1.4.*",
     "python-dotenv==1.0.*",
-    "psycopg2==2.9.*",
+    "psycopg2-binary==2.9.*",
     "django-solo==2.4.*",
     "python-dateutil",
     "pytz",
