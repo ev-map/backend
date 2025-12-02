@@ -4,6 +4,8 @@ RUN apt-get update && apt-get install -y \
     gdal-bin \
     libgdal-dev \
     supervisor \
+    --no-install-recommends \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
