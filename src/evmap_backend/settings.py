@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 from django.utils.crypto import get_random_string
 
@@ -39,8 +40,11 @@ else:
 
 DEBUG = "runserver" in sys.argv
 
-ALLOWED_HOSTS = [os.environ.get("ALLOWED_HOSTS", "api.ev-map.app")] if not DEBUG else []
-
+SITE_URL = os.environ.get("SITE_URL", "https://api.ev-map.app")
+ALLOWED_HOSTS = (
+    [os.environ.get("ALLOWED_HOSTS", urlparse(SITE_URL).hostname)] if not DEBUG else []
+)
+CSRF_TRUSTED_ORIGINS = [urlparse(SITE_URL).scheme + "://" + urlparse(SITE_URL).hostname]
 
 # Application definition
 
