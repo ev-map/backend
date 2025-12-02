@@ -3,10 +3,11 @@ from typing import List
 
 from ninja import NinjaAPI, Schema
 
+from evmap_backend.apikeys.ninja import ApiKeyAuth
 from evmap_backend.data_sources.nobil.models import NobilRealtimeData
 from evmap_backend.helpers.database import distinct_on
 
-api = NinjaAPI(urls_namespace="nobil")
+api = NinjaAPI(urls_namespace="nobil", auth=ApiKeyAuth())
 
 
 class RealtimeStatusSchema(Schema):
