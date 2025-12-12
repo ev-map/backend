@@ -17,7 +17,7 @@ class BaseDatex2DataSource(DataSource):
 
     @property
     def supports_push(self) -> bool:
-        return False
+        return True
 
     @abstractmethod
     def get_data(self) -> str:
@@ -30,6 +30,13 @@ class BaseDatex2DataSource(DataSource):
 
     def load_data(self):
         root = self.get_data()
+        self._parse_data(root)
+
+    def process_push(self, body: bytes):
+        root = body.decode("utf-8")
+        self._parse_data(root)
+
+    def _parse_data(self, root: str):
         sites_datex = self.get_parser().parse(root)
         sync_chargers(self.id, (site.convert(self.id) for site in sites_datex))
 

@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import logging
 import os
 import sys
 from pathlib import Path
@@ -39,6 +40,8 @@ else:
         f.write(SECRET_KEY)
 
 DEBUG = "runserver" in sys.argv
+
+logging.basicConfig(level=logging.DEBUG if DEBUG else logging.INFO)
 
 SITE_URL = os.environ.get("SITE_URL", "https://api.ev-map.app")
 ALLOWED_HOSTS = (

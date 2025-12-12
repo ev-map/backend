@@ -42,3 +42,7 @@ class DataSource(ABC):
     @abstractmethod
     def load_data(self):
         pass
+
+    @abstractmethod
+    def process_push(self, body: bytes):
+        pass
