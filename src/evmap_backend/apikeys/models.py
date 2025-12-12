@@ -19,4 +19,4 @@ class ApiKey(models.Model):
         return f"{self.key[:10]}..."
 
     def __str__(self):
-        return f"APIKey(owner={self.description}, revoked={self.active})"
+        return f"APIKey(owner={self.description}, active={self.active})"
