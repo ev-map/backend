@@ -1,5 +1,6 @@
 from django.core.management import BaseCommand
 
+from evmap_backend.data_sources.models import UpdateState
 from evmap_backend.data_sources.registry import get_data_source, list_available_sources
 
 
@@ -22,6 +23,7 @@ class Command(BaseCommand):
             )
 
             data_source.load_data()
+            UpdateState(data_source=data_source.id, push=False).save()
 
             self.stdout.write(
                 self.style.SUCCESS(f"Successfully loaded data from source: {source_id}")

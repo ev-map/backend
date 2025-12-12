@@ -7,6 +7,8 @@ from ninja import ModelSchema, NinjaAPI
 from ninja.orm import register_field
 
 from evmap_backend.chargers.models import ChargingSite
+from evmap_backend.data_sources import UpdateMethod
+from evmap_backend.data_sources.models import UpdateState
 from evmap_backend.data_sources.registry import get_data_source
 
 api = NinjaAPI(urls_namespace="evmap")
@@ -35,7 +37,7 @@ def sites(request, sw_lat: float, sw_lng: float, ne_lat: float, ne_lng: float):
 @api.post("/push/{data_source}")
 def push(request, data_source: str):
     data_source = get_data_source(data_source)
-    if not data_source.supports_push:
+    if not UpdateMethod.HTTP_PUSH in data_source.supported_update_methods:
         raise ValueError("Data source does not support push")
 
     data_source.verify_push(request)
@@ -47,4 +49,6 @@ def push(request, data_source: str):
         body = gzip.decompress(body)
 
     data_source.process_push(body)
+
+    UpdateState(data_source=data_source.id, push=True).save()
     logging.info(f"Successfully processed push for {data_source}")

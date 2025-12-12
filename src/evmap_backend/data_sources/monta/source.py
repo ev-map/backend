@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from evmap_backend.chargers.fields import normalize_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
-from evmap_backend.data_sources import DataSource, DataType
+from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.monta.models import MontaTokens
 from evmap_backend.sync import sync_chargers
 
@@ -122,8 +122,8 @@ class MontaDataSource(DataSource):
         return [DataType.STATIC]
 
     @property
-    def supports_push(self) -> bool:
-        return False
+    def supported_update_methods(self) -> List[UpdateMethod]:
+        return [UpdateMethod.PULL]
 
     def load_data(self):
         tokens = MontaTokens.get_solo()

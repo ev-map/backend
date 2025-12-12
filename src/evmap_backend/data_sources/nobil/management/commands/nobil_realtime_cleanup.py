@@ -2,7 +2,7 @@ import datetime as dt
 
 from django.core.management import BaseCommand
 
-from evmap_backend.data_sources.nobil.models import NobilRealtimeData
+from evmap_backend.data_sources.nobil.parser import NobilRealtimeData
 from evmap_backend.helpers.database import distinct_on
 
 

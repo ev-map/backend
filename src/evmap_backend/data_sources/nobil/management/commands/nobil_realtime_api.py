@@ -6,7 +6,7 @@ import requests
 from asgiref.sync import sync_to_async
 from django.core.management import BaseCommand
 
-from evmap_backend.data_sources.nobil.models import NobilRealtimeData
+from evmap_backend.data_sources.nobil.parser import NobilRealtimeData
 
 
 class Command(BaseCommand):

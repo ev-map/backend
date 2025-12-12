@@ -4,7 +4,7 @@ from typing import List
 
 import requests
 
-from evmap_backend.data_sources import DataSource, DataType
+from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.ocpi.parser import OcpiParser
 from evmap_backend.sync import sync_chargers
 
@@ -41,8 +41,8 @@ class OcpiDataSource(DataSource):
         return [DataType.STATIC]
 
     @property
-    def supports_push(self) -> bool:
-        return False
+    def supported_update_methods(self) -> List[UpdateMethod]:
+        return [UpdateMethod.PULL]
 
     def load_data(self):
         root = get_ndw_data()
