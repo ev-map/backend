@@ -43,6 +43,19 @@ DEBUG = "runserver" in sys.argv
 
 logging.basicConfig(level=logging.DEBUG if DEBUG else logging.INFO)
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "django": {"handlers": ["console"], "level": "INFO"},
+    },
+}
+
 SITE_URL = os.environ.get("SITE_URL", "https://api.ev-map.app")
 ALLOWED_HOSTS = (
     [os.environ.get("ALLOWED_HOSTS", urlparse(SITE_URL).hostname)] if not DEBUG else []
