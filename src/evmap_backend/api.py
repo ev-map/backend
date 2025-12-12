@@ -27,3 +27,8 @@ class ChargingSitesSchema(ModelSchema):
 def sites(request, sw_lat: float, sw_lng: float, ne_lat: float, ne_lng: float):
     region = Polygon.from_bbox((sw_lng, sw_lat, ne_lng, ne_lat))
     return ChargingSite.objects.filter(location__within=region)[:1000]
+
+
+@api.post("/push")
+def push(request):
+    print(request.body)
