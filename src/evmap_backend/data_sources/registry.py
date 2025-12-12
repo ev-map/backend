@@ -12,6 +12,10 @@ from evmap_backend.data_sources.datex2.source import (
 )
 from evmap_backend.data_sources.eliso.source import ElisoDataSource
 from evmap_backend.data_sources.monta.source import MontaDataSource
+from evmap_backend.data_sources.nobil.source import (
+    NobilDataSource,
+    NobilRealtimeDataSource,
+)
 from evmap_backend.data_sources.ocpi.source import OcpiDataSource
 
 DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
@@ -29,6 +33,9 @@ DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
     "luxembourg_ecomovement": Datex2LuxembourgEcoMovementDataSource,
     # Netherlands
     "ndw_netherlands": OcpiDataSource,
+    # Sweden and Norway
+    "nobil": NobilDataSource,
+    "nobil_realtime": NobilRealtimeDataSource,
 }
 
 

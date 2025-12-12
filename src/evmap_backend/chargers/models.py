@@ -75,6 +75,7 @@ class Connector(models.Model):
         TYPE_3A = "Type 3A", "Type 3A"
         TYPE_3C = "Type 3C", "Type 3C"
         CHADEMO = "CHAdeMO", "CHAdeMO"
+        MCS = "MCS", "MCS"
 
         SCHUKO = "Schuko", "Schuko (Type F)"
         # TODO: add other household plugs

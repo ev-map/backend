@@ -9,7 +9,7 @@ from cryptography.x509 import load_pem_x509_certificate, load_pem_x509_certifica
 from cryptography.x509.verification import PolicyBuilder, Store
 from django.http import HttpRequest
 
-from evmap_backend.data_sources import DataSource, DataType
+from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.datex2.parser.json import Datex2JsonParser
 from evmap_backend.data_sources.datex2.parser.xml import Datex2XmlParser
 from evmap_backend.settings import BASE_DIR
@@ -22,8 +22,8 @@ class BaseDatex2DataSource(DataSource):
         return [DataType.STATIC]
 
     @property
-    def supports_push(self) -> bool:
-        return False
+    def supported_update_methods(self) -> List[UpdateMethod]:
+        return [UpdateMethod.PULL]
 
     @abstractmethod
     def get_data(self) -> str:
@@ -34,7 +34,7 @@ class BaseDatex2DataSource(DataSource):
         """Get the appropriate parser for this data source. Override for non-XML sources."""
         return Datex2XmlParser()
 
-    def load_data(self):
+    def pull_data(self):
         root = self.get_data()
         self._parse_data(root)
 
@@ -56,8 +56,8 @@ mobilithek_store = Store(
 
 class BaseMobilithekDatex2DataSource(BaseDatex2DataSource):
     @property
-    def supports_push(self) -> bool:
-        return True
+    def supported_update_methods(self) -> List[UpdateMethod]:
+        return [UpdateMethod.PULL, UpdateMethod.HTTP_PUSH]
 
     def verify_push(self, request: HttpRequest):
         if "X-Forwarded-Client-Cert" not in request.headers:

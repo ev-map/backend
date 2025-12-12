@@ -290,6 +290,7 @@ def _sync_connectors_batch(
 def sync_chargers(
     data_source: str,
     sites: Iterable[Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]],
+    delete_missing: bool = True,
 ):
     """
     Sync charging sites from a data source using bulk operations.
@@ -319,7 +320,7 @@ def sync_chargers(
                 total_sites_created += sites_created
 
         # Delete all remaining sites that weren't in the input
-        if site_ids_to_delete:
+        if site_ids_to_delete and delete_missing:
             ChargingSite.objects.filter(id__in=site_ids_to_delete).delete()
             total_sites_deleted = len(site_ids_to_delete)
 

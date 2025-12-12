@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.gis",
     "evmap_backend.chargers",
+    "evmap_backend.realtime",
     "evmap_backend.data_sources",
     "evmap_backend.data_sources.nobil",
     "evmap_backend.data_sources.openstreetmap",

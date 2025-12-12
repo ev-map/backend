@@ -25,6 +25,21 @@ class DataType(Enum):
     """
 
 
+class UpdateMethod(Enum):
+    PULL = 1
+    """Data can be retrieved by calling pull_data from a cron job"""
+
+    HTTP_PUSH = 2
+    """
+    Data source an call our server at /push/{data_source_id} to push new data.
+    verify_push and process_push have to be implemented.
+    """
+
+    STREAMING = 3
+    """A background service runs continuously (e.g., with an MQTT connection) to receive streaming updates with the
+    stream_data method."""
+
+
 class DataSource(ABC):
     @property
     @abstractmethod
@@ -38,15 +53,17 @@ class DataSource(ABC):
 
     @property
     @abstractmethod
-    def supports_push(self) -> bool:
+    def supported_update_methods(self) -> List[UpdateMethod]:
         pass
 
-    @abstractmethod
-    def load_data(self):
-        pass
+    def pull_data(self):
+        raise NotImplementedError()
 
     def verify_push(self, request: HttpRequest):
         raise NotImplementedError()
 
     def process_push(self, body: bytes):
+        raise NotImplementedError()
+
+    def stream_data(self):
         raise NotImplementedError()

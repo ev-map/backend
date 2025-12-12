@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from django.db.models import OuterRef, QuerySet, Subquery
 
@@ -21,3 +21,10 @@ def distinct_on(
         )
         # filter using the subquery
         return queryset.filter(**{order_field: Subquery(subquery)})
+
+
+def none_to_blank(val: Optional[str]) -> str:
+    if val is None:
+        return ""
+    else:
+        return val

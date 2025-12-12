@@ -6,7 +6,7 @@ from django.contrib.gis.geos import Point
 from tqdm import tqdm
 
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
-from evmap_backend.data_sources import DataSource, DataType
+from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.sync import sync_chargers
 
 API_URL = "https://mobilithek.info:8443/mobilithek/api/v1.0/subscription"
@@ -77,10 +77,10 @@ class ElisoDataSource(DataSource):
         return [DataType.STATIC]
 
     @property
-    def supports_push(self) -> bool:
-        return False
+    def supported_update_methods(self) -> List[UpdateMethod]:
+        return [UpdateMethod.PULL]
 
-    def load_data(self):
+    def pull_data(self):
         root = get_mobilithek_data()
         eliso_chargers = parse_eliso_chargers(root)
         sync_chargers(SOURCE, eliso_chargers)
