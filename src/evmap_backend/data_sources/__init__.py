@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from typing import List
 
+from django.http import HttpRequest
+
 
 class DataType(Enum):
     STATIC = 1
@@ -43,6 +45,8 @@ class DataSource(ABC):
     def load_data(self):
         pass
 
-    @abstractmethod
+    def verify_push(self, request: HttpRequest):
+        raise NotImplementedError()
+
     def process_push(self, body: bytes):
-        pass
+        raise NotImplementedError()

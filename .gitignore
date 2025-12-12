@@ -5,8 +5,8 @@ db.sqlite3
 db.sqlite3-journal
 /dbdata
 /data
+/cert.pem
 
 __pycache__/
 *.py[cod]
-*.pem
 *.egg-info/

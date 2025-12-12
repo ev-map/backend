@@ -4,7 +4,7 @@ from evmap_backend.data_sources import DataSource
 from evmap_backend.data_sources.datex2.source import (
     Datex2AustriaDataSource,
     Datex2LuxembourgEcoMovementDataSource,
-    Datex2MobilithekEcoMovementDataSource,
+    Datex2MobilithekEcoMovementDatex2DataSource,
     Datex2MobilithekEnbwDataSource,
     Datex2MobilithekLadenetzDataSource,
     Datex2MobilithekUlmDataSource,
@@ -20,7 +20,7 @@ DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
     # Germany
     "monta": MontaDataSource,
     "mobilithek_eliso": ElisoDataSource,
-    "mobilithek_ecomovement": Datex2MobilithekEcoMovementDataSource,
+    "mobilithek_ecomovement": Datex2MobilithekEcoMovementDatex2DataSource,
     "mobilithek_enbw": Datex2MobilithekEnbwDataSource,
     "mobilithek_ladenetz": Datex2MobilithekLadenetzDataSource,
     "mobilithek_ulm": Datex2MobilithekUlmDataSource,

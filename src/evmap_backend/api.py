@@ -34,11 +34,11 @@ def sites(request, sw_lat: float, sw_lng: float, ne_lat: float, ne_lng: float):
 
 @api.post("/push/{data_source}")
 def push(request, data_source: str):
-    print(request.headers)
-
     data_source = get_data_source(data_source)
     if not data_source.supports_push:
         raise ValueError("Data source does not support push")
+
+    data_source.verify_push(request)
 
     logging.info(f"Processing push for {data_source}...")
 

@@ -1,12 +1,18 @@
 import os
 from abc import abstractmethod
+from datetime import datetime
 from typing import List
+from urllib.parse import unquote_to_bytes
 
 import requests
+from cryptography.x509 import load_pem_x509_certificate, load_pem_x509_certificates
+from cryptography.x509.verification import ClientVerifier, PolicyBuilder, Store
+from django.http import HttpRequest
 
 from evmap_backend.data_sources import DataSource, DataType
 from evmap_backend.data_sources.datex2.parser.json import Datex2JsonParser
 from evmap_backend.data_sources.datex2.parser.xml import Datex2XmlParser
+from evmap_backend.settings import BASE_DIR
 from evmap_backend.sync import sync_chargers
 
 
@@ -17,7 +23,7 @@ class BaseDatex2DataSource(DataSource):
 
     @property
     def supports_push(self) -> bool:
-        return True
+        return False
 
     @abstractmethod
     def get_data(self) -> str:
@@ -41,6 +47,31 @@ class BaseDatex2DataSource(DataSource):
         sync_chargers(self.id, (site.convert(self.id) for site in sites_datex))
 
 
+mobilithek_store = Store(
+    load_pem_x509_certificates(
+        open(BASE_DIR / "evmap_backend/certificates/mobilithek.pem", "rb").read()
+    )
+)
+
+
+class BaseMobilithekDatex2DataSource(BaseDatex2DataSource):
+    @property
+    def supports_push(self) -> bool:
+        return True
+
+    def verify_push(self, request: HttpRequest):
+        cert = load_pem_x509_certificate(
+            unquote_to_bytes(request.headers["X-Forwarded-Client-Cert"])
+        )
+        verifier = (
+            PolicyBuilder()
+            .store(mobilithek_store)
+            .time(datetime.now())
+            .build_client_verifier()
+        )
+        verifier.verify(cert, [])
+
+
 class Datex2AustriaDataSource(BaseDatex2DataSource):
     @property
     def id(self) -> str:
@@ -58,7 +89,7 @@ class Datex2AustriaDataSource(BaseDatex2DataSource):
         return response.text
 
 
-class Datex2MobilithekEcoMovementDataSource(BaseDatex2DataSource):
+class Datex2MobilithekEcoMovementDatex2DataSource(BaseMobilithekDatex2DataSource):
     @property
     def id(self) -> str:
         return "mobilithek_ecomovement"
@@ -77,7 +108,7 @@ class Datex2MobilithekEcoMovementDataSource(BaseDatex2DataSource):
         return response.text
 
 
-class Datex2MobilithekEnbwDataSource(BaseDatex2DataSource):
+class Datex2MobilithekEnbwDataSource(BaseMobilithekDatex2DataSource):
     @property
     def id(self) -> str:
         return "mobilithek_enbw"
@@ -97,7 +128,7 @@ class Datex2MobilithekEnbwDataSource(BaseDatex2DataSource):
         return Datex2JsonParser()
 
 
-class Datex2MobilithekLadenetzDataSource(BaseDatex2DataSource):
+class Datex2MobilithekLadenetzDataSource(BaseMobilithekDatex2DataSource):
     @property
     def id(self) -> str:
         return "mobilithek_ladenetz"
@@ -116,7 +147,7 @@ class Datex2MobilithekLadenetzDataSource(BaseDatex2DataSource):
         return response.text
 
 
-class Datex2MobilithekUlmDataSource(BaseDatex2DataSource):
+class Datex2MobilithekUlmDataSource(BaseMobilithekDatex2DataSource):
     @property
     def id(self) -> str:
         return "mobilithek_ulm"
@@ -133,7 +164,7 @@ class Datex2MobilithekUlmDataSource(BaseDatex2DataSource):
         return response.text
 
 
-class Datex2MobilithekWirelaneDataSource(BaseDatex2DataSource):
+class Datex2MobilithekWirelaneDataSource(BaseMobilithekDatex2DataSource):
     @property
     def id(self) -> str:
         return "mobilithek_wirelane"
