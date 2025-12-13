@@ -6,7 +6,7 @@ from urllib.parse import unquote_to_bytes
 
 import requests
 from cryptography.x509 import load_pem_x509_certificate, load_pem_x509_certificates
-from cryptography.x509.verification import ClientVerifier, PolicyBuilder, Store
+from cryptography.x509.verification import PolicyBuilder, Store
 from django.http import HttpRequest
 
 from evmap_backend.data_sources import DataSource, DataType
@@ -60,9 +60,11 @@ class BaseMobilithekDatex2DataSource(BaseDatex2DataSource):
         return True
 
     def verify_push(self, request: HttpRequest):
-        cert = load_pem_x509_certificate(
-            unquote_to_bytes(request.headers["X-Forwarded-Client-Cert"])
-        )
+        if "X-Forwarded-Client-Cert" not in request.headers:
+            raise PermissionError("Client certificate missing")
+
+        cert_header = request.headers["X-Forwarded-Client-Cert"]
+        cert = load_pem_x509_certificate(unquote_to_bytes(cert_header))
         verifier = (
             PolicyBuilder()
             .store(mobilithek_store)
