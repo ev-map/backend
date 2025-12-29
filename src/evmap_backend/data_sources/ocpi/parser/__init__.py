@@ -114,6 +114,7 @@ connector_mapping = {
     OcpiConnector.ConnectorType.IEC_62196_T3A: Connector.ConnectorTypes.TYPE_3A,
     OcpiConnector.ConnectorType.IEC_62196_T3C: Connector.ConnectorTypes.TYPE_3C,
     OcpiConnector.ConnectorType.SAE_J3400: Connector.ConnectorTypes.NACS,
+    OcpiConnector.ConnectorType.TESLA_S: Connector.ConnectorTypes.NACS,
     OcpiConnector.ConnectorType.TESLA_R: Connector.ConnectorTypes.TESLA_ROADSTER_HPC,
 }
 
