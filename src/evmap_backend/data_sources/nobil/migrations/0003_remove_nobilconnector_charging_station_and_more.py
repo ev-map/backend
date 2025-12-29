@@ -33,7 +33,7 @@ def convert_realtime(apps, schema_editor):
             ).save()
         except Chargepoint.DoesNotExist:
             if data.nobil_id.split("_")[0] in ["NOR", "SWE"]:
-                raise RuntimeError(
+                print(
                     f"did not find correct chargepoint for realtime data with ID {data.nobil_id}/{data.evse_uid}"
                 )
 
