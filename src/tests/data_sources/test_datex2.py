@@ -9,9 +9,7 @@ from cryptography.x509.oid import NameOID
 from cryptography.x509.verification import VerificationError
 from django.http import HttpRequest
 
-from evmap_backend.data_sources.datex2.source import (
-    Datex2MobilithekEcoMovementDatex2DataSource,
-)
+from evmap_backend.data_sources.datex2.source import BaseMobilithekDatex2DataSource
 
 
 @pytest.fixture
@@ -59,7 +57,11 @@ def random_x509_certificate():
 
 
 def test_verify_push_mobilithek(random_x509_certificate):
-    ds = Datex2MobilithekEcoMovementDatex2DataSource()
+    class DummyMobilithekDatex2DataSource(BaseMobilithekDatex2DataSource):
+        id = "dummy"
+        subscription_id = "dummy"
+
+    ds = DummyMobilithekDatex2DataSource()
 
     # no certificate
     req = HttpRequest()

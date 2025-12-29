@@ -99,29 +99,29 @@ class Datex2AustriaDataSource(BaseDatex2DataSource):
 
 class Datex2MobilithekEcoMovementDatex2DataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_ecomovement"
-    subscription_id = os.environ["MOBILITHEK_ECOMOVEMENT_STATIC_SUBSCRIPTION_ID"]
+    subscription_id = os.environ.get("MOBILITHEK_ECOMOVEMENT_STATIC_SUBSCRIPTION_ID")
     ignore_encoding = True
 
 
 class Datex2MobilithekEnbwDataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_enbw"
-    subscription_id = os.environ["MOBILITHEK_ENBW_STATIC_SUBSCRIPTION_ID"]
+    subscription_id = os.environ.get("MOBILITHEK_ENBW_STATIC_SUBSCRIPTION_ID")
     parser = Datex2JsonParser()
 
 
 class Datex2MobilithekLadenetzDataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_ladenetz"
-    subscription_id = os.environ["MOBILITHEK_LADENETZ_STATIC_SUBSCRIPTION_ID"]
+    subscription_id = os.environ.get("MOBILITHEK_LADENETZ_STATIC_SUBSCRIPTION_ID")
 
 
 class Datex2MobilithekUlmDataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_ulm"
-    subscription_id = os.environ["MOBILITHEK_ULM_STATIC_SUBSCRIPTION_ID"]
+    subscription_id = os.environ.get("MOBILITHEK_ULM_STATIC_SUBSCRIPTION_ID")
 
 
 class Datex2MobilithekWirelaneDataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_wirelane"
-    subscription_id = os.environ["MOBILITHEK_WIRELANE_STATIC_SUBSCRIPTION_ID"]
+    subscription_id = os.environ.get("MOBILITHEK_WIRELANE_STATIC_SUBSCRIPTION_ID")
     parser = Datex2JsonParser()
 
 
