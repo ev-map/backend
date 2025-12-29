@@ -5,37 +5,8 @@ from django.db import migrations
 from evmap_backend.data_sources.registry import get_data_source
 
 
-def convert_realtime(apps, schema_editor):
-    # converts previous NobilRealtime data into generic RealtimeState data
-    NobilRealtimeData = apps.get_model("nobil", "NobilRealtimeData")
-    RealtimeStatus = apps.get_model("realtime", "RealtimeStatus")
-    Chargepoint = apps.get_model("chargers", "Chargepoint")
-
-    if NobilRealtimeData.objects.count() == 0:
-        return
-
-    print("loading all chargers from nobil to be able to migrate realtime status")
+def get_nobil_data(apps, schema_editor):
     get_data_source("nobil").pull_data()
-
-    for data in NobilRealtimeData.objects.all():
-        nobil_id_without_country = str(int(data.nobil_id.split("_")[1]))
-        try:
-            chargepoint = Chargepoint.objects.get(
-                site__data_source="nobil",
-                site__id_from_source=nobil_id_without_country,
-                id_from_source=data.evse_uid,
-            )
-            RealtimeStatus(
-                chargepoint=chargepoint,
-                status=data.status,
-                timestamp=data.timestamp,
-                data_source="nobil_realtime",
-            ).save()
-        except Chargepoint.DoesNotExist:
-            if data.nobil_id.split("_")[0] in ["NOR", "SWE"]:
-                print(
-                    f"did not find correct chargepoint for realtime data with ID {data.nobil_id}/{data.evse_uid}"
-                )
 
 
 class Migration(migrations.Migration):
@@ -47,7 +18,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(convert_realtime, atomic=True),
+        migrations.RunPython(get_nobil_data),
+        migrations.RunSQL(
+            "INSERT INTO realtime_realtimestatus (status, timestamp, data_source, chargepoint_id) SELECT rt.status, rt.timestamp, 'nobil_realtime', cp.id FROM nobil_nobilrealtimedata AS rt INNER JOIN chargers_chargingsite AS cs ON (cs.data_source = 'nobil' AND cs.id_from_source = CAST(CAST(SPLIT_PART(rt.nobil_id, '_', 2) AS INTEGER) AS TEXT)) INNER JOIN chargers_chargepoint AS cp ON (cp.site_id = cs.id AND cp.id_from_source = rt.evse_uid);"
+        ),
         migrations.RemoveField(
             model_name="nobilconnector",
             name="charging_station",
