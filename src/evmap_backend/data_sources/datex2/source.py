@@ -17,22 +17,14 @@ from evmap_backend.sync import sync_chargers
 
 
 class BaseDatex2DataSource(DataSource):
-    @property
-    def supported_data_types(self) -> List[DataType]:
-        return [DataType.STATIC]
-
-    @property
-    def supported_update_methods(self) -> List[UpdateMethod]:
-        return [UpdateMethod.PULL]
+    supported_data_types = [DataType.STATIC]
+    supported_update_methods = [UpdateMethod.PULL]
+    parser = Datex2XmlParser()
 
     @abstractmethod
     def get_data(self) -> str:
         """Get the data from the data source"""
         pass
-
-    def get_parser(self):
-        """Get the appropriate parser for this data source. Override for non-XML sources."""
-        return Datex2XmlParser()
 
     def pull_data(self):
         root = self.get_data()
@@ -43,7 +35,7 @@ class BaseDatex2DataSource(DataSource):
         self._parse_data(root)
 
     def _parse_data(self, root: str):
-        sites_datex = self.get_parser().parse(root)
+        sites_datex = self.parser.parse(root)
         sync_chargers(self.id, (site.convert(self.id) for site in sites_datex))
 
 
@@ -55,9 +47,25 @@ mobilithek_store = Store(
 
 
 class BaseMobilithekDatex2DataSource(BaseDatex2DataSource):
+    supported_update_methods = [UpdateMethod.PULL, UpdateMethod.HTTP_PUSH]
+    ignore_encoding = False
+
     @property
-    def supported_update_methods(self) -> List[UpdateMethod]:
-        return [UpdateMethod.PULL, UpdateMethod.HTTP_PUSH]
+    @abstractmethod
+    def subscription_id(self):
+        pass
+
+    def get_data(self) -> str:
+        response = requests.get(
+            "https://mobilithek.info:8443/mobilithek/api/v1.0/subscription",
+            params={
+                "subscriptionID": self.subscription_id,
+            },
+            cert=os.environ["MOBILITHEK_CERTIFICATE"],
+        )
+        if self.ignore_encoding:
+            response.encoding = response.apparent_encoding
+        return response.text
 
     def verify_push(self, request: HttpRequest):
         if "X-Forwarded-Client-Cert" not in request.headers:
@@ -75,9 +83,7 @@ class BaseMobilithekDatex2DataSource(BaseDatex2DataSource):
 
 
 class Datex2AustriaDataSource(BaseDatex2DataSource):
-    @property
-    def id(self) -> str:
-        return "e-control_austria"
+    id = "e-control_austria"
 
     def get_data(self) -> str:
         response = requests.get(
@@ -92,115 +98,42 @@ class Datex2AustriaDataSource(BaseDatex2DataSource):
 
 
 class Datex2MobilithekEcoMovementDatex2DataSource(BaseMobilithekDatex2DataSource):
-    @property
-    def id(self) -> str:
-        return "mobilithek_ecomovement"
-
-    def get_data(self) -> str:
-        response = requests.get(
-            "https://mobilithek.info:8443/mobilithek/api/v1.0/subscription",
-            params={
-                "subscriptionID": os.environ[
-                    "MOBILITHEK_ECOMOVEMENT_STATIC_SUBSCRIPTION_ID"
-                ],
-            },
-            cert=os.environ["MOBILITHEK_CERTIFICATE"],
-        )
-        response.encoding = response.apparent_encoding
-        return response.text
+    id = "mobilithek_ecomovement"
+    subscription_id = os.environ["MOBILITHEK_ECOMOVEMENT_STATIC_SUBSCRIPTION_ID"]
+    ignore_encoding = True
 
 
 class Datex2MobilithekEnbwDataSource(BaseMobilithekDatex2DataSource):
-    @property
-    def id(self) -> str:
-        return "mobilithek_enbw"
-
-    def get_data(self) -> str:
-        """Get the JSON data from the data source"""
-        response = requests.get(
-            "https://mobilithek.info:8443/mobilithek/api/v1.0/subscription",
-            params={
-                "subscriptionID": os.environ["MOBILITHEK_ENBW_STATIC_SUBSCRIPTION_ID"],
-            },
-            cert=os.environ["MOBILITHEK_CERTIFICATE"],
-        )
-        return response.text
-
-    def get_parser(self):
-        return Datex2JsonParser()
+    id = "mobilithek_enbw"
+    subscription_id = os.environ["MOBILITHEK_ENBW_STATIC_SUBSCRIPTION_ID"]
+    parser = Datex2JsonParser()
 
 
 class Datex2MobilithekLadenetzDataSource(BaseMobilithekDatex2DataSource):
-    @property
-    def id(self) -> str:
-        return "mobilithek_ladenetz"
-
-    def get_data(self) -> str:
-        response = requests.get(
-            "https://mobilithek.info:8443/mobilithek/api/v1.0/subscription",
-            params={
-                "subscriptionID": os.environ[
-                    "MOBILITHEK_LADENETZ_STATIC_SUBSCRIPTION_ID"
-                ],
-            },
-            cert=os.environ["MOBILITHEK_CERTIFICATE"],
-        )
-        response.encoding = response.apparent_encoding
-        return response.text
+    id = "mobilithek_ladenetz"
+    subscription_id = os.environ["MOBILITHEK_LADENETZ_STATIC_SUBSCRIPTION_ID"]
 
 
 class Datex2MobilithekUlmDataSource(BaseMobilithekDatex2DataSource):
-    @property
-    def id(self) -> str:
-        return "mobilithek_ulm"
-
-    def get_data(self) -> str:
-        response = requests.get(
-            "https://mobilithek.info:8443/mobilithek/api/v1.0/subscription",
-            params={
-                "subscriptionID": os.environ["MOBILITHEK_ULM_STATIC_SUBSCRIPTION_ID"],
-            },
-            cert=os.environ["MOBILITHEK_CERTIFICATE"],
-        )
-        response.encoding = response.apparent_encoding
-        return response.text
+    id = "mobilithek_ulm"
+    subscription_id = os.environ["MOBILITHEK_ULM_STATIC_SUBSCRIPTION_ID"]
 
 
 class Datex2MobilithekWirelaneDataSource(BaseMobilithekDatex2DataSource):
-    @property
-    def id(self) -> str:
-        return "mobilithek_wirelane"
-
-    def get_data(self) -> str:
-        response = requests.get(
-            "https://mobilithek.info:8443/mobilithek/api/v1.0/subscription",
-            params={
-                "subscriptionID": os.environ[
-                    "MOBILITHEK_WIRELANE_STATIC_SUBSCRIPTION_ID"
-                ],
-            },
-            cert=os.environ["MOBILITHEK_CERTIFICATE"],
-        )
-        return response.text
-
-    def get_parser(self):
-        return Datex2JsonParser()
+    id = "mobilithek_wirelane"
+    subscription_id = os.environ["MOBILITHEK_WIRELANE_STATIC_SUBSCRIPTION_ID"]
+    parser = Datex2JsonParser()
 
 
 class Datex2LuxembourgEcoMovementDataSource(BaseDatex2DataSource):
-    @property
-    def id(self) -> str:
-        return "luxembourg_ecomovement"
+    id = "luxembourg_ecomovement"
 
     def get_data(self) -> str:
         response = requests.get(
-            "https://mobilithek.info:8443/mobilithek/api/v1.0/subscription",
+            "https://api.eco-movement.com/api/nap/datexii/locations",
             params={
-                "subscriptionID": os.environ[
-                    "MOBILITHEK_LUXEMBOURG_ECOMOVEMENT_STATIC_SUBSCRIPTION_ID"
-                ],
+                "token": os.environ["ECOMOVEMENT_LUXEMBOURG_TOKEN"],
             },
-            cert=os.environ["MOBILITHEK_CERTIFICATE"],
         )
         response.encoding = response.apparent_encoding
         return response.text
