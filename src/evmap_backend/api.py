@@ -42,7 +42,7 @@ def push(request, data_source: str):
 
     data_source.verify_push(request)
 
-    logging.info(f"Processing push for {data_source}...")
+    logging.info(f"Processing push for {data_source.id}...")
 
     body = request.body
     if request.headers.get("Content-Encoding") == "gzip":
@@ -51,4 +51,4 @@ def push(request, data_source: str):
     data_source.process_push(body)
 
     UpdateState(data_source=data_source.id, push=True).save()
-    logging.info(f"Successfully processed push for {data_source}")
+    logging.info(f"Successfully processed push for {data_source.id}")
