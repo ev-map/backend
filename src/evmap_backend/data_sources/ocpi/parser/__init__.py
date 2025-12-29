@@ -1,7 +1,7 @@
 import datetime
 import enum
 from dataclasses import dataclass
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple, Union
 
 from django.contrib.gis.geos import Point
 from tqdm import tqdm
@@ -221,6 +221,6 @@ class OcpiLocation:
 
 
 class OcpiParser:
-    def parse(self, data: List) -> Iterable[OcpiLocation]:
+    def parse(self, data: Iterable) -> Iterable[OcpiLocation]:
         for site in tqdm(data):
             yield OcpiLocation.from_json(site)

@@ -16,7 +16,10 @@ from evmap_backend.data_sources.nobil.source import (
     NobilDataSource,
     NobilRealtimeDataSource,
 )
-from evmap_backend.data_sources.ocpi.source import OcpiDataSource
+from evmap_backend.data_sources.ocpi.source import (
+    BpPulseUkOcpiDataSource,
+    NdwNetherlandsOcpiDataSource,
+)
 
 DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
     # Austria
@@ -32,10 +35,12 @@ DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
     # Luxembourg
     "luxembourg_ecomovement": Datex2LuxembourgEcoMovementDataSource,
     # Netherlands
-    "ndw_netherlands": OcpiDataSource,
+    "ndw_netherlands": NdwNetherlandsOcpiDataSource,
     # Sweden and Norway
     "nobil": NobilDataSource,
     "nobil_realtime": NobilRealtimeDataSource,
+    # UK
+    "bp_pulse_uk": BpPulseUkOcpiDataSource,
 }
 
 

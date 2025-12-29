@@ -1,19 +1,17 @@
 import gzip
 import json
-from typing import List
+import os
+from abc import abstractmethod
+from typing import Iterable, List
 
 import requests
 
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
-from evmap_backend.data_sources.ocpi.parser import OcpiParser
+from evmap_backend.data_sources.ocpi.parser import OcpiLocation, OcpiParser
 from evmap_backend.sync import sync_chargers
 
-LOCATIONS_URL = "https://opendata.ndw.nu/charging_point_locations_ocpi.json.gz"
-TARIFFS_URL = "https://opendata.ndw.nu/charging_point_tariffs_ocpi.json.gz"
-SOURCE = "ndw_netherlands"
 
-
-def deduplicate_chargers(chargers):
+def deduplicate_chargers(chargers: Iterable[OcpiLocation]) -> Iterable[OcpiLocation]:
     chargers_by_id = {}
     for charger in chargers:
         if (
@@ -25,30 +23,76 @@ def deduplicate_chargers(chargers):
     return chargers_by_id.values()
 
 
-def get_ndw_data():
-    response = requests.get(LOCATIONS_URL)
-    unzipped = gzip.decompress(response.content).decode("utf-8")
-    return json.loads(unzipped)
+class BaseOcpiDataSource(DataSource):
+    supported_data_types = [DataType.STATIC]
+    supported_update_methods = [UpdateMethod.PULL]
 
+    @abstractmethod
+    def get_locations_data(self) -> Iterable[dict]:
+        """Get the data from the data source"""
+        pass
 
-class OcpiDataSource(DataSource):
-    @property
-    def id(self) -> str:
-        return "ndw_netherlands"
-
-    @property
-    def supported_data_types(self) -> List[DataType]:
-        return [DataType.STATIC]
-
-    @property
-    def supported_update_methods(self) -> List[UpdateMethod]:
-        return [UpdateMethod.PULL]
+    def postprocess_locations(
+        self, locations: Iterable[OcpiLocation]
+    ) -> Iterable[OcpiLocation]:
+        return locations
 
     def pull_data(self):
-        root = get_ndw_data()
-        ndw_chargers = OcpiParser().parse(root)
+        root = self.get_locations_data()
+        locations = OcpiParser().parse(root)
+        locations = self.postprocess_locations(locations)
+        sync_chargers(self.id, (location.convert(self.id) for location in locations))
 
+
+class NdwNetherlandsOcpiDataSource(BaseOcpiDataSource):
+    locations_url = "https://opendata.ndw.nu/charging_point_locations_ocpi.json.gz"
+    tariffs_url = "https://opendata.ndw.nu/charging_point_tariffs_ocpi.json.gz"
+
+    supported_data_types = [DataType.STATIC]
+    supported_update_methods = [UpdateMethod.PULL]
+    id = "ndw_netherlands"
+
+    def get_locations_data(self):
+        response = requests.get(self.locations_url)
+        unzipped = gzip.decompress(response.content).decode("utf-8")
+        return json.loads(unzipped)
+
+    def postprocess_locations(
+        self, locations: Iterable[OcpiLocation]
+    ) -> Iterable[OcpiLocation]:
         # dataset contains duplicate chargers with the same ID. These are actually the same location, but with outdated data
-        ndw_chargers = deduplicate_chargers(ndw_chargers)
+        return deduplicate_chargers(locations)
 
-        sync_chargers(SOURCE, (location.convert(SOURCE) for location in ndw_chargers))
+
+class BpPulseUkOcpiDataSource(BaseOcpiDataSource):
+    locations_url = "https://open-chargepoints.com/api/ocpi/cpo/2.2.1/locations"
+    tariffs_url = "https://open-chargepoints.com/api/ocpi/cpo/2.2.1/tariffs"
+
+    supported_data_types = [DataType.STATIC]
+    supported_update_methods = [UpdateMethod.PULL]
+    id = "bp_pulse_uk"
+
+    def get_locations_data(self):
+        offset = 0
+        limit = 1000
+        while True:
+            response = requests.get(
+                self.locations_url,
+                params={"limit": limit, "offset": offset},
+                headers={
+                    "Authorization": f"Token {os.environ['BP_PULSE_UK_ECOMOVEMENT_TOKEN']}"
+                },
+            )
+            result = json.loads(response.text)["data"]
+            for item in result:
+                yield item
+            if len(result) < limit:
+                break
+            offset += limit
+
+
+class BpPulseUkOcpiRealtimeDataSource(BaseOcpiDataSource):
+    statuses_url = "https://open-chargepoints.com/api/statuses"
+
+    supported_data_types = [DataType.DYNAMIC]
+    supported_update_methods = [UpdateMethod.PULL]
