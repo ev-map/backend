@@ -96,3 +96,15 @@ class BpPulseUkOcpiRealtimeDataSource(BaseOcpiDataSource):
 
     supported_data_types = [DataType.DYNAMIC]
     supported_update_methods = [UpdateMethod.PULL]
+
+
+class ChargyUkOcpiDataSource(BaseOcpiDataSource):
+    locations_url = "https://char.gy/open-ocpi/locations"
+    tariffs_url = "https://char.gy/open-ocpi/tariffs/GB/CGY"
+
+    supported_data_types = [DataType.STATIC]
+    supported_update_methods = [UpdateMethod.PULL]
+    id = "chargy_uk"
+
+    def get_locations_data(self):
+        return json.loads(requests.get(self.locations_url).text)["data"]

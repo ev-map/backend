@@ -1,6 +1,8 @@
 import datetime
 import enum
 from dataclasses import dataclass
+from math import sqrt
+from re import match
 from typing import Iterable, List, Optional, Tuple, Union
 
 from django.contrib.gis.geos import Point
@@ -60,15 +62,23 @@ class OcpiConnector:
         TESLA_R = "TESLA_R"  # Tesla Connector "Roadster"-type (round, 4 pin)
         TESLA_S = "TESLA_S"  # Tesla Connector "Model-S"-type (oval, 5 pin). Mechanically compatible with SAE J3400 but uses CAN bus for communication instead of power line communication.
 
-    class OcpiConnectorFormat(enum.StrEnum):
+    class ConnectorFormat(enum.StrEnum):
         SOCKET = "SOCKET"
         CABLE = "CABLE"
 
+    class PowerType(enum.StrEnum):
+        AC_1_PHASE = "AC_1_PHASE"
+        AC_2_PHASE = "AC_2_PHASE"
+        AC_2_PHASE_SPLIT = "AC_2_PHASE_SPLIT"
+        AC_3_PHASE = "AC_3_PHASE"
+        DC = "DC"
+
     id: str
     standard: ConnectorType
-    format: OcpiConnectorFormat
+    format: ConnectorFormat
     max_voltage: int
     max_amperage: int
+    power_type: PowerType
     max_electric_power: Optional[int]
 
     # TODO: tariff_ids
@@ -79,24 +89,37 @@ class OcpiConnector:
     def from_json(cls, data: dict):
         return OcpiConnector(
             id=data["id"],
-            standard=data["standard"],
-            format=data["format"],
+            standard=OcpiConnector.ConnectorType(data["standard"]),
+            format=OcpiConnector.ConnectorFormat(data["format"]),
             max_voltage=data["max_voltage"],
             max_amperage=data["max_amperage"],
-            max_electric_power=data["max_electric_power"],
+            power_type=OcpiConnector.PowerType(data["power_type"]),
+            max_electric_power=data.get("max_electric_power"),
             last_updated=datetime.datetime.fromisoformat(data["last_updated"]),
         )
+
+    def max_power(self) -> int:
+        if self.max_electric_power is not None:
+            return self.max_electric_power
+
+        match self.power_type:
+            case OcpiConnector.PowerType.AC_3_PHASE:
+                power_factor = sqrt(3)
+            case OcpiConnector.PowerType.AC_1_PHASE | OcpiConnector.PowerType.DC:
+                power_factor = 1
+            case _:
+                raise NotImplementedError(
+                    "power calculation for 2 phases not implemented"
+                )
+
+        return self.max_voltage * self.max_amperage * power_factor
 
     def convert(self) -> Connector:
         return Connector(
             id_from_source=self.id,
             connector_type=connector_mapping.get(self.standard),
             connector_format=format_mapping[self.format],
-            max_power=(
-                self.max_electric_power
-                if self.max_electric_power is not None
-                else self.max_voltage * self.max_amperage
-            ),
+            max_power=self.max_power(),
         )
 
 
@@ -119,8 +142,8 @@ connector_mapping = {
 }
 
 format_mapping = {
-    OcpiConnector.OcpiConnectorFormat.SOCKET: Connector.ConnectorFormats.SOCKET,
-    OcpiConnector.OcpiConnectorFormat.CABLE: Connector.ConnectorFormats.CABLE,
+    OcpiConnector.ConnectorFormat.SOCKET: Connector.ConnectorFormats.SOCKET,
+    OcpiConnector.ConnectorFormat.CABLE: Connector.ConnectorFormats.CABLE,
 }
 
 
@@ -150,7 +173,11 @@ class OcpiEvse:
         return OcpiEvse(
             uid=data["uid"],
             evse_id=data["evse_id"],
-            status=OcpiEvse.OcpiEvseStatus(data["status"]),
+            status=(
+                OcpiEvse.OcpiEvseStatus(data["status"])
+                if data["status"] in OcpiEvse.OcpiEvseStatus
+                else OcpiEvse.OcpiEvseStatus.UNKNOWN
+            ),
             connectors=[
                 OcpiConnector.from_json(connector) for connector in data["connectors"]
             ],
@@ -172,7 +199,7 @@ class OcpiLocation:
     address: str
     city: str
     postal_code: str
-    state: str
+    state: Optional[str]
     coordinates: Tuple[float, float]
     evses: List[OcpiEvse]
     operator_name: str
@@ -190,7 +217,7 @@ class OcpiLocation:
             data["address"],
             data["city"],
             data["postal_code"],
-            data["state"],
+            data.get("state"),
             (
                 float(data["coordinates"]["longitude"]),
                 float(data["coordinates"]["latitude"]),
