@@ -6,6 +6,10 @@ from evmap_backend.data_sources.registry import get_data_source
 
 
 def get_nobil_data(apps, schema_editor):
+    NobilRealtimeData = apps.get_model("nobil", "NobilRealtimeData")
+    if NobilRealtimeData.objects.count() == 0:
+        return
+
     get_data_source("nobil").pull_data()
 
 
