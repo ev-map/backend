@@ -1,5 +1,6 @@
 import datetime
 import enum
+import logging
 from dataclasses import dataclass
 from math import sqrt
 from re import match
@@ -10,6 +11,7 @@ from tqdm import tqdm
 
 from evmap_backend.chargers.fields import normalize_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
+from evmap_backend.helpers.database import none_to_blank
 
 # spec: https://evroaming.org/wp-content/uploads/2025/02/OCPI-2.3.0.pdf
 
@@ -172,7 +174,7 @@ class OcpiEvse:
     def from_json(cls, data: dict):
         return OcpiEvse(
             uid=data["uid"],
-            evse_id=data["evse_id"],
+            evse_id=data.get("evse_id"),
             status=(
                 OcpiEvse.OcpiEvseStatus(data["status"])
                 if data["status"] in OcpiEvse.OcpiEvseStatus
@@ -195,10 +197,10 @@ class OcpiEvse:
 class OcpiLocation:
     id: str
     country_code: str
-    name: str
-    address: str
-    city: str
-    postal_code: str
+    name: Optional[str]
+    address: Optional[str]
+    city: Optional[str]
+    postal_code: Optional[str]
     state: Optional[str]
     coordinates: Tuple[float, float]
     evses: List[OcpiEvse]
@@ -210,13 +212,17 @@ class OcpiLocation:
 
     @classmethod
     def from_json(cls, data: dict):
+        if not "coordinates" in data:
+            logging.warning(f"OCPI location without coordinates: {data}")
+            return None
+
         return OcpiLocation(
             data["id"],
             data["country_code"],
-            data["name"],
-            data["address"],
-            data["city"],
-            data["postal_code"],
+            data.get("name"),
+            data.get("address"),
+            data.get("city"),
+            data.get("postal_code"),
             data.get("state"),
             (
                 float(data["coordinates"]["longitude"]),
@@ -233,12 +239,12 @@ class OcpiLocation:
         site = ChargingSite(
             data_source=data_source,
             id_from_source=self.id,
-            name=self.name if self.name is not None else self.address,
+            name=none_to_blank(self.name if self.name is not None else self.address),
             location=Point(*self.coordinates),
             operator=self.operator_name,
-            street=self.address,
-            zipcode=self.postal_code,
-            city=self.city,
+            street=none_to_blank(self.address),
+            zipcode=none_to_blank(self.postal_code),
+            city=none_to_blank(self.city),
             country=self.country_code,
         )
         chargepoints = [
@@ -251,4 +257,6 @@ class OcpiLocation:
 class OcpiParser:
     def parse(self, data: Iterable) -> Iterable[OcpiLocation]:
         for site in tqdm(data):
-            yield OcpiLocation.from_json(site)
+            loc = OcpiLocation.from_json(site)
+            if loc is not None:
+                yield loc

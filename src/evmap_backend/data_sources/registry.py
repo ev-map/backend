@@ -20,7 +20,9 @@ from evmap_backend.data_sources.ocpi.source import (
     BlinkUkOcpiDataSource,
     BpPulseUkOcpiDataSource,
     ChargyUkOcpiDataSource,
+    EsbUkOcpiDataSource,
     IonityUkOcpiDataSource,
+    MfgUkOcpiDataSource,
     NdwNetherlandsOcpiDataSource,
 )
 
@@ -47,6 +49,8 @@ DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
     "chargy_uk": ChargyUkOcpiDataSource,
     "ionity_uk": IonityUkOcpiDataSource,
     "blink_uk": BlinkUkOcpiDataSource,
+    "mfg_uk": MfgUkOcpiDataSource,
+    "esb_uk": EsbUkOcpiDataSource,
 }
 
 

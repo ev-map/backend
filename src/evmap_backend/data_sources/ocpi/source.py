@@ -107,6 +107,11 @@ class BlinkUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
     id = "blink_uk"
 
 
+class EsbUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
+    token = os.environ.get("ESB_UK_ECOMOVEMENT_TOKEN")
+    id = "esb_uk"
+
+
 class BpPulseUkOcpiRealtimeDataSource(BaseOcpiDataSource):
     statuses_url = "https://open-chargepoints.com/api/statuses"
 
@@ -121,6 +126,18 @@ class ChargyUkOcpiDataSource(BaseOcpiDataSource):
     supported_data_types = [DataType.STATIC]
     supported_update_methods = [UpdateMethod.PULL]
     id = "chargy_uk"
+
+    def get_locations_data(self):
+        return json.loads(requests.get(self.locations_url).text)["data"]
+
+
+class MfgUkOcpiDataSource(BaseOcpiDataSource):
+    locations_url = "https://opendata.motorfuelgroup.net/locations"
+    tariffs_url = "https://opendata.motorfuelgroup.net/tariffs"
+
+    supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
+    supported_update_methods = [UpdateMethod.PULL]
+    id = "mfg_uk"
 
     def get_locations_data(self):
         return json.loads(requests.get(self.locations_url).text)["data"]
