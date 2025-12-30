@@ -41,7 +41,16 @@ class BaseOcpiDataSource(DataSource):
         root = self.get_locations_data()
         locations = OcpiParser().parse_locations(root)
         locations = self.postprocess_locations(locations)
+        if DataType.DYNAMIC in self.supported_data_types:
+            locations = list(locations)
+
         sync_chargers(self.id, (location.convert(self.id) for location in locations))
+        if DataType.DYNAMIC in self.supported_data_types:
+            sync_statuses(
+                self.id,
+                self.id,
+                (s for location in locations for s in location.convert_status(self.id)),
+            )
 
 
 class BaseOcpiRealtimeDataSource(DataSource):
@@ -130,8 +139,7 @@ class NdwNetherlandsOcpiDataSource(BaseOcpiDataSource):
     locations_url = "https://opendata.ndw.nu/charging_point_locations_ocpi.json.gz"
     tariffs_url = "https://opendata.ndw.nu/charging_point_tariffs_ocpi.json.gz"
 
-    supported_data_types = [DataType.STATIC]
-    supported_update_methods = [UpdateMethod.PULL]
+    supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
     id = "ndw_netherlands"
 
     def get_locations_data(self):
@@ -211,4 +219,6 @@ class MfgUkOcpiDataSource(BaseOcpiDataSource):
     id = "mfg_uk"
 
     def get_locations_data(self):
-        return json.loads(requests.get(self.locations_url).text)["data"]
+        response = requests.get(self.locations_url)
+        response.raise_for_status()
+        return json.loads(response.text)["data"]
