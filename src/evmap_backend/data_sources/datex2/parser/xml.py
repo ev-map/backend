@@ -1,3 +1,4 @@
+import datetime
 from typing import Iterable, Optional, Tuple
 from xml.etree.ElementTree import Element
 
@@ -7,8 +8,10 @@ from tqdm import tqdm
 from evmap_backend.data_sources.datex2.parser import (
     Datex2Connector,
     Datex2EnergyInfrastructureSite,
+    Datex2EnergyInfrastructureSiteStatus,
     Datex2MultilingualString,
     Datex2RefillPoint,
+    Datex2RefillPointStatus,
 )
 
 ns = {
@@ -33,6 +36,17 @@ def text_if_exists(elem: Element, tag: str):
         return found.text
     else:
         return None
+
+
+def find_payload(root: Element) -> Element:
+    if root.tag not in [tag("con:payload"), tag("d2p:payload")]:
+        if (result := root.find("con:payload", ns)) is not None:
+            root = result
+        elif (result := root.find("d2p:payload", ns)) is not None:
+            root = result
+        else:
+            raise ValueError("payload not found")
+    return root
 
 
 def parse_multilingual_string(elem: Element) -> Optional[Datex2MultilingualString]:
@@ -80,6 +94,56 @@ def parse_refill_point(elem: Element) -> Datex2RefillPoint:
             parse_connector(connector)
             for connector in elem.findall("egi:connector", ns)
         ],
+    )
+
+
+def parse_energy_infrastructure_site_status(
+    elem: Element,
+) -> Datex2EnergyInfrastructureSiteStatus:
+    last_updated_elem = elem.find("fac:lastUpdated", ns)
+    last_updated = (
+        datetime.datetime.fromisoformat(last_updated_elem.text)
+        if last_updated_elem
+        else None
+    )
+    return Datex2EnergyInfrastructureSiteStatus(
+        site_id=elem.find("fac:reference", ns).attrib["id"],
+        refill_point_statuses=[
+            parse_refill_point_status(refill_point, last_updated)
+            for station in elem.findall("egi:energyInfrastructureStationStatus", ns)
+            for refill_point in station.findall("egi:refillPointStatus", ns)
+        ],
+    )
+
+
+def parse_energy_infrastructure_station_status(
+    elem: Element,
+) -> Datex2EnergyInfrastructureSiteStatus:
+    last_updated_elem = elem.find("fac:lastUpdated", ns)
+    last_updated = (
+        datetime.datetime.fromisoformat(last_updated_elem.text)
+        if last_updated_elem
+        else None
+    )
+    return Datex2EnergyInfrastructureSiteStatus(
+        site_id=elem.find("fac:reference", ns).attrib["id"],
+        refill_point_statuses=[
+            parse_refill_point_status(refill_point, last_updated)
+            for refill_point in elem.findall("egi:refillPointStatus", ns)
+        ],
+    )
+
+
+def parse_refill_point_status(
+    elem: Element, last_updated: datetime.datetime = None
+) -> Datex2RefillPointStatus:
+    last_updated_elem = elem.find("fac:lastUpdated", ns)
+    if last_updated_elem is not None:
+        last_updated = datetime.datetime.fromisoformat(last_updated_elem.text)
+    return Datex2RefillPointStatus(
+        refill_point_id=elem.find("fac:reference", ns).attrib["id"],
+        last_updated=last_updated,
+        status=Datex2RefillPointStatus.Status(elem.find("egi:status", ns).text),
     )
 
 
@@ -135,15 +199,23 @@ def parse_energy_infrastructure_site(elem: Element) -> Datex2EnergyInfrastructur
 class Datex2XmlParser:
     def parse(self, xml) -> Iterable[Datex2EnergyInfrastructureSite]:
         root = ElementTree.fromstring(xml)
-
-        if root.tag not in [tag("con:payload"), tag("d2p:payload")]:
-            if (result := root.find("con:payload", ns)) is not None:
-                root = result
-            elif (result := root.find("d2p:payload", ns)) is not None:
-                root = result
-            else:
-                raise ValueError("payload not found")
+        root = find_payload(root)
 
         for table in root.findall("egi:energyInfrastructureTable", ns):
             for site in tqdm(table.findall("egi:energyInfrastructureSite", ns)):
                 yield parse_energy_infrastructure_site(site)
+
+    def parse_status(
+        self, xml, station_as_site=False
+    ) -> Iterable[Datex2EnergyInfrastructureSiteStatus]:
+        root = ElementTree.fromstring(xml)
+        root = find_payload(root)
+
+        for site in root.findall("egi:energyInfrastructureSiteStatus", ns):
+            if station_as_site:
+                for station in site.findall(
+                    "egi:energyInfrastructureStationStatus", ns
+                ):
+                    yield parse_energy_infrastructure_station_status(station)
+            else:
+                yield parse_energy_infrastructure_site_status(site)

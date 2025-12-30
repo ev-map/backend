@@ -1,3 +1,4 @@
+import datetime
 import enum
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
@@ -7,6 +8,7 @@ from django.core.exceptions import ValidationError
 
 from evmap_backend.chargers.fields import EVSEIDType, normalize_evseid, validate_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
+from evmap_backend.realtime.models import RealtimeStatus
 
 
 @dataclass
@@ -173,3 +175,62 @@ class Datex2EnergyInfrastructureSite:
             for rp in self.refill_points
         ]
         return site, chargepoints
+
+
+@dataclass
+class Datex2RefillPointStatus:
+    class Status(enum.StrEnum):
+        AVAILABLE = "available"
+        BLOCKED = "blocked"
+        CHARGING = "charging"
+        FAULTED = "faulted"
+        INOPERATIVE = "inoperative"
+        OCCUPIED = "occupied"
+        OUTOFORDER = "outOfOrder"
+        OUTOFSTOCK = "outOfStock"
+        PLANNED = "planned"
+        REMOVED = "removed"
+        RESERVED = "reserved"
+        UNAVAILABLE = "unavailable"
+        UNKNOWN = "unknown"
+
+    refill_point_id: str
+    last_updated: datetime.datetime
+    status: Status
+
+    def convert(self, data_source: str) -> RealtimeStatus:
+        return RealtimeStatus(
+            chargepoint=Chargepoint(id_from_source=self.refill_point_id),
+            status=status_map[self.status],
+            timestamp=self.last_updated,
+            data_source=data_source,
+        )
+
+
+status_map = {
+    Datex2RefillPointStatus.Status.AVAILABLE: RealtimeStatus.Status.AVAILABLE,
+    Datex2RefillPointStatus.Status.BLOCKED: RealtimeStatus.Status.BLOCKED,
+    Datex2RefillPointStatus.Status.CHARGING: RealtimeStatus.Status.CHARGING,
+    Datex2RefillPointStatus.Status.FAULTED: RealtimeStatus.Status.OUTOFORDER,
+    Datex2RefillPointStatus.Status.INOPERATIVE: RealtimeStatus.Status.INOPERATIVE,
+    Datex2RefillPointStatus.Status.OCCUPIED: RealtimeStatus.Status.CHARGING,
+    Datex2RefillPointStatus.Status.OUTOFORDER: RealtimeStatus.Status.OUTOFORDER,
+    Datex2RefillPointStatus.Status.OUTOFSTOCK: RealtimeStatus.Status.OUTOFORDER,
+    Datex2RefillPointStatus.Status.PLANNED: RealtimeStatus.Status.PLANNED,
+    Datex2RefillPointStatus.Status.REMOVED: RealtimeStatus.Status.REMOVED,
+    Datex2RefillPointStatus.Status.RESERVED: RealtimeStatus.Status.RESERVED,
+    Datex2RefillPointStatus.Status.UNAVAILABLE: RealtimeStatus.Status.UNKNOWN,
+    Datex2RefillPointStatus.Status.UNKNOWN: RealtimeStatus.Status.UNKNOWN,
+}
+
+
+@dataclass
+class Datex2EnergyInfrastructureSiteStatus:
+    site_id: str
+    refill_point_statuses: List[Datex2RefillPointStatus]
+
+    def convert(self, data_source: str) -> List[Tuple[str, RealtimeStatus]]:
+        return [
+            (self.site_id, rps.convert(data_source))
+            for rps in self.refill_point_statuses
+        ]

@@ -3,12 +3,18 @@ from typing import Dict, List, Type
 from evmap_backend.data_sources import DataSource
 from evmap_backend.data_sources.datex2.source import (
     Datex2AustriaDataSource,
+    Datex2AustriaRealtimeDataSource,
     Datex2LuxembourgEcoMovementDataSource,
     Datex2MobilithekEcoMovementDatex2DataSource,
+    Datex2MobilithekEcoMovementRealtimeDataSource,
     Datex2MobilithekEnbwDataSource,
+    Datex2MobilithekEnbwRealtimeDataSource,
     Datex2MobilithekLadenetzDataSource,
+    Datex2MobilithekLadenetzRealtimeDataSource,
     Datex2MobilithekUlmDataSource,
+    Datex2MobilithekUlmRealtimeDataSource,
     Datex2MobilithekWirelaneDataSource,
+    Datex2MobilithekWirelaneRealtimeDataSource,
 )
 from evmap_backend.data_sources.eliso.source import ElisoDataSource
 from evmap_backend.data_sources.monta.source import MontaDataSource
@@ -33,14 +39,20 @@ from evmap_backend.data_sources.ocpi.source import (
 DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
     # Austria
     "e-control_austria": Datex2AustriaDataSource,
+    "e-control_austria_realtime": Datex2AustriaRealtimeDataSource,
     # Germany
     "monta": MontaDataSource,
     "mobilithek_eliso": ElisoDataSource,
     "mobilithek_ecomovement": Datex2MobilithekEcoMovementDatex2DataSource,
+    "mobilithek_ecomovement_realtime": Datex2MobilithekEcoMovementRealtimeDataSource,
     "mobilithek_enbw": Datex2MobilithekEnbwDataSource,
+    "mobilithek_enbw_realtime": Datex2MobilithekEnbwRealtimeDataSource,
     "mobilithek_ladenetz": Datex2MobilithekLadenetzDataSource,
+    "mobilithek_ladenetz_realtime": Datex2MobilithekLadenetzRealtimeDataSource,
     "mobilithek_ulm": Datex2MobilithekUlmDataSource,
+    "mobilithek_ulm_realtime": Datex2MobilithekUlmRealtimeDataSource,
     "mobilithek_wirelane": Datex2MobilithekWirelaneDataSource,
+    "mobilithek_wirelane_realtime": Datex2MobilithekWirelaneRealtimeDataSource,
     # Luxembourg
     "luxembourg_ecomovement": Datex2LuxembourgEcoMovementDataSource,
     # Netherlands

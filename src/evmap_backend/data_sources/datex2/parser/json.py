@@ -1,3 +1,4 @@
+import datetime
 import json
 from typing import Iterable, Optional, Tuple
 
@@ -6,8 +7,10 @@ from tqdm import tqdm
 from evmap_backend.data_sources.datex2.parser import (
     Datex2Connector,
     Datex2EnergyInfrastructureSite,
+    Datex2EnergyInfrastructureSiteStatus,
     Datex2MultilingualString,
     Datex2RefillPoint,
+    Datex2RefillPointStatus,
 )
 
 
@@ -117,6 +120,32 @@ def parse_energy_infrastructure_site(
     )
 
 
+def parse_refill_point_status(
+    elem: dict, last_updated: datetime.datetime = None
+) -> Datex2RefillPointStatus:
+    if "lastUpdated" in elem:
+        last_updated = datetime.datetime.fromisoformat(elem["lastUpdated"])
+    return Datex2RefillPointStatus(
+        refill_point_id=elem["reference"]["idG"],
+        last_updated=last_updated,
+        status=Datex2RefillPointStatus.Status(elem["status"]["value"]),
+    )
+
+
+def parse_energy_infrastructure_site_status(
+    elem: dict,
+) -> Datex2EnergyInfrastructureSiteStatus:
+    last_updated = datetime.datetime.fromisoformat(elem.get("lastUpdated"))
+    return Datex2EnergyInfrastructureSiteStatus(
+        site_id=elem["reference"]["idG"],
+        refill_point_statuses=[
+            parse_refill_point_status(rp["aegiRefillPointStatus"], last_updated)
+            for station in elem["energyInfrastructureStationStatus"]
+            for rp in station["refillPointStatus"]
+        ],
+    )
+
+
 class Datex2JsonParser:
     def parse(self, data) -> Iterable[Datex2EnergyInfrastructureSite]:
         root = json.loads(data)
@@ -129,3 +158,18 @@ class Datex2JsonParser:
                 site = parse_energy_infrastructure_site(site)
                 if site is not None:
                     yield site
+
+    def parse_status(
+        self, data, station_as_site=False
+    ) -> Iterable[Datex2EnergyInfrastructureSiteStatus]:
+        if station_as_site:
+            raise NotImplementedError()
+
+        root = json.loads(data)
+        root = root["messageContainer"]["payload"]
+
+        for payload in root:
+            for site in payload["aegiEnergyInfrastructureStatusPublication"][
+                "energyInfrastructureSiteStatus"
+            ]:
+                yield parse_energy_infrastructure_site_status(site)
