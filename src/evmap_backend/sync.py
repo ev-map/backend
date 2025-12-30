@@ -401,7 +401,11 @@ def _sync_statuses_batch(
 
         latest_status = latest_status_map.get(chargepoint.id)
 
-        if latest_status is None or status.timestamp > latest_status.timestamp:
+        if (
+            latest_status is None
+            or status.timestamp > latest_status.timestamp
+            and status.status != latest_status.status
+        ):
             status.chargepoint = chargepoint
             status.data_source = realtime_data_source
             statuses_to_create.append(status)
