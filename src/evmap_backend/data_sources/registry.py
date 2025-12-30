@@ -18,10 +18,14 @@ from evmap_backend.data_sources.nobil.source import (
 )
 from evmap_backend.data_sources.ocpi.source import (
     BlinkUkOcpiDataSource,
+    BlinkUkOcpiRealtimeDataSource,
     BpPulseUkOcpiDataSource,
+    BpPulseUkOcpiRealtimeDataSource,
     ChargyUkOcpiDataSource,
     EsbUkOcpiDataSource,
+    EsbUkOcpiRealtimeDataSource,
     IonityUkOcpiDataSource,
+    IonityUkOcpiRealtimeDataSource,
     MfgUkOcpiDataSource,
     NdwNetherlandsOcpiDataSource,
 )
@@ -44,13 +48,17 @@ DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
     # Sweden and Norway
     "nobil": NobilDataSource,
     "nobil_realtime": NobilRealtimeDataSource,
-    # UK
+    # United Kingdom
     "bp_pulse_uk": BpPulseUkOcpiDataSource,
-    "chargy_uk": ChargyUkOcpiDataSource,
+    "bp_pulse_uk_realtime": BpPulseUkOcpiRealtimeDataSource,
     "ionity_uk": IonityUkOcpiDataSource,
+    "ionity_uk_realtime": IonityUkOcpiRealtimeDataSource,
     "blink_uk": BlinkUkOcpiDataSource,
-    "mfg_uk": MfgUkOcpiDataSource,
+    "blink_uk_realtime": BlinkUkOcpiRealtimeDataSource,
     "esb_uk": EsbUkOcpiDataSource,
+    "esb_uk_realtime": EsbUkOcpiRealtimeDataSource,
+    "chargy_uk": ChargyUkOcpiDataSource,
+    "mfg_uk": MfgUkOcpiDataSource,
 }
 
 

@@ -12,6 +12,7 @@ from tqdm import tqdm
 from evmap_backend.chargers.fields import normalize_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
 from evmap_backend.helpers.database import none_to_blank
+from evmap_backend.realtime.models import RealtimeStatus
 
 # spec: https://evroaming.org/wp-content/uploads/2025/02/OCPI-2.3.0.pdf
 
@@ -171,7 +172,10 @@ class OcpiEvse:
     last_updated: datetime.datetime
 
     @classmethod
-    def from_json(cls, data: dict):
+    def from_json(cls, data: dict, status_only: bool = False):
+        if "connectors" not in data and not status_only:
+            raise ValueError("OCPI EVSE has no connectors")
+
         return OcpiEvse(
             uid=data["uid"],
             evse_id=data.get("evse_id"),
@@ -180,9 +184,11 @@ class OcpiEvse:
                 if data["status"] in OcpiEvse.OcpiEvseStatus
                 else OcpiEvse.OcpiEvseStatus.UNKNOWN
             ),
-            connectors=[
-                OcpiConnector.from_json(connector) for connector in data["connectors"]
-            ],
+            connectors=(
+                [OcpiConnector.from_json(connector) for connector in data["connectors"]]
+                if "connectors" in data
+                else None
+            ),
             last_updated=datetime.datetime.fromisoformat(data["last_updated"]),
         )
 
@@ -193,43 +199,62 @@ class OcpiEvse:
         )
 
 
+status_mapping = {
+    OcpiEvse.OcpiEvseStatus.AVAILABLE: RealtimeStatus.Status.AVAILABLE,
+    OcpiEvse.OcpiEvseStatus.BLOCKED: RealtimeStatus.Status.BLOCKED,
+    OcpiEvse.OcpiEvseStatus.CHARGING: RealtimeStatus.Status.CHARGING,
+    OcpiEvse.OcpiEvseStatus.INOPERATIVE: RealtimeStatus.Status.INOPERATIVE,
+    OcpiEvse.OcpiEvseStatus.OUTOFORDER: RealtimeStatus.Status.OUTOFORDER,
+    OcpiEvse.OcpiEvseStatus.PLANNED: RealtimeStatus.Status.PLANNED,
+    OcpiEvse.OcpiEvseStatus.REMOVED: RealtimeStatus.Status.REMOVED,
+    OcpiEvse.OcpiEvseStatus.RESERVED: RealtimeStatus.Status.RESERVED,
+    OcpiEvse.OcpiEvseStatus.UNKNOWN: RealtimeStatus.Status.UNKNOWN,
+}
+
+
 @dataclass
 class OcpiLocation:
     id: str
-    country_code: str
+    country_code: Optional[str]
     name: Optional[str]
     address: Optional[str]
     city: Optional[str]
     postal_code: Optional[str]
     state: Optional[str]
-    coordinates: Tuple[float, float]
+    coordinates: Optional[Tuple[float, float]]
     evses: List[OcpiEvse]
-    operator_name: str
+    operator_name: Optional[str]
 
     # TODO: opening_times
 
     last_updated: datetime.datetime
 
     @classmethod
-    def from_json(cls, data: dict):
-        if not "coordinates" in data:
-            logging.warning(f"OCPI location without coordinates: {data}")
+    def from_json(cls, data: dict, status_only: bool = False):
+        if (
+            "coordinates" not in data or "country_code" not in data
+        ) and not status_only:
+            logging.warning(f"OCPI location with missing required fields: {data}")
             return None
 
         return OcpiLocation(
             data["id"],
-            data["country_code"],
+            data.get("country_code"),
             data.get("name"),
             data.get("address"),
             data.get("city"),
             data.get("postal_code"),
             data.get("state"),
             (
-                float(data["coordinates"]["longitude"]),
-                float(data["coordinates"]["latitude"]),
+                (
+                    float(data["coordinates"]["longitude"]),
+                    float(data["coordinates"]["latitude"]),
+                )
+                if "coordinates" in data
+                else None
             ),
-            [OcpiEvse.from_json(evse) for evse in data["evses"]],
-            data["operator"]["name"],
+            [OcpiEvse.from_json(evse, status_only) for evse in data["evses"]],
+            data["operator"]["name"] if "operator" in data else None,
             datetime.datetime.fromisoformat(data["last_updated"]),
         )
 
@@ -253,10 +278,26 @@ class OcpiLocation:
         ]
         return site, chargepoints
 
+    def convert_status(self, data_source: str) -> List[Tuple[str, RealtimeStatus]]:
+        return [
+            (
+                self.id,
+                RealtimeStatus(
+                    chargepoint=evse.convert(),
+                    status=status_mapping[evse.status],
+                    timestamp=evse.last_updated,
+                    data_source=data_source,
+                ),
+            )
+            for evse in self.evses
+        ]
+
 
 class OcpiParser:
-    def parse(self, data: Iterable) -> Iterable[OcpiLocation]:
+    def parse_locations(
+        self, data: Iterable, status_only: bool = False
+    ) -> Iterable[OcpiLocation]:
         for site in tqdm(data):
-            loc = OcpiLocation.from_json(site)
+            loc = OcpiLocation.from_json(site, status_only)
             if loc is not None:
                 yield loc

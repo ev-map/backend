@@ -6,6 +6,7 @@ from typing import List, Optional
 import aiohttp
 import requests
 from asgiref.sync import sync_to_async
+from django.utils import timezone
 
 from evmap_backend.chargers.models import Chargepoint
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
@@ -96,6 +97,7 @@ class NobilRealtimeDataSource(DataSource):
                                 chargepoint=chargepoint,
                                 status=RealtimeStatus.Status[evse_data["status"]],
                                 data_source=self.id,
+                                timestamp=timezone.now(),
                             )
                             await sync_to_async(obj.save)()
                         except Chargepoint.DoesNotExist:

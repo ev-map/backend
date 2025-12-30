@@ -7,6 +7,8 @@ from django.forms import model_to_dict
 from tqdm import tqdm
 
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
+from evmap_backend.helpers.database import distinct_on
+from evmap_backend.realtime.models import RealtimeStatus
 
 
 def _sync_sites_batch(
@@ -327,3 +329,85 @@ def sync_chargers(
         print(
             f"{total_sites_created} sites created, {total_sites_deleted} sites deleted"
         )
+
+
+def sync_statuses(
+    realtime_data_source: str,
+    chargepoint_data_source: str,
+    statuses: Iterable[Tuple[str, RealtimeStatus]],
+):
+    """
+    Sync charger statuses using bulk operations.
+    Processes statuses in batches for efficiency.
+    """
+    total_statuses_created = 0
+    batch_size = 100
+
+    with transaction.atomic():
+        for batch in tqdm(batched(statuses, batch_size), desc="Syncing statuses"):
+            statuses_created = _sync_statuses_batch(
+                realtime_data_source, chargepoint_data_source, batch
+            )
+            total_statuses_created += statuses_created
+
+        print(f"Created {total_statuses_created} statuses")
+
+
+def _sync_statuses_batch(
+    realtime_data_source: str,
+    chargepoint_data_source: str,
+    batch: Tuple[Tuple[str, RealtimeStatus], ...],
+) -> int:
+    """
+    Sync a batch of statuses using bulk operations.
+    Returns the number of statuses created in this batch.
+    """
+    # Fetch all chargepoints for this batch in one query
+    chargepoints = Chargepoint.objects.select_related("site").filter(
+        site__data_source=chargepoint_data_source,
+        site__id_from_source__in=[site_id for site_id, _ in batch],
+    )
+
+    # Build a mapping of (site_id_from_source, chargepoint_id_from_source) -> chargepoint
+    chargepoint_map = {
+        (cp.site.id_from_source, cp.id_from_source): cp for cp in chargepoints
+    }
+
+    # Fetch the latest status for each chargepoint
+    latest_statuses_qs = distinct_on(
+        RealtimeStatus.objects.filter(
+            data_source=realtime_data_source,
+            chargepoint__in=chargepoint_map.values(),
+        ),
+        distinct_fields=["chargepoint_id"],
+        order_field="timestamp",
+    )
+
+    # Build a mapping of chargepoint_id -> latest status
+    latest_status_map = {status.chargepoint_id: status for status in latest_statuses_qs}
+
+    # Collect statuses to create
+    statuses_to_create = []
+
+    for site_id, status in batch:
+        cp_key = (site_id, status.chargepoint.id_from_source)
+        chargepoint = chargepoint_map.get(cp_key)
+
+        if chargepoint is None:
+            logging.warning(
+                f"Chargepoint {site_id}/{status.chargepoint.id_from_source} not found, ignoring status update"
+            )
+            continue
+
+        latest_status = latest_status_map.get(chargepoint.id)
+
+        if latest_status is None or status.timestamp > latest_status.timestamp:
+            status.chargepoint = chargepoint
+            status.data_source = realtime_data_source
+            statuses_to_create.append(status)
+
+    # Bulk create new statuses
+    if statuses_to_create:
+        RealtimeStatus.objects.bulk_create(statuses_to_create)
+
+    return len(statuses_to_create)

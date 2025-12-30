@@ -8,7 +8,7 @@ import requests
 
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.ocpi.parser import OcpiLocation, OcpiParser
-from evmap_backend.sync import sync_chargers
+from evmap_backend.sync import sync_chargers, sync_statuses
 
 
 def deduplicate_chargers(chargers: Iterable[OcpiLocation]) -> Iterable[OcpiLocation]:
@@ -39,12 +39,41 @@ class BaseOcpiDataSource(DataSource):
 
     def pull_data(self):
         root = self.get_locations_data()
-        locations = OcpiParser().parse(root)
+        locations = OcpiParser().parse_locations(root)
         locations = self.postprocess_locations(locations)
         sync_chargers(self.id, (location.convert(self.id) for location in locations))
 
 
+class BaseOcpiRealtimeDataSource(DataSource):
+    supported_data_types = [DataType.DYNAMIC]
+    supported_update_methods = [UpdateMethod.PULL]
+
+    @abstractmethod
+    def get_statuses_data(self) -> Iterable[dict]:
+        """Get the data from the data source"""
+        pass
+
+    @property
+    @abstractmethod
+    def locations_data_source(self) -> str:
+        pass
+
+    def pull_data(self):
+        root = self.get_statuses_data()
+        locations = OcpiParser().parse_locations(root, status_only=True)
+        sync_statuses(
+            self.id,
+            self.locations_data_source,
+            (s for location in locations for s in location.convert_status(self.id)),
+        )
+
+
 class BaseEcoMovementUkOcpiDataSource(BaseOcpiDataSource):
+    """
+    Base class for static data from Eco-Movement's PCPR API (based on OCPI) for the UK
+    https://developers.eco-movement.com/docs/eco-movement-pcpr-api-user-guide
+    """
+
     locations_url = "https://open-chargepoints.com/api/ocpi/cpo/2.2.1/locations"
     tariffs_url = "https://open-chargepoints.com/api/ocpi/cpo/2.2.1/tariffs"
     supported_data_types = [DataType.STATIC]
@@ -64,12 +93,37 @@ class BaseEcoMovementUkOcpiDataSource(BaseOcpiDataSource):
                 params={"limit": limit, "offset": offset},
                 headers={"Authorization": f"Token {self.token}"},
             )
+            response.raise_for_status()
             result = json.loads(response.text)["data"]
             for item in result:
                 yield item
             if len(result) < limit:
                 break
             offset += limit
+
+
+class BaseEcoMovementUkOcpiRealtimeDataSource(BaseOcpiRealtimeDataSource):
+    """
+    Base class for realtime status data from Eco-Movement's PCPR API (based on OCPI) for the UK
+    https://developers.eco-movement.com/docs/eco-movement-pcpr-api-user-guide
+    """
+
+    statuses_url = "https://open-chargepoints.com/api/statuses"
+    supported_data_types = [DataType.DYNAMIC]
+    supported_update_methods = [UpdateMethod.PULL]
+
+    @property
+    @abstractmethod
+    def token(self) -> str:
+        pass
+
+    def get_statuses_data(self) -> Iterable[dict]:
+        response = requests.get(
+            self.statuses_url,
+            headers={"Authorization": f"Token {self.token}"},
+        )
+        response.raise_for_status()
+        return json.loads(response.text)["data"]
 
 
 class NdwNetherlandsOcpiDataSource(BaseOcpiDataSource):
@@ -97,9 +151,21 @@ class BpPulseUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
     id = "bp_pulse_uk"
 
 
+class BpPulseUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
+    token = os.environ.get("BP_PULSE_UK_ECOMOVEMENT_TOKEN")
+    id = "bp_pulse_uk_realtime"
+    locations_data_source = "bp_pulse_uk"
+
+
 class IonityUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
     token = os.environ.get("IONITY_UK_ECOMOVEMENT_TOKEN")
     id = "ionity_uk"
+
+
+class IonityUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
+    token = os.environ.get("IONITY_UK_ECOMOVEMENT_TOKEN")
+    id = "ionity_uk_realtime"
+    locations_data_source = "ionity_uk"
 
 
 class BlinkUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
@@ -107,16 +173,21 @@ class BlinkUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
     id = "blink_uk"
 
 
+class BlinkUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
+    token = os.environ.get("BLINK_UK_ECOMOVEMENT_TOKEN")
+    id = "blink_uk_realtime"
+    locations_data_source = "blink_uk"
+
+
 class EsbUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
     token = os.environ.get("ESB_UK_ECOMOVEMENT_TOKEN")
     id = "esb_uk"
 
 
-class BpPulseUkOcpiRealtimeDataSource(BaseOcpiDataSource):
-    statuses_url = "https://open-chargepoints.com/api/statuses"
-
-    supported_data_types = [DataType.DYNAMIC]
-    supported_update_methods = [UpdateMethod.PULL]
+class EsbUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
+    token = os.environ.get("ESB_UK_ECOMOVEMENT_TOKEN")
+    id = "esb_uk_realtime"
+    locations_data_source = "esb_uk"
 
 
 class ChargyUkOcpiDataSource(BaseOcpiDataSource):

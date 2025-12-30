@@ -38,5 +38,5 @@ class RealtimeStatus(models.Model):
 
     chargepoint = models.ForeignKey(Chargepoint, models.CASCADE)
     status = models.CharField(max_length=20, choices=Status)
-    timestamp = models.DateTimeField(auto_now=True)
+    timestamp = models.DateTimeField()
     data_source = models.CharField(max_length=255)
