@@ -44,6 +44,34 @@ class BaseOcpiDataSource(DataSource):
         sync_chargers(self.id, (location.convert(self.id) for location in locations))
 
 
+class BaseEcoMovementUkOcpiDataSource(BaseOcpiDataSource):
+    locations_url = "https://open-chargepoints.com/api/ocpi/cpo/2.2.1/locations"
+    tariffs_url = "https://open-chargepoints.com/api/ocpi/cpo/2.2.1/tariffs"
+    supported_data_types = [DataType.STATIC]
+    supported_update_methods = [UpdateMethod.PULL]
+
+    @property
+    @abstractmethod
+    def token(self) -> str:
+        pass
+
+    def get_locations_data(self):
+        offset = 0
+        limit = 1000
+        while True:
+            response = requests.get(
+                self.locations_url,
+                params={"limit": limit, "offset": offset},
+                headers={"Authorization": f"Token {self.token}"},
+            )
+            result = json.loads(response.text)["data"]
+            for item in result:
+                yield item
+            if len(result) < limit:
+                break
+            offset += limit
+
+
 class NdwNetherlandsOcpiDataSource(BaseOcpiDataSource):
     locations_url = "https://opendata.ndw.nu/charging_point_locations_ocpi.json.gz"
     tariffs_url = "https://opendata.ndw.nu/charging_point_tariffs_ocpi.json.gz"
@@ -64,31 +92,19 @@ class NdwNetherlandsOcpiDataSource(BaseOcpiDataSource):
         return deduplicate_chargers(locations)
 
 
-class BpPulseUkOcpiDataSource(BaseOcpiDataSource):
-    locations_url = "https://open-chargepoints.com/api/ocpi/cpo/2.2.1/locations"
-    tariffs_url = "https://open-chargepoints.com/api/ocpi/cpo/2.2.1/tariffs"
-
-    supported_data_types = [DataType.STATIC]
-    supported_update_methods = [UpdateMethod.PULL]
+class BpPulseUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
+    token = os.environ.get("BP_PULSE_UK_ECOMOVEMENT_TOKEN")
     id = "bp_pulse_uk"
 
-    def get_locations_data(self):
-        offset = 0
-        limit = 1000
-        while True:
-            response = requests.get(
-                self.locations_url,
-                params={"limit": limit, "offset": offset},
-                headers={
-                    "Authorization": f"Token {os.environ['BP_PULSE_UK_ECOMOVEMENT_TOKEN']}"
-                },
-            )
-            result = json.loads(response.text)["data"]
-            for item in result:
-                yield item
-            if len(result) < limit:
-                break
-            offset += limit
+
+class IonityUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
+    token = os.environ.get("IONITY_UK_ECOMOVEMENT_TOKEN")
+    id = "ionity_uk"
+
+
+class BlinkUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
+    token = os.environ.get("BLINK_UK_ECOMOVEMENT_TOKEN")
+    id = "blink_uk"
 
 
 class BpPulseUkOcpiRealtimeDataSource(BaseOcpiDataSource):

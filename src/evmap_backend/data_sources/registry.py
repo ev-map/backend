@@ -17,8 +17,10 @@ from evmap_backend.data_sources.nobil.source import (
     NobilRealtimeDataSource,
 )
 from evmap_backend.data_sources.ocpi.source import (
+    BlinkUkOcpiDataSource,
     BpPulseUkOcpiDataSource,
     ChargyUkOcpiDataSource,
+    IonityUkOcpiDataSource,
     NdwNetherlandsOcpiDataSource,
 )
 
@@ -43,6 +45,8 @@ DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
     # UK
     "bp_pulse_uk": BpPulseUkOcpiDataSource,
     "chargy_uk": ChargyUkOcpiDataSource,
+    "ionity_uk": IonityUkOcpiDataSource,
+    "blink_uk": BlinkUkOcpiDataSource,
 }
 
 
