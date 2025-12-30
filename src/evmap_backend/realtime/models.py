@@ -6,6 +6,12 @@ from evmap_backend.chargers.models import Chargepoint
 
 
 class RealtimeStatus(models.Model):
+    class Meta:
+        get_latest_by = "timestamp"
+        indexes = [
+            models.Index(fields=["chargepoint", "timestamp"]),
+        ]
+
     class Status(models.TextChoices):
         """
         EVSE status, as defined in OCPI
