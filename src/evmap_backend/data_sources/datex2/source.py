@@ -1,13 +1,12 @@
 import os
 from abc import abstractmethod
-from datetime import datetime
-from typing import List
 from urllib.parse import unquote_to_bytes
 
 import requests
 from cryptography.x509 import load_pem_x509_certificate, load_pem_x509_certificates
 from cryptography.x509.verification import PolicyBuilder, Store
 from django.http import HttpRequest
+from django.utils import timezone
 
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.datex2.parser.json import Datex2JsonParser
@@ -76,7 +75,7 @@ class BaseMobilithekDatex2DataSource(BaseDatex2DataSource):
         verifier = (
             PolicyBuilder()
             .store(mobilithek_store)
-            .time(datetime.now())
+            .time(timezone.now())
             .build_client_verifier()
         )
         verifier.verify(cert, [])

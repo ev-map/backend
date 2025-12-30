@@ -1,6 +1,7 @@
 import datetime as dt
 
 from django.core.management import BaseCommand
+from django.utils import timezone
 
 from evmap_backend.helpers.database import distinct_on
 from evmap_backend.realtime.models import RealtimeStatus
@@ -13,7 +14,7 @@ class Command(BaseCommand):
         super().__init__(*args, **kwargs)
 
     def handle(self, *args, **options):
-        expire_threshold = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=30)
+        expire_threshold = timezone.now() - dt.timedelta(days=30)
 
         # make sure to keep the latest value for each nobil_id & evse_uid combination
         latest = distinct_on(

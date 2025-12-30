@@ -3,6 +3,7 @@ import datetime
 import requests
 from django.contrib.gis.geos import Point
 from django.core.management import BaseCommand
+from django.utils import timezone
 
 from evmap_backend.data_sources.openstreetmap.models import OsmNode, OsmUpdateState
 
@@ -23,7 +24,7 @@ class Command(BaseCommand):
             f'(newer:"{last_update.isoformat()}")' if last_update is not None else ""
         )
 
-        now = datetime.datetime.now()
+        now = timezone.now()
         response = requests.post(
             OVERPASS_INTERPRETER,
             timeout=TIMEOUT_SECONDS,

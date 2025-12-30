@@ -5,6 +5,7 @@ from typing import List
 
 import requests
 from django.contrib.gis.geos import Point
+from django.utils import timezone
 from tqdm import tqdm
 
 from evmap_backend.chargers.fields import normalize_evseid
@@ -127,7 +128,7 @@ class MontaDataSource(DataSource):
 
     def pull_data(self):
         tokens = MontaTokens.get_solo()
-        now = dt.datetime.now().astimezone()
+        now = timezone.now()
         if tokens.refresh_token_expires <= now:
             response = get_monta_token()
             tokens.access_token = response["accessToken"]

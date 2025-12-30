@@ -8,6 +8,7 @@ from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 from cryptography.x509.oid import NameOID
 from cryptography.x509.verification import VerificationError
 from django.http import HttpRequest
+from django.utils import timezone
 
 from evmap_backend.data_sources.datex2.source import BaseMobilithekDatex2DataSource
 
@@ -18,7 +19,7 @@ def random_x509_certificate():
     subject = issuer = x509.Name(
         [x509.NameAttribute(NameOID.COMMON_NAME, "ev-map.app")]
     )
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = timezone.now()
     random_certificate = (
         x509.CertificateBuilder()
         .subject_name(subject)
