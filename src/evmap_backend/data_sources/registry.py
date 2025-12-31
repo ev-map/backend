@@ -17,6 +17,7 @@ from evmap_backend.data_sources.datex2.source import (
     Datex2MobilithekWirelaneRealtimeDataSource,
 )
 from evmap_backend.data_sources.eliso.source import ElisoDataSource
+from evmap_backend.data_sources.goingelectric.source import GoingElectricDataSource
 from evmap_backend.data_sources.monta.source import MontaDataSource
 from evmap_backend.data_sources.nobil.source import (
     NobilDataSource,
@@ -37,6 +38,8 @@ from evmap_backend.data_sources.ocpi.source import (
 )
 
 DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
+    # multiple countries
+    GoingElectricDataSource,
     # Austria
     Datex2AustriaDataSource,
     Datex2AustriaRealtimeDataSource,

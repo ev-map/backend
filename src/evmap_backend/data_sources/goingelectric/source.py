@@ -2,9 +2,9 @@ import os
 
 import requests
 from django.contrib.gis.geos import Point
-from django.core.management import BaseCommand
 from django.db import transaction
 
+from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.goingelectric.models import (
     GoingElectricChargeLocation,
     GoingElectricChargepoint,
@@ -13,13 +13,35 @@ from evmap_backend.data_sources.goingelectric.models import (
 API_URL = "https://api.goingelectric.de"
 
 
-class Command(BaseCommand):
-    help = "Connects to GoingElectric API to extract static charger information"
+def get_goingelectric_chargers(startkey=None):
+    params = {
+        "clustering": False,
+        "key": os.environ["GOINGELECTRIC_API_KEY"],
+        "ne_lat": 90.0,
+        "ne_lng": 180.0,
+        "sw_lat": -90.0,
+        "sw_lng": -180.0,
+    }
+    if startkey is not None:
+        params["startkey"] = startkey
+    response = requests.get(
+        API_URL + "/chargepoints",
+        params=params,
+        headers={
+            "Referer": "https://www.goingelectric.de/",
+            "Origin": "https://www.goingelectric.de",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+        },
+    )
+    return response.json()
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
-    def handle(self, *args, **options):
+class GoingElectricDataSource(DataSource):
+    id = "goingelectric"
+    supported_update_methods = [UpdateMethod.PULL]
+    supported_data_types = [DataType.SUPPLEMENTARY]
+
+    def pull_data(self):
         startkey = None
         while True:
             response = get_goingelectric_chargers(startkey=startkey)
@@ -78,26 +100,3 @@ class Command(BaseCommand):
                 print(startkey)
             else:
                 break
-
-
-def get_goingelectric_chargers(startkey=None):
-    params = {
-        "clustering": False,
-        "key": os.environ["GOINGELECTRIC_API_KEY"],
-        "ne_lat": 90.0,
-        "ne_lng": 180.0,
-        "sw_lat": -90.0,
-        "sw_lng": -180.0,
-    }
-    if startkey is not None:
-        params["startkey"] = startkey
-    response = requests.get(
-        API_URL + "/chargepoints",
-        params=params,
-        headers={
-            "Referer": "https://www.goingelectric.de/",
-            "Origin": "https://www.goingelectric.de",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
-        },
-    )
-    return response.json()
