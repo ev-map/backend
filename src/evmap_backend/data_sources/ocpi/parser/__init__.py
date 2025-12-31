@@ -94,8 +94,12 @@ class OcpiConnector:
             id=data["id"],
             standard=OcpiConnector.ConnectorType(data["standard"]),
             format=OcpiConnector.ConnectorFormat(data["format"]),
-            max_voltage=data["max_voltage"],
-            max_amperage=data["max_amperage"],
+            max_voltage=(
+                data["max_voltage"] if "max_voltage" in data else data["voltage"]
+            ),
+            max_amperage=(
+                data["max_amperage"] if "max_amperage" in data else data["amperage"]
+            ),
             power_type=OcpiConnector.PowerType(data["power_type"]),
             max_electric_power=data.get("max_electric_power"),
             last_updated=datetime.datetime.fromisoformat(data["last_updated"]),

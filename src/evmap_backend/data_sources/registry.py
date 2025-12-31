@@ -32,6 +32,7 @@ from evmap_backend.data_sources.ocpi.source import (
     EsbUkOcpiRealtimeDataSource,
     IonityUkOcpiDataSource,
     IonityUkOcpiRealtimeDataSource,
+    LatviaOcpiDataSource,
     MfgUkOcpiDataSource,
     NdwNetherlandsOcpiDataSource,
 )
@@ -71,6 +72,8 @@ DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
     "esb_uk_realtime": EsbUkOcpiRealtimeDataSource,
     "chargy_uk": ChargyUkOcpiDataSource,
     "mfg_uk": MfgUkOcpiDataSource,
+    # Latvia
+    # "latvia": LatviaOcpiDataSource, Data is malformed (duplicate IDs)
 }
 
 
