@@ -7,11 +7,6 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    replaces = [
-        ("goingelectric", "0001_initial"),
-        ("goingelectric", "0002_alter_goingelectricchargelocation_url"),
-    ]
-
     initial = True
 
     dependencies = []
