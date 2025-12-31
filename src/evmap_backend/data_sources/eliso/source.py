@@ -68,17 +68,9 @@ def get_mobilithek_data():
 
 
 class ElisoDataSource(DataSource):
-    @property
-    def id(self) -> str:
-        return "mobilithek_eliso"
-
-    @property
-    def supported_data_types(self) -> List[DataType]:
-        return [DataType.STATIC]
-
-    @property
-    def supported_update_methods(self) -> List[UpdateMethod]:
-        return [UpdateMethod.PULL]
+    id = "mobilithek_eliso"
+    supported_data_types = [DataType.STATIC]
+    supported_update_methods = [UpdateMethod.PULL]
 
     def pull_data(self):
         root = get_mobilithek_data()

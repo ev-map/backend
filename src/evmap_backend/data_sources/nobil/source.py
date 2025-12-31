@@ -17,17 +17,9 @@ from evmap_backend.sync import sync_chargers
 
 
 class NobilDataSource(DataSource):
-    @property
-    def id(self) -> str:
-        return "nobil"
-
-    @property
-    def supported_data_types(self) -> List[DataType]:
-        return [DataType.STATIC]
-
-    @property
-    def supported_update_methods(self) -> List[UpdateMethod]:
-        return [UpdateMethod.PULL]
+    id = "nobil"
+    supported_data_types = [DataType.STATIC]
+    supported_update_methods = [UpdateMethod.PULL]
 
     def get_nobil_dump(self, fromdate: Optional[datetime.datetime] = None):
         response = requests.get(
@@ -56,17 +48,9 @@ class NobilDataSource(DataSource):
 
 
 class NobilRealtimeDataSource(DataSource):
-    @property
-    def id(self) -> str:
-        return "nobil_realtime"
-
-    @property
-    def supported_data_types(self) -> List[DataType]:
-        return [DataType.DYNAMIC]
-
-    @property
-    def supported_update_methods(self) -> List[UpdateMethod]:
-        return [UpdateMethod.STREAMING]
+    id = "nobil_realtime"
+    supported_data_types = [DataType.DYNAMIC]
+    supported_update_methods = [UpdateMethod.STREAMING]
 
     def _get_realtime_websocket_url(self):
         response = requests.post(

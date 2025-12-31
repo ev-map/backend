@@ -32,48 +32,51 @@ from evmap_backend.data_sources.ocpi.source import (
     EsbUkOcpiRealtimeDataSource,
     IonityUkOcpiDataSource,
     IonityUkOcpiRealtimeDataSource,
-    LatviaOcpiDataSource,
     MfgUkOcpiDataSource,
     NdwNetherlandsOcpiDataSource,
 )
 
-DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
+DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     # Austria
-    "e-control_austria": Datex2AustriaDataSource,
-    "e-control_austria_realtime": Datex2AustriaRealtimeDataSource,
+    Datex2AustriaDataSource,
+    Datex2AustriaRealtimeDataSource,
     # Germany
-    "monta": MontaDataSource,
-    "mobilithek_eliso": ElisoDataSource,
-    "mobilithek_ecomovement": Datex2MobilithekEcoMovementDatex2DataSource,
-    "mobilithek_ecomovement_realtime": Datex2MobilithekEcoMovementRealtimeDataSource,
-    "mobilithek_enbw": Datex2MobilithekEnbwDataSource,
-    "mobilithek_enbw_realtime": Datex2MobilithekEnbwRealtimeDataSource,
-    "mobilithek_ladenetz": Datex2MobilithekLadenetzDataSource,
-    "mobilithek_ladenetz_realtime": Datex2MobilithekLadenetzRealtimeDataSource,
-    "mobilithek_ulm": Datex2MobilithekUlmDataSource,
-    "mobilithek_ulm_realtime": Datex2MobilithekUlmRealtimeDataSource,
-    "mobilithek_wirelane": Datex2MobilithekWirelaneDataSource,
-    "mobilithek_wirelane_realtime": Datex2MobilithekWirelaneRealtimeDataSource,
+    MontaDataSource,
+    ElisoDataSource,
+    Datex2MobilithekEcoMovementDatex2DataSource,
+    Datex2MobilithekEcoMovementRealtimeDataSource,
+    Datex2MobilithekEnbwDataSource,
+    Datex2MobilithekEnbwRealtimeDataSource,
+    Datex2MobilithekLadenetzDataSource,
+    Datex2MobilithekLadenetzRealtimeDataSource,
+    Datex2MobilithekUlmDataSource,
+    Datex2MobilithekUlmRealtimeDataSource,
+    Datex2MobilithekWirelaneDataSource,
+    Datex2MobilithekWirelaneRealtimeDataSource,
     # Luxembourg
-    "luxembourg_ecomovement": Datex2LuxembourgEcoMovementDataSource,
+    Datex2LuxembourgEcoMovementDataSource,
     # Netherlands
-    "ndw_netherlands": NdwNetherlandsOcpiDataSource,
+    NdwNetherlandsOcpiDataSource,
     # Sweden and Norway
-    "nobil": NobilDataSource,
-    "nobil_realtime": NobilRealtimeDataSource,
+    NobilDataSource,
+    NobilRealtimeDataSource,
     # United Kingdom
-    "bp_pulse_uk": BpPulseUkOcpiDataSource,
-    "bp_pulse_uk_realtime": BpPulseUkOcpiRealtimeDataSource,
-    "ionity_uk": IonityUkOcpiDataSource,
-    "ionity_uk_realtime": IonityUkOcpiRealtimeDataSource,
-    "blink_uk": BlinkUkOcpiDataSource,
-    "blink_uk_realtime": BlinkUkOcpiRealtimeDataSource,
-    "esb_uk": EsbUkOcpiDataSource,
-    "esb_uk_realtime": EsbUkOcpiRealtimeDataSource,
-    "chargy_uk": ChargyUkOcpiDataSource,
-    "mfg_uk": MfgUkOcpiDataSource,
+    BpPulseUkOcpiDataSource,
+    BpPulseUkOcpiRealtimeDataSource,
+    IonityUkOcpiDataSource,
+    IonityUkOcpiRealtimeDataSource,
+    BlinkUkOcpiDataSource,
+    BlinkUkOcpiRealtimeDataSource,
+    EsbUkOcpiDataSource,
+    EsbUkOcpiRealtimeDataSource,
+    ChargyUkOcpiDataSource,
+    MfgUkOcpiDataSource,
     # Latvia
-    # "latvia": LatviaOcpiDataSource, Data is malformed (duplicate IDs)
+    # LatviaOcpiDataSource,  # Data is malformed (duplicate IDs)
+]
+
+DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
+    cls.id: cls for cls in DATA_SOURCE_CLASSES
 }
 
 

@@ -114,17 +114,9 @@ def convert_monta_data(chargers_by_location):
 
 
 class MontaDataSource(DataSource):
-    @property
-    def id(self) -> str:
-        return "monta"
-
-    @property
-    def supported_data_types(self) -> List[DataType]:
-        return [DataType.STATIC]
-
-    @property
-    def supported_update_methods(self) -> List[UpdateMethod]:
-        return [UpdateMethod.PULL]
+    id = "monta"
+    supported_data_types = [DataType.STATIC]
+    supported_update_methods = [UpdateMethod.PULL]
 
     def pull_data(self):
         tokens = MontaTokens.get_solo()

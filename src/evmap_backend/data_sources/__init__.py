@@ -3,6 +3,7 @@ from enum import Enum
 from typing import List
 
 from django.http import HttpRequest
+from django.utils.functional import classproperty
 
 
 class DataType(Enum):
@@ -41,17 +42,17 @@ class UpdateMethod(Enum):
 
 
 class DataSource(ABC):
-    @property
+    @classproperty
     @abstractmethod
     def id(self) -> str:
         pass
 
-    @property
+    @classproperty
     @abstractmethod
     def supported_data_types(self) -> List[DataType]:
         pass
 
-    @property
+    @classproperty
     @abstractmethod
     def supported_update_methods(self) -> List[UpdateMethod]:
         pass
