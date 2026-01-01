@@ -16,8 +16,8 @@ class ConnectorInline(admin.StackedInline):
 
 
 class ChargingSiteAdmin(GISModelAdmin):
-    list_display = ["name", "data_source", "operator", "city", "country"]
-    list_filter = ["data_source", "operator", "country"]
+    list_display = ["name", "data_source", "network", "city", "country"]
+    list_filter = ["data_source", "network", "country"]
     inlines = [ChargepointInline]
 
 
