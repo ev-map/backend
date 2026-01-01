@@ -402,7 +402,7 @@ def parse_nobil_chargers(json_data) -> Iterable[NobilChargerStation]:
             street=csmd["Street"],
             house_number=csmd["House_number"],
             zip_code=csmd["Zipcode"],
-            city=csmd["City"],
+            city=fix_city_capitalization(csmd["City"]),
             municipality_id=csmd["Municipality_ID"],
             municipality=csmd["Municipality"],
             county_id=csmd["County_ID"],
@@ -486,3 +486,20 @@ def parse_nobil_chargers(json_data) -> Iterable[NobilChargerStation]:
             ],
         )
         yield charger
+
+
+def fix_city_capitalization(city: str) -> str:
+    """
+    Fixes city names that are written in all-caps by converting them to title case,
+    while keeping certain words in lowercase (e.g., "i" in "Mo i Rana").
+    """
+    if not city.isupper() or len(city) <= 1:
+        # city is not written in all-caps -> all is fine
+        return city
+
+    lower_words = {"i", "på"}
+    words = (
+        word.lower() if word.lower() in lower_words else word.capitalize()
+        for word in city.split(" ")
+    )
+    return " ".join(words)
