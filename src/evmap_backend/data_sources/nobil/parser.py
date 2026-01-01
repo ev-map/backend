@@ -299,27 +299,43 @@ class NobilChargerStation:
             country=self.land_code,
         )
 
-        # group connectors by EVSE UID and EVSEID
-        evse_dict = defaultdict(list)
-        for con in self.connectors:
-            if con.evse_id is None or con.evse_uid is None:
-                continue
+        if all(con.evse_id is None and con.evse_uid is None for con in self.connectors):
+            # no EVSE IDs available, create one chargepoint per connector
+            chargepoints = [
+                (
+                    Chargepoint(
+                        site=site,
+                        id_from_source=str(
+                            i
+                        ),  # connector_id is unusable (duplicates and empty values)
+                        evseid="",
+                    ),
+                    con.convert(),
+                )
+                for i, con in enumerate(self.connectors)
+            ]
+        else:
+            # group connectors by EVSE UID and EVSEID
+            evse_dict = defaultdict(list)
+            for con in self.connectors:
+                # normalize and validate EVSEID
+                evseid = (
+                    normalize_evseid(con.evse_id) if con.evse_id is not None else ""
+                )
+                try:
+                    validate_evseid(evseid)
+                except ValidationError:
+                    evseid = ""
+                evse_uid = con.evse_uid if con.evse_uid is not None else evseid
+                evse_dict[(evse_uid, evseid)].append(con)
 
-            # normalize and validate EVSEID
-            evseid = normalize_evseid(con.evse_id)
-            try:
-                validate_evseid(evseid)
-            except ValidationError:
-                evseid = ""
-            evse_dict[(con.evse_uid, evseid)].append(con)
-
-        chargepoints = [
-            (
-                Chargepoint(site=site, id_from_source=evse_uid, evseid=evseid),
-                [c for con in connectors for c in con.convert()],
-            )
-            for (evse_uid, evseid), connectors in evse_dict.items()
-        ]
+            chargepoints = [
+                (
+                    Chargepoint(site=site, id_from_source=evse_uid, evseid=evseid),
+                    [c for con in connectors for c in con.convert()],
+                )
+                for (evse_uid, evseid), connectors in evse_dict.items()
+            ]
         return site, chargepoints
 
 
