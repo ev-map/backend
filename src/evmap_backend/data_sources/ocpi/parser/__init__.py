@@ -270,7 +270,7 @@ class OcpiLocation:
             id_from_source=self.id,
             name=none_to_blank(self.name if self.name is not None else self.address),
             location=Point(*self.coordinates),
-            operator=self.operator_name,
+            network=self.operator_name,
             street=none_to_blank(self.address),
             zipcode=none_to_blank(self.postal_code),
             city=none_to_blank(self.city),

@@ -33,7 +33,7 @@ def parse_eliso_chargers(
             zipcode=item["postalCode"],
             city=item["city"],
             country=item["country_iso_3166_alpha_2"],
-            operator=item["operator_name"],
+            network=item["operator_name"],
             location=Point(
                 item["coordinates"]["longitude"], item["coordinates"]["latitude"]
             ),

@@ -163,7 +163,7 @@ class Datex2EnergyInfrastructureSite:
                 )
             ),
             location=Point(*self.location),
-            operator=self.operator_name.first(),
+            network=self.operator_name.first(),
             street=self.street if self.street is not None else "",
             zipcode=self.zipcode if self.zipcode is not None else "",
             city=self.city if self.city is not None else "",
