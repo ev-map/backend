@@ -6,6 +6,7 @@ from typing import Optional
 import opening_hours
 from django.core.exceptions import ValidationError
 from django.db import models
+from django_countries.data import COUNTRIES
 
 
 def validate_opening_hours(value: str):
@@ -51,7 +52,7 @@ def validate_evseid(value: str, evseid_type: Optional[EVSEIDType] = None):
             + (f" for type {evseid_type.name}" if evseid_type else "")
             + "."
         )
-    # TODO: validate that country code is valid
+    validate_alpha2_country_code(value[:2])
 
 
 def validate_evse_operator_id(value: str):
@@ -63,7 +64,18 @@ def validate_evse_operator_id(value: str):
     pattern = r"^[A-Z]{2}[A-Z0-9]{3}$"
     if not re.match(pattern, value):
         raise ValidationError(f"{value} is not a valid EVSE Operator ID.")
-    # TODO: validate that country is valid
+    validate_alpha2_country_code(value[:2])
+
+
+def validate_alpha2_country_code(country_code: str):
+    """
+    Validate that the given country code is a valid ISO 3166-1 alpha-2 country code.
+
+    :param country_code: The country code to validate.
+    :raises ValidationError: If the country code is not valid.
+    """
+    if not country_code in COUNTRIES:
+        raise ValidationError(f"{country_code} is not a valid country code.")
 
 
 class EVSEIDField(models.CharField):

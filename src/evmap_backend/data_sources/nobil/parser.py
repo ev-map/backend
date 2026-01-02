@@ -10,7 +10,7 @@ from django.contrib.gis.geos import Point
 from django.core.exceptions import ValidationError
 from tqdm import tqdm
 
-from evmap_backend.chargers.fields import normalize_evseid, validate_evseid
+from evmap_backend.chargers.fields import EVSEIDType, normalize_evseid, validate_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
 from evmap_backend.helpers.database import none_to_blank
 
@@ -324,7 +324,7 @@ class NobilChargerStation:
                     normalize_evseid(con.evse_id) if con.evse_id is not None else ""
                 )
                 try:
-                    validate_evseid(evseid)
+                    validate_evseid(evseid, EVSEIDType.EVSE)
                 except ValidationError:
                     evseid = ""
                 evse_uid = con.evse_uid if con.evse_uid is not None else evseid
