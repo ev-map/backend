@@ -29,6 +29,16 @@ def normalize_evseid(value: str) -> str:
     return re.sub(r"[*\-\s]", "", value).upper()
 
 
+def format_evseid(value: str) -> str:
+    """
+    Format EVSEID for display by inserting asterisks after country code and operator ID.
+    Example stored: DEABCE12345
+    Example display: DE ABC E12345
+    """
+    validate_evseid(value)
+    return f"{value[:2]}*{value[2:5]}*{value[5:]}"
+
+
 class EVSEIDType(StrEnum):
     EVSE = "E"  # single EVSE (chargepoint) - required
     STATION = "S"  # charging station (site) - optional

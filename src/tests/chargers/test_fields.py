@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 
 from evmap_backend.chargers.fields import (
     EVSEIDType,
+    format_evseid,
     normalize_evseid,
     validate_evse_operator_id,
     validate_evseid,
@@ -81,3 +82,12 @@ def test_normalize_evseid():
     assert normalize_evseid("DE IOY E1234567") == "DEIOYE1234567"
     assert normalize_evseid("  DE*IOY*E1234567  ") == "DEIOYE1234567"
     assert normalize_evseid("DEIOYE1234567") == "DEIOYE1234567"
+
+
+def test_display_evseid():
+    assert format_evseid("DEIOYE1234567") == "DE*IOY*E1234567"
+    assert format_evseid("DEIOYS12345") == "DE*IOY*S12345"
+    assert format_evseid("DEIOYP1234") == "DE*IOY*P1234"
+
+    with pytest.raises(ValidationError):
+        format_evseid("")  # invalid EVSEID

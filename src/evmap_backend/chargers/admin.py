@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.gis.admin import GISModelAdmin
 
+from evmap_backend.chargers.fields import format_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
 
 
@@ -22,8 +23,12 @@ class ChargingSiteAdmin(GISModelAdmin):
 
 
 class ChargepointAdmin(admin.ModelAdmin):
-    list_display = ["evseid"]
+    list_display = ["formatted_evseid"]
     inlines = [ConnectorInline]
+
+    @admin.display(description="EVSEID")
+    def formatted_evseid(self, obj):
+        return format_evseid(obj.evseid)
 
 
 class ConnectorAdmin(admin.ModelAdmin):
