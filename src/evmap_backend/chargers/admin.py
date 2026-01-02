@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.gis.admin import GISModelAdmin
 
-from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
+from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
 
 
 # Register your models here.
@@ -36,7 +36,12 @@ class ConnectorAdmin(admin.ModelAdmin):
     list_filter = ["connector_type", "chargepoint__site__operator"]
 
 
+class NetworkAdmin(admin.ModelAdmin):
+    list_display = ["name", "evse_operator_id"]
+
+
 # Register your models here.
 admin.site.register(ChargingSite, ChargingSiteAdmin)
 admin.site.register(Chargepoint, ChargepointAdmin)
 admin.site.register(Connector, ConnectorAdmin)
+admin.site.register(Network, NetworkAdmin)

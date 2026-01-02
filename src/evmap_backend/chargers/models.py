@@ -1,7 +1,12 @@
 from django.contrib.gis.db import models
 from django_countries.fields import CountryField
 
-from evmap_backend.chargers.fields import EVSEIDField, EVSEIDType, OpeningHoursField
+from evmap_backend.chargers.fields import (
+    EVSEIDField,
+    EVSEIDType,
+    EVSEOperatorIDField,
+    OpeningHoursField,
+)
 
 
 class ChargingSite(models.Model):
@@ -109,3 +114,14 @@ class Connector(models.Model):
         max_length=255, choices=ConnectorFormats, blank=True
     )
     max_power = models.FloatField()  # in watts
+
+
+class Network(models.Model):
+    class Meta:
+        indexes = [
+            models.Index(fields=["evse_operator_id"]),
+        ]
+
+    name = models.CharField(max_length=255, blank=True)
+    evse_operator_id = EVSEOperatorIDField(blank=True, unique=True)
+    website = models.URLField(blank=True)

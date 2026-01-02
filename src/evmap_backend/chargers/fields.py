@@ -51,6 +51,19 @@ def validate_evseid(value: str, evseid_type: Optional[EVSEIDType] = None):
             + (f" for type {evseid_type.name}" if evseid_type else "")
             + "."
         )
+    # TODO: validate that country code is valid
+
+
+def validate_evse_operator_id(value: str):
+    """
+    Validate EVSE Operator ID in normalized (separator-free) form.
+    Expected: 2 letters country, 3 operator chars.
+    Example stored: DEABC
+    """
+    pattern = r"^[A-Z]{2}[A-Z0-9]{3}$"
+    if not re.match(pattern, value):
+        raise ValidationError(f"{value} is not a valid EVSE Operator ID.")
+    # TODO: validate that country is valid
 
 
 class EVSEIDField(models.CharField):
@@ -60,6 +73,19 @@ class EVSEIDField(models.CharField):
         self, max_length=37, evseid_type: Optional[EVSEIDType] = None, *args, **kwargs
     ):
         self.default_validators = [partial(validate_evseid, evseid_type=evseid_type)]
+        super().__init__(*args, max_length=max_length, **kwargs)
+
+    def get_prep_value(self, value):
+        if value is None:
+            return value
+        return normalize_evseid(value)
+
+
+class EVSEOperatorIDField(models.CharField):
+    description = "EVSE Operator ID (normalized without separators)"
+
+    def __init__(self, max_length=5, *args, **kwargs):
+        self.default_validators = [validate_evse_operator_id]
         super().__init__(*args, max_length=max_length, **kwargs)
 
     def get_prep_value(self, value):
