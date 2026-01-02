@@ -29,12 +29,16 @@ from evmap_backend.data_sources.ocpi.source import (
     BpPulseUkOcpiDataSource,
     BpPulseUkOcpiRealtimeDataSource,
     ChargyUkOcpiDataSource,
+    CommunityByShellRechargeUkOcpiDataSource,
+    CommunityByShellRechargeUkOcpiRealtimeDataSource,
     EsbUkOcpiDataSource,
     EsbUkOcpiRealtimeDataSource,
     IonityUkOcpiDataSource,
     IonityUkOcpiRealtimeDataSource,
     MfgUkOcpiDataSource,
     NdwNetherlandsOcpiDataSource,
+    ShellRechargeUkOcpiDataSource,
+    ShellRechargeUkOcpiRealtimeDataSource,
 )
 
 DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
@@ -72,6 +76,10 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     BlinkUkOcpiRealtimeDataSource,
     EsbUkOcpiDataSource,
     EsbUkOcpiRealtimeDataSource,
+    ShellRechargeUkOcpiDataSource,
+    ShellRechargeUkOcpiRealtimeDataSource,
+    CommunityByShellRechargeUkOcpiDataSource,
+    CommunityByShellRechargeUkOcpiRealtimeDataSource,
     ChargyUkOcpiDataSource,
     MfgUkOcpiDataSource,
     # Latvia

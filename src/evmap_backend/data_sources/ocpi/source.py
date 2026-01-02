@@ -198,6 +198,31 @@ class EsbUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
     locations_data_source = "esb_uk"
 
 
+class ShellRechargeUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
+    # Includes both Shell Recharge and Ubitricity chargers in the UK
+    token = os.environ.get("SHELLRECHARGE_UK_ECOMOVEMENT_TOKEN")
+    id = "shellrecharge_uk"
+
+
+class ShellRechargeUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
+    token = os.environ.get("SHELLRECHARGE_UK_ECOMOVEMENT_TOKEN")
+    id = "shellrecharge_uk_realtime"
+    locations_data_source = "shellrecharge_uk"
+
+
+class CommunityByShellRechargeUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
+    token = os.environ.get("SHELLRECHARGE_COMMUNITY_UK_ECOMOVEMENT_TOKEN")
+    id = "shellrecharge_community_uk"
+
+
+class CommunityByShellRechargeUkOcpiRealtimeDataSource(
+    BaseEcoMovementUkOcpiRealtimeDataSource
+):
+    token = os.environ.get("SHELLRECHARGE_COMMUNITY_UK_ECOMOVEMENT_TOKEN")
+    id = "shellrecharge_community_uk_realtime"
+    locations_data_source = "shellrecharge_community_uk"
+
+
 class ChargyUkOcpiDataSource(BaseOcpiDataSource):
     locations_url = "https://char.gy/open-ocpi/locations"
     tariffs_url = "https://char.gy/open-ocpi/tariffs/GB/CGY"
