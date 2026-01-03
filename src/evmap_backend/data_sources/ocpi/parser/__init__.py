@@ -263,10 +263,17 @@ class OcpiLocation:
         )
 
     def convert(
-        self, data_source: str
+        self,
+        data_source: str,
+        license_attribution: str,
+        license_attribution_link: Optional[str] = None,
     ) -> Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]:
         site = ChargingSite(
             data_source=data_source,
+            license_attribution=license_attribution,
+            license_attribution_link=(
+                license_attribution_link if license_attribution_link is not None else ""
+            ),
             id_from_source=self.id,
             name=none_to_blank(self.name if self.name is not None else self.address),
             location=Point(*self.coordinates),
@@ -282,7 +289,12 @@ class OcpiLocation:
         ]
         return site, chargepoints
 
-    def convert_status(self, data_source: str) -> List[Tuple[str, RealtimeStatus]]:
+    def convert_status(
+        self,
+        data_source: str,
+        license_attribution: str,
+        license_attribution_link: Optional[str] = None,
+    ) -> List[Tuple[str, RealtimeStatus]]:
         return [
             (
                 self.id,
@@ -291,6 +303,12 @@ class OcpiLocation:
                     status=status_mapping[evse.status],
                     timestamp=evse.last_updated,
                     data_source=data_source,
+                    license_attribution=license_attribution,
+                    license_attribution_link=(
+                        license_attribution_link
+                        if license_attribution_link is not None
+                        else ""
+                    ),
                 ),
             )
             for evse in self.evses

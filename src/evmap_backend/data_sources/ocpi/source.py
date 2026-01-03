@@ -2,9 +2,10 @@ import gzip
 import json
 import os
 from abc import abstractmethod
-from typing import Iterable, List
+from typing import Iterable, List, Optional
 
 import requests
+from django.utils.functional import classproperty
 
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.ocpi.parser import OcpiLocation, OcpiParser
@@ -26,6 +27,12 @@ def deduplicate_chargers(chargers: Iterable[OcpiLocation]) -> Iterable[OcpiLocat
 class BaseOcpiDataSource(DataSource):
     supported_data_types = [DataType.STATIC]
     supported_update_methods = [UpdateMethod.PULL]
+    license_attribution_link: Optional[str] = None
+
+    @abstractmethod
+    @classproperty
+    def license_attribution(self) -> str:
+        pass
 
     @abstractmethod
     def get_locations_data(self) -> Iterable[dict]:
@@ -44,18 +51,38 @@ class BaseOcpiDataSource(DataSource):
         if DataType.DYNAMIC in self.supported_data_types:
             locations = list(locations)
 
-        sync_chargers(self.id, (location.convert(self.id) for location in locations))
+        sync_chargers(
+            self.id,
+            (
+                location.convert(
+                    self.id, self.license_attribution, self.license_attribution_link
+                )
+                for location in locations
+            ),
+        )
         if DataType.DYNAMIC in self.supported_data_types:
             sync_statuses(
                 self.id,
                 self.id,
-                (s for location in locations for s in location.convert_status(self.id)),
+                (
+                    s
+                    for location in locations
+                    for s in location.convert_status(
+                        self.id, self.license_attribution, self.license_attribution_link
+                    )
+                ),
             )
 
 
 class BaseOcpiRealtimeDataSource(DataSource):
     supported_data_types = [DataType.DYNAMIC]
     supported_update_methods = [UpdateMethod.PULL]
+    license_attribution_link: Optional[str] = None
+
+    @abstractmethod
+    @classproperty
+    def license_attribution(self) -> str:
+        pass
 
     @abstractmethod
     def get_statuses_data(self) -> Iterable[dict]:
@@ -73,7 +100,13 @@ class BaseOcpiRealtimeDataSource(DataSource):
         sync_statuses(
             self.id,
             self.locations_data_source,
-            (s for location in locations for s in location.convert_status(self.id)),
+            (
+                s
+                for location in locations
+                for s in location.convert_status(
+                    self.id, self.license_attribution, self.license_attribution_link
+                )
+            ),
         )
 
 
@@ -87,6 +120,7 @@ class BaseEcoMovementUkOcpiDataSource(BaseOcpiDataSource):
     tariffs_url = "https://open-chargepoints.com/api/ocpi/cpo/2.2.1/tariffs"
     supported_data_types = [DataType.STATIC]
     supported_update_methods = [UpdateMethod.PULL]
+    license_attribution = "Eco-Movement BV"
 
     @property
     @abstractmethod
@@ -120,6 +154,7 @@ class BaseEcoMovementUkOcpiRealtimeDataSource(BaseOcpiRealtimeDataSource):
     statuses_url = "https://open-chargepoints.com/api/statuses"
     supported_data_types = [DataType.DYNAMIC]
     supported_update_methods = [UpdateMethod.PULL]
+    license_attribution = "Eco-Movement BV"
 
     @property
     @abstractmethod
@@ -138,6 +173,8 @@ class BaseEcoMovementUkOcpiRealtimeDataSource(BaseOcpiRealtimeDataSource):
 class NdwNetherlandsOcpiDataSource(BaseOcpiDataSource):
     locations_url = "https://opendata.ndw.nu/charging_point_locations_ocpi.json.gz"
     tariffs_url = "https://opendata.ndw.nu/charging_point_tariffs_ocpi.json.gz"
+    license_attribution = "Nationaal Dataportaal Wegverkeer"
+    # https://docs.ndw.nu/en/data-uitwisseling/interface-beschrijvingen/dafne-api
 
     supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
     id = "ndw_netherlands"
@@ -157,62 +194,73 @@ class NdwNetherlandsOcpiDataSource(BaseOcpiDataSource):
 class BpPulseUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
     token = os.environ.get("BP_PULSE_UK_ECOMOVEMENT_TOKEN")
     id = "bp_pulse_uk"
+    # https://www.bppulse.com/en-gb/help-and-support/public-ev-charging/public-charge-point-regulations
 
 
 class BpPulseUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
     token = os.environ.get("BP_PULSE_UK_ECOMOVEMENT_TOKEN")
     id = "bp_pulse_uk_realtime"
     locations_data_source = "bp_pulse_uk"
+    # https://www.bppulse.com/en-gb/help-and-support/public-ev-charging/public-charge-point-regulations
 
 
 class IonityUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
     token = os.environ.get("IONITY_UK_ECOMOVEMENT_TOKEN")
     id = "ionity_uk"
+    # https://www.ionity.eu/open-data-request
 
 
 class IonityUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
     token = os.environ.get("IONITY_UK_ECOMOVEMENT_TOKEN")
     id = "ionity_uk_realtime"
     locations_data_source = "ionity_uk"
+    # https://www.ionity.eu/open-data-request
 
 
 class BlinkUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
     token = os.environ.get("BLINK_UK_ECOMOVEMENT_TOKEN")
     id = "blink_uk"
+    # https://blinkcharging.com/en-gb/getintouch/blink-open-data-request
 
 
 class BlinkUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
     token = os.environ.get("BLINK_UK_ECOMOVEMENT_TOKEN")
     id = "blink_uk_realtime"
     locations_data_source = "blink_uk"
+    # https://blinkcharging.com/en-gb/getintouch/blink-open-data-request
 
 
 class EsbUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
     token = os.environ.get("ESB_UK_ECOMOVEMENT_TOKEN")
     id = "esb_uk"
+    # https://www.esbenergy.co.uk/ev/charge-points -> PCPR Data Request
 
 
 class EsbUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
     token = os.environ.get("ESB_UK_ECOMOVEMENT_TOKEN")
     id = "esb_uk_realtime"
     locations_data_source = "esb_uk"
+    # https://www.esbenergy.co.uk/ev/charge-points -> PCPR Data Request
 
 
 class ShellRechargeUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
     # Includes both Shell Recharge and Ubitricity chargers in the UK
     token = os.environ.get("SHELLRECHARGE_UK_ECOMOVEMENT_TOKEN")
     id = "shellrecharge_uk"
+    # https://www.shell.co.uk/electric-vehicle-charging/public-charge-point-regulations.html
 
 
 class ShellRechargeUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
     token = os.environ.get("SHELLRECHARGE_UK_ECOMOVEMENT_TOKEN")
     id = "shellrecharge_uk_realtime"
     locations_data_source = "shellrecharge_uk"
+    # https://www.shell.co.uk/electric-vehicle-charging/public-charge-point-regulations.html
 
 
 class CommunityByShellRechargeUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
     token = os.environ.get("SHELLRECHARGE_COMMUNITY_UK_ECOMOVEMENT_TOKEN")
     id = "shellrecharge_community_uk"
+    # https://www.shell.co.uk/electric-vehicle-charging/public-charge-point-regulations.html
 
 
 class CommunityByShellRechargeUkOcpiRealtimeDataSource(
@@ -221,11 +269,14 @@ class CommunityByShellRechargeUkOcpiRealtimeDataSource(
     token = os.environ.get("SHELLRECHARGE_COMMUNITY_UK_ECOMOVEMENT_TOKEN")
     id = "shellrecharge_community_uk_realtime"
     locations_data_source = "shellrecharge_community_uk"
+    # https://www.shell.co.uk/electric-vehicle-charging/public-charge-point-regulations.html
 
 
 class ChargyUkOcpiDataSource(BaseOcpiDataSource):
     locations_url = "https://char.gy/open-ocpi/locations"
     tariffs_url = "https://char.gy/open-ocpi/tariffs/GB/CGY"
+    license_attribution = "char.gy Ltd"
+    # https://help.char.gy/support/solutions/articles/77000576948-public-charge-point-regulations-2023
 
     supported_data_types = [DataType.STATIC]
     supported_update_methods = [UpdateMethod.PULL]
@@ -241,6 +292,8 @@ class MfgUkOcpiDataSource(BaseOcpiDataSource):
 
     supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
     id = "mfg_uk"
+    license_attribution = "Motor Fuel Limited"
+    # https://www.motorfuelgroup.com/ev-power/ -> Open data
 
     def get_locations_data(self):
         response = requests.get(self.locations_url)
@@ -253,6 +306,8 @@ class LatviaOcpiDataSource(BaseOcpiDataSource):
     supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
     locations_url = "https://ev.vialietuva.lt/ocpi/2.2.1/locations"
     tariffs_url = "https://ev.vialietuva.lt/ocpi/2.2.1/tariffs"
+    license_attribution = "Via Lietuva, CC-BY 4.0"
+    # https://ev.lakd.lt/en/open_source
 
     def get_locations_data(self):
         response = requests.get(self.locations_url)

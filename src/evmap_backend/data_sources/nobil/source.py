@@ -20,6 +20,8 @@ class NobilDataSource(DataSource):
     id = "nobil"
     supported_data_types = [DataType.STATIC]
     supported_update_methods = [UpdateMethod.PULL]
+    license_attribution = "NOBIL by Enova"
+    license_attribution_link = "https://nobil.no/"
 
     def get_nobil_dump(self, fromdate: Optional[datetime.datetime] = None):
         response = requests.get(
@@ -42,7 +44,12 @@ class NobilDataSource(DataSource):
         sites_nobil = parse_nobil_chargers(dump)
         sync_chargers(
             self.id,
-            (site.convert(self.id) for site in sites_nobil),
+            (
+                site.convert(
+                    self.id, self.license_attribution, self.license_attribution_link
+                )
+                for site in sites_nobil
+            ),
             last_update is None,
         )
 
@@ -51,6 +58,8 @@ class NobilRealtimeDataSource(DataSource):
     id = "nobil_realtime"
     supported_data_types = [DataType.DYNAMIC]
     supported_update_methods = [UpdateMethod.STREAMING]
+    license_attribution = "NOBIL by Enova"
+    license_attribution_link = "https://nobil.no/"
 
     def _get_realtime_websocket_url(self):
         response = requests.post(
@@ -81,6 +90,8 @@ class NobilRealtimeDataSource(DataSource):
                                 chargepoint=chargepoint,
                                 status=RealtimeStatus.Status[evse_data["status"]],
                                 data_source=self.id,
+                                license_attribution=self.license_attribution,
+                                license_attribution_link=self.license_attribution_link,
                                 timestamp=timezone.now(),
                             )
                             await sync_to_async(obj.save)()

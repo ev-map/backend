@@ -40,3 +40,5 @@ class RealtimeStatus(models.Model):
     status = models.CharField(max_length=20, choices=Status)
     timestamp = models.DateTimeField()
     data_source = models.CharField(max_length=255)
+    license_attribution = models.TextField(blank=True)
+    license_attribution_link = models.URLField(blank=True)

@@ -285,10 +285,17 @@ class NobilChargerStation:
     connectors: List[NobilConnector]
 
     def convert(
-        self, data_source: str
+        self,
+        data_source: str,
+        license_attribution: str,
+        license_attribution_link: Optional[str] = None,
     ) -> Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]:
         site = ChargingSite(
             data_source=data_source,
+            license_attribution=license_attribution,
+            license_attribution_link=(
+                license_attribution_link if license_attribution_link is not None else ""
+            ),
             id_from_source=str(self.id),
             name=self.name,
             location=Point(*self.location),

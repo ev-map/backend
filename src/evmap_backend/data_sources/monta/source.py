@@ -17,7 +17,6 @@ from evmap_backend.sync import sync_chargers
 API_URL = "https://partner-api.monta.com/api/v1/afir/charge-points"
 TOKEN_URL = "https://partner-api.monta.com/api/v1/auth/token"
 REFRESH_URL = "https://partner-api.monta.com/api/v1/auth/refresh"
-SOURCE = "monta"
 
 connector_mapping = {
     "type1": Connector.ConnectorTypes.TYPE_1,
@@ -77,11 +76,12 @@ def get_all_monta_chargers(access_token):
             yield charger
 
 
-def convert_monta_data(chargers_by_location):
+def convert_monta_data(chargers_by_location, source, license_attribution):
     for location in chargers_by_location:
         evses = chargers_by_location[location]
         site = ChargingSite(
-            data_source=SOURCE,
+            data_source=source,
+            license_attribution=license_attribution,
             id_from_source=location,
             name=location,
             location=Point(
@@ -117,6 +117,8 @@ class MontaDataSource(DataSource):
     id = "monta"
     supported_data_types = [DataType.STATIC]
     supported_update_methods = [UpdateMethod.PULL]
+    license_attribution = "Monta ApS"
+    # https://docs.partner-api.monta.com/docs/afir-access
 
     def pull_data(self):
         tokens = MontaTokens.get_solo()
@@ -148,5 +150,7 @@ class MontaDataSource(DataSource):
         for charger in tqdm(get_all_monta_chargers(access_token=tokens.access_token)):
             chargers_by_location[charger["location"]["addressLabel"]].append(charger)
 
-        sites = convert_monta_data(chargers_by_location)
-        sync_chargers(SOURCE, sites)
+        sites = convert_monta_data(
+            chargers_by_location, self.id, self.license_attribution
+        )
+        sync_chargers(self.id, sites)

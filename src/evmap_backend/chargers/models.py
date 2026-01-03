@@ -39,6 +39,9 @@ class ChargingSite(models.Model):
 
     opening_hours = OpeningHoursField(blank=True)
 
+    license_attribution = models.TextField(blank=True)
+    license_attribution_link = models.URLField(blank=True)
+
 
 class Chargepoint(models.Model):
     class Meta:

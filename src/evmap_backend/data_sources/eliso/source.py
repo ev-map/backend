@@ -10,7 +10,6 @@ from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.sync import sync_chargers
 
 API_URL = "https://mobilithek.info:8443/mobilithek/api/v1.0/subscription"
-SOURCE = "mobilithek_eliso"
 
 connector_mapping = {
     "Type 2 (AC)": Connector.ConnectorTypes.TYPE_2,
@@ -19,14 +18,15 @@ connector_mapping = {
 
 
 def parse_eliso_chargers(
-    root,
+    root, source, license_attribution
 ) -> Iterable[Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]]:
     for item in tqdm(root):
         # Eliso doesn't have IDs, so we make one from the city and address:
         item_id = item["address"] + " " + item["postalCode"] + " " + item["city"]
 
         site = ChargingSite(
-            data_source=SOURCE,
+            data_source=source,
+            license_attribution=license_attribution,
             id_from_source=item_id,
             name=item["address"],
             street=item["address"],
@@ -71,8 +71,10 @@ class ElisoDataSource(DataSource):
     id = "mobilithek_eliso"
     supported_data_types = [DataType.STATIC]
     supported_update_methods = [UpdateMethod.PULL]
+    license_attribution = "eliso GmbH"
+    # https://mobilithek.info/offers/843477276990078976
 
     def pull_data(self):
         root = get_mobilithek_data()
-        eliso_chargers = parse_eliso_chargers(root)
-        sync_chargers(SOURCE, eliso_chargers)
+        eliso_chargers = parse_eliso_chargers(root, self.id, self.license_attribution)
+        sync_chargers(self.id, eliso_chargers)

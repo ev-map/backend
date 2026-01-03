@@ -1,5 +1,6 @@
 import os
 from abc import abstractmethod
+from typing import Optional
 from urllib.parse import unquote_to_bytes
 
 import requests
@@ -7,6 +8,7 @@ from cryptography.x509 import load_pem_x509_certificate, load_pem_x509_certifica
 from cryptography.x509.verification import PolicyBuilder, Store
 from django.http import HttpRequest
 from django.utils import timezone
+from django.utils.functional import classproperty
 
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.datex2.parser.json import Datex2JsonParser
@@ -18,6 +20,7 @@ from evmap_backend.sync import sync_chargers, sync_statuses
 class BaseDatex2DataSource(DataSource):
     supported_data_types = [DataType.STATIC]
     supported_update_methods = [UpdateMethod.PULL]
+    license_attribution_link: Optional[str] = None
     parser = Datex2XmlParser()
 
     realtime_station_as_site = False
@@ -32,6 +35,11 @@ class BaseDatex2DataSource(DataSource):
     def static_data_source(self) -> str:
         raise NotImplementedError()
 
+    @abstractmethod
+    @classproperty
+    def license_attribution(self) -> str:
+        pass
+
     def pull_data(self):
         root = self.get_data()
         self._parse_data(root)
@@ -43,7 +51,15 @@ class BaseDatex2DataSource(DataSource):
     def _parse_data(self, root: str):
         if self.supported_data_types == [DataType.STATIC]:
             sites_datex = self.parser.parse(root)
-            sync_chargers(self.id, (site.convert(self.id) for site in sites_datex))
+            sync_chargers(
+                self.id,
+                (
+                    site.convert(
+                        self.id, self.license_attribution, self.license_attribution_link
+                    )
+                    for site in sites_datex
+                ),
+            )
         elif self.supported_data_types == [DataType.DYNAMIC]:
             statuses_datex = self.parser.parse_status(
                 root, station_as_site=self.realtime_station_as_site
@@ -51,7 +67,13 @@ class BaseDatex2DataSource(DataSource):
             sync_statuses(
                 self.id,
                 self.static_data_source,
-                (s for status in statuses_datex for s in status.convert(self.id)),
+                (
+                    s
+                    for status in statuses_datex
+                    for s in status.convert(
+                        self.id, self.license_attribution, self.license_attribution_link
+                    )
+                ),
             )
         else:
             raise NotImplementedError()
@@ -102,6 +124,9 @@ class BaseMobilithekDatex2DataSource(BaseDatex2DataSource):
 
 class Datex2AustriaDataSource(BaseDatex2DataSource):
     id = "e-control_austria"
+    license_attribution = "E-Control"
+    license_attribution_link = "http://www.e-control.at/"
+    # https://admin.ladestellen.at/#/api/registrieren
 
     def get_data(self) -> str:
         response = requests.get(
@@ -117,6 +142,10 @@ class Datex2AustriaDataSource(BaseDatex2DataSource):
 
 class Datex2AustriaRealtimeDataSource(BaseDatex2DataSource):
     id = "e-control_austria_realtime"
+    supported_data_types = [DataType.DYNAMIC]
+    license_attribution = "E-Control"
+    license_attribution_link = "http://www.e-control.at/"
+    # https://admin.ladestellen.at/#/api/registrieren
 
     def get_data(self) -> str:
         response = requests.get(
@@ -134,6 +163,8 @@ class Datex2MobilithekEcoMovementDatex2DataSource(BaseMobilithekDatex2DataSource
     id = "mobilithek_ecomovement"
     subscription_id = os.environ.get("MOBILITHEK_ECOMOVEMENT_STATIC_SUBSCRIPTION_ID")
     ignore_encoding = True
+    license_attribution = "Eco-Movement BV, CC-BY 4.0"
+    # https://mobilithek.info/offers/855030183015186432
 
 
 class Datex2MobilithekEcoMovementRealtimeDataSource(BaseMobilithekDatex2DataSource):
@@ -141,12 +172,16 @@ class Datex2MobilithekEcoMovementRealtimeDataSource(BaseMobilithekDatex2DataSour
     subscription_id = os.environ.get("MOBILITHEK_ECOMOVEMENT_DYNAMIC_SUBSCRIPTION_ID")
     supported_data_types = [DataType.DYNAMIC]
     static_data_source = "mobilithek_ecomovement"
+    license_attribution = "Eco-Movement BV, CC-BY 4.0"
+    # https://mobilithek.info/offers/904394594561454080
 
 
 class Datex2MobilithekEnbwDataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_enbw"
     subscription_id = os.environ.get("MOBILITHEK_ENBW_STATIC_SUBSCRIPTION_ID")
     parser = Datex2JsonParser()
+    license_attribution = "EnBW AG, CC-BY 4.0"
+    # https://mobilithek.info/offers/907574882292453376
 
 
 class Datex2MobilithekEnbwRealtimeDataSource(BaseMobilithekDatex2DataSource):
@@ -155,11 +190,15 @@ class Datex2MobilithekEnbwRealtimeDataSource(BaseMobilithekDatex2DataSource):
     supported_data_types = [DataType.DYNAMIC]
     static_data_source = "mobilithek_enbw"
     parser = Datex2JsonParser()
+    license_attribution = "EnBW AG, CC-BY 4.0"
+    # https://mobilithek.info/offers/907575401287241728
 
 
 class Datex2MobilithekLadenetzDataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_ladenetz"
     subscription_id = os.environ.get("MOBILITHEK_LADENETZ_STATIC_SUBSCRIPTION_ID")
+    license_attribution = "Smartlab Innovationsgesellschaft mbH, CC-0"
+    # https://mobilithek.info/offers/902547569133924352
 
 
 class Datex2MobilithekLadenetzRealtimeDataSource(BaseMobilithekDatex2DataSource):
@@ -168,11 +207,15 @@ class Datex2MobilithekLadenetzRealtimeDataSource(BaseMobilithekDatex2DataSource)
     supported_data_types = [DataType.DYNAMIC]
     static_data_source = "mobilithek_ladenetz"
     realtime_station_as_site = True
+    license_attribution = "Smartlab Innovationsgesellschaft mbH, CC-0"
+    # https://mobilithek.info/offers/903240716507836416
 
 
 class Datex2MobilithekUlmDataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_ulm"
     subscription_id = os.environ.get("MOBILITHEK_ULM_STATIC_SUBSCRIPTION_ID")
+    license_attribution = "Smartlab Innovationsgesellschaft mbH, CC-0"
+    # https://mobilithek.info/offers/854410608351543296
 
 
 class Datex2MobilithekUlmRealtimeDataSource(BaseMobilithekDatex2DataSource):
@@ -181,12 +224,16 @@ class Datex2MobilithekUlmRealtimeDataSource(BaseMobilithekDatex2DataSource):
     supported_data_types = [DataType.DYNAMIC]
     static_data_source = "mobilithek_ulm"
     realtime_station_as_site = True
+    license_attribution = "Smartlab Innovationsgesellschaft mbH, CC-0"
+    # https://mobilithek.info/offers/854416606814023680
 
 
 class Datex2MobilithekWirelaneDataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_wirelane"
     subscription_id = os.environ.get("MOBILITHEK_WIRELANE_STATIC_SUBSCRIPTION_ID")
     parser = Datex2JsonParser()
+    license_attribution = "Wirelane GmbH, CC-0"
+    # https://mobilithek.info/offers/869246425829892096
 
 
 class Datex2MobilithekWirelaneRealtimeDataSource(BaseMobilithekDatex2DataSource):
@@ -195,10 +242,14 @@ class Datex2MobilithekWirelaneRealtimeDataSource(BaseMobilithekDatex2DataSource)
     parser = Datex2JsonParser()
     supported_data_types = [DataType.DYNAMIC]
     static_data_source = "mobilithek_wirelane"
+    license_attribution = "Wirelane GmbH, CC-0"
+    # https://mobilithek.info/offers/876587237907525632
 
 
 class Datex2LuxembourgEcoMovementDataSource(BaseDatex2DataSource):
     id = "luxembourg_ecomovement"
+    license_attribution = "Eco-Movement BV"
+    # https://data.public.lu/en/datasets/bornes-de-chargement-publiques-pour-voitures-electriques-du-plusieurs-operateurs-1/
 
     def get_data(self) -> str:
         response = requests.get(

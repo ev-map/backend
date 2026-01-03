@@ -148,10 +148,17 @@ class Datex2EnergyInfrastructureSite:
     additional_information: Datex2MultilingualString = None
 
     def convert(
-        self, data_source: str
+        self,
+        data_source: str,
+        license_attribution: str,
+        license_attribution_link: Optional[str],
     ) -> Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]:
         site = ChargingSite(
             data_source=data_source,
+            license_attribution=license_attribution,
+            license_attribution_link=(
+                license_attribution_link if license_attribution_link is not None else ""
+            ),
             id_from_source=self.id,
             name=(
                 self.name.first()
@@ -198,12 +205,21 @@ class Datex2RefillPointStatus:
     last_updated: datetime.datetime
     status: Status
 
-    def convert(self, data_source: str) -> RealtimeStatus:
+    def convert(
+        self,
+        data_source: str,
+        license_attribution: str,
+        license_attribution_link: Optional[str],
+    ) -> RealtimeStatus:
         return RealtimeStatus(
             chargepoint=Chargepoint(id_from_source=self.refill_point_id),
             status=status_map[self.status],
             timestamp=self.last_updated,
             data_source=data_source,
+            license_attribution=license_attribution,
+            license_attribution_link=(
+                license_attribution_link if license_attribution_link is not None else ""
+            ),
         )
 
 
@@ -229,8 +245,16 @@ class Datex2EnergyInfrastructureSiteStatus:
     site_id: str
     refill_point_statuses: List[Datex2RefillPointStatus]
 
-    def convert(self, data_source: str) -> List[Tuple[str, RealtimeStatus]]:
+    def convert(
+        self,
+        data_source: str,
+        license_attribution: str,
+        license_attribution_link: Optional[str],
+    ) -> List[Tuple[str, RealtimeStatus]]:
         return [
-            (self.site_id, rps.convert(data_source))
+            (
+                self.site_id,
+                rps.convert(data_source, license_attribution, license_attribution_link),
+            )
             for rps in self.refill_point_statuses
         ]
