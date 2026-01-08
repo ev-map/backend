@@ -201,6 +201,7 @@ class Datex2MobilithekLadenetzDataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_ladenetz"
     subscription_id = os.environ.get("MOBILITHEK_LADENETZ_STATIC_SUBSCRIPTION_ID")
     license_attribution = "Smartlab Innovationsgesellschaft mbH, CC-0"
+    ignore_encoding = True
     # https://mobilithek.info/offers/902547569133924352
 
 
