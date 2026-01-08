@@ -265,3 +265,16 @@ class Datex2LuxembourgEcoMovementDataSource(BaseDatex2DataSource):
         response.raise_for_status()
         response.encoding = response.apparent_encoding
         return response.text
+
+
+class Datex2LatviaDataSource(BaseDatex2DataSource):
+    id = "latvia"
+    license_attribution = "Via Lietuva"
+    # https://ev.lakd.lt/en/data-provision
+
+    def get_data(self) -> str:
+        response = requests.get(
+            "https://ev.vialietuva.lt/publicdata/EnergyInfrastructureTablePublication",
+        )
+        response.raise_for_status()
+        return response.text

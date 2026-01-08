@@ -299,17 +299,3 @@ class MfgUkOcpiDataSource(BaseOcpiDataSource):
         response = requests.get(self.locations_url)
         response.raise_for_status()
         return json.loads(response.text)["data"]
-
-
-class LatviaOcpiDataSource(BaseOcpiDataSource):
-    id = "latvia"
-    supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
-    locations_url = "https://ev.vialietuva.lt/ocpi/2.2.1/locations"
-    tariffs_url = "https://ev.vialietuva.lt/ocpi/2.2.1/tariffs"
-    license_attribution = "Via Lietuva, CC-BY 4.0"
-    # https://ev.lakd.lt/en/open_source
-
-    def get_locations_data(self):
-        response = requests.get(self.locations_url)
-        response.raise_for_status()
-        return json.loads(response.text)["data"]

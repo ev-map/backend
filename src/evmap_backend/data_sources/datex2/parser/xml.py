@@ -14,7 +14,7 @@ from evmap_backend.data_sources.datex2.parser import (
     Datex2RefillPointStatus,
 )
 
-ns = {
+ns_http = {
     "d2p": "http://datex2.eu/schema/3/d2Payload",
     "com": "http://datex2.eu/schema/3/common",
     "con": "http://datex2.eu/schema/3/messageContainer",
@@ -23,14 +23,15 @@ ns = {
     "locx": "http://datex2.eu/schema/3/locationExtension",
     "fac": "http://datex2.eu/schema/3/facilities",
 }
+ns_https = {k: v.replace("http://", "https://") for k, v in ns_http.items()}
 
 
-def tag(qname: str):
+def tag(qname: str, ns: dict[str, str]):
     namespace, tag = qname.split(":", 1)
     return f"{{{ns[namespace]}}}{tag}"
 
 
-def text_if_exists(elem: Element, tag: str):
+def text_if_exists(elem: Element, tag: str, ns: dict[str, str]):
     found = elem.find(tag, ns)
     if found is not None:
         return found.text
@@ -38,8 +39,8 @@ def text_if_exists(elem: Element, tag: str):
         return None
 
 
-def find_payload(root: Element) -> Element:
-    if root.tag not in [tag("con:payload"), tag("d2p:payload")]:
+def find_payload(root: Element, ns: dict[str, str]) -> Element:
+    if root.tag not in [tag("con:payload", ns), tag("d2p:payload", ns)]:
         if (result := root.find("con:payload", ns)) is not None:
             root = result
         elif (result := root.find("d2p:payload", ns)) is not None:
@@ -49,7 +50,9 @@ def find_payload(root: Element) -> Element:
     return root
 
 
-def parse_multilingual_string(elem: Element) -> Optional[Datex2MultilingualString]:
+def parse_multilingual_string(
+    elem: Element, ns: dict[str, str]
+) -> Optional[Datex2MultilingualString]:
     values_elem = elem.find("com:values", ns)
     values = {}
     if values_elem is not None:
@@ -59,22 +62,24 @@ def parse_multilingual_string(elem: Element) -> Optional[Datex2MultilingualStrin
     return Datex2MultilingualString(values=values)
 
 
-def parse_single_or_multilingual_string(elem: Element) -> Optional[str]:
+def parse_single_or_multilingual_string(
+    elem: Element, ns: dict[str, str]
+) -> Optional[str]:
     if elem.text is not None:
         return elem.text
     else:
-        return parse_multilingual_string(elem).first()
+        return parse_multilingual_string(elem, ns).first()
 
 
-def parse_point_coordinates(elem: Element) -> Tuple[float, float]:
+def parse_point_coordinates(elem: Element, ns: dict[str, str]) -> Tuple[float, float]:
     return (
         float(elem.find("loc:longitude", ns).text),
         float(elem.find("loc:latitude", ns).text),
     )
 
 
-def parse_connector(elem) -> Datex2Connector:
-    charging_mode = text_if_exists(elem, "egi:chargingMode")
+def parse_connector(elem, ns: dict[str, str]) -> Datex2Connector:
+    charging_mode = text_if_exists(elem, "egi:chargingMode", ns)
     return Datex2Connector(
         connector_type=Datex2Connector.ConnectorType(
             elem.find("egi:connectorType", ns).text
@@ -86,19 +91,19 @@ def parse_connector(elem) -> Datex2Connector:
     )
 
 
-def parse_refill_point(elem: Element) -> Datex2RefillPoint:
+def parse_refill_point(elem: Element, ns: dict[str, str]) -> Datex2RefillPoint:
     return Datex2RefillPoint(
-        external_identifier=text_if_exists(elem, "fac:externalIdentifier"),
+        external_identifier=text_if_exists(elem, "fac:externalIdentifier", ns),
         id=elem.attrib["id"],
         connectors=[
-            parse_connector(connector)
+            parse_connector(connector, ns)
             for connector in elem.findall("egi:connector", ns)
         ],
     )
 
 
 def parse_energy_infrastructure_site_status(
-    elem: Element,
+    elem: Element, ns: dict[str, str]
 ) -> Datex2EnergyInfrastructureSiteStatus:
     last_updated_elem = elem.find("fac:lastUpdated", ns)
     last_updated = (
@@ -117,7 +122,7 @@ def parse_energy_infrastructure_site_status(
 
 
 def parse_energy_infrastructure_station_status(
-    elem: Element,
+    elem: Element, ns: dict[str, str]
 ) -> Datex2EnergyInfrastructureSiteStatus:
     last_updated_elem = elem.find("fac:lastUpdated", ns)
     last_updated = (
@@ -135,7 +140,7 @@ def parse_energy_infrastructure_station_status(
 
 
 def parse_refill_point_status(
-    elem: Element, last_updated: datetime.datetime = None
+    elem: Element, ns: dict[str, str], last_updated: datetime.datetime = None
 ) -> Datex2RefillPointStatus:
     last_updated_elem = elem.find("fac:lastUpdated", ns)
     if last_updated_elem is not None:
@@ -147,30 +152,32 @@ def parse_refill_point_status(
     )
 
 
-def parse_address(address: Element) -> str:
+def parse_address(address: Element, ns: dict[str, str]) -> str:
     address_lines = address.findall("locx:addressLine", ns)
     address_lines = sorted(address_lines, key=lambda line: int(line.attrib["order"]))
     texts = []
     for line in address_lines:
         text = line.find("locx:text", ns)
-        text = parse_single_or_multilingual_string(text)
+        text = parse_single_or_multilingual_string(text, ns)
         if text is not None:
             texts.append(text)
 
     return " ".join(texts)
 
 
-def parse_energy_infrastructure_site(elem: Element) -> Datex2EnergyInfrastructureSite:
+def parse_energy_infrastructure_site(
+    elem: Element, ns: dict[str, str]
+) -> Datex2EnergyInfrastructureSite:
     operator = elem.find("fac:operator", ns)
     contactInfo = operator.find("fac:organisationUnit", ns).find(
         "fac:contactInformation", ns
     )
-    phone = text_if_exists(contactInfo, "fac:telephoneNumber")
+    phone = text_if_exists(contactInfo, "fac:telephoneNumber", ns)
 
     refill_points = []
     for station in elem.findall("egi:energyInfrastructureStation", ns):
         for refill_point in station.findall("egi:refillPoint", ns):
-            refill_points.append(parse_refill_point(refill_point))
+            refill_points.append(parse_refill_point(refill_point, ns))
 
     location = elem.find("fac:locationReference", ns)
     loc_extension = location.find("loc:_pointLocationExtension", ns)
@@ -182,15 +189,18 @@ def parse_energy_infrastructure_site(elem: Element) -> Datex2EnergyInfrastructur
     address = facility_location.find("locx:address", ns)
     return Datex2EnergyInfrastructureSite(
         id=elem.attrib["id"],
-        name=parse_multilingual_string(elem.find("fac:name", ns)),
+        name=parse_multilingual_string(elem.find("fac:name", ns), ns),
         location=parse_point_coordinates(
-            location.find("loc:pointByCoordinates", ns).find("loc:pointCoordinates", ns)
+            location.find("loc:pointByCoordinates", ns).find(
+                "loc:pointCoordinates", ns
+            ),
+            ns,
         ),
         zipcode=address.find("locx:postcode", ns).text,
-        city=parse_single_or_multilingual_string(address.find("locx:city", ns)),
-        street=parse_address(address),
+        city=parse_single_or_multilingual_string(address.find("locx:city", ns), ns),
+        street=parse_address(address, ns),
         country=address.find("locx:countryCode", ns).text,
-        operator_name=parse_multilingual_string(operator.find("fac:name", ns)),
+        operator_name=parse_multilingual_string(operator.find("fac:name", ns), ns),
         operator_phone=phone,
         refill_points=refill_points,
     )
@@ -199,23 +209,25 @@ def parse_energy_infrastructure_site(elem: Element) -> Datex2EnergyInfrastructur
 class Datex2XmlParser:
     def parse(self, xml) -> Iterable[Datex2EnergyInfrastructureSite]:
         root = ElementTree.fromstring(xml)
-        root = find_payload(root)
+        ns = ns_https if root.tag.startswith("{https://") else ns_http
+        root = find_payload(root, ns)
 
         for table in root.findall("egi:energyInfrastructureTable", ns):
             for site in tqdm(table.findall("egi:energyInfrastructureSite", ns)):
-                yield parse_energy_infrastructure_site(site)
+                yield parse_energy_infrastructure_site(site, ns)
 
     def parse_status(
         self, xml, station_as_site=False
     ) -> Iterable[Datex2EnergyInfrastructureSiteStatus]:
         root = ElementTree.fromstring(xml)
-        root = find_payload(root)
+        ns = ns_https if root.tag.startswith("{https://") else ns_http
+        root = find_payload(root, ns)
 
         for site in root.findall("egi:energyInfrastructureSiteStatus", ns):
             if station_as_site:
                 for station in site.findall(
                     "egi:energyInfrastructureStationStatus", ns
                 ):
-                    yield parse_energy_infrastructure_station_status(station)
+                    yield parse_energy_infrastructure_station_status(station, ns)
             else:
-                yield parse_energy_infrastructure_site_status(site)
+                yield parse_energy_infrastructure_site_status(site, ns)
