@@ -103,6 +103,7 @@ class BaseMobilithekDatex2DataSource(BaseDatex2DataSource):
             },
             cert=os.environ["MOBILITHEK_CERTIFICATE"],
         )
+        response.raise_for_status()
         if self.ignore_encoding:
             response.encoding = response.apparent_encoding
         return response.text
@@ -137,6 +138,7 @@ class Datex2AustriaDataSource(BaseDatex2DataSource):
                 "Referer": "https://ev-map.app",
             },
         )
+        response.raise_for_status()
         return response.text
 
 
@@ -156,6 +158,7 @@ class Datex2AustriaRealtimeDataSource(BaseDatex2DataSource):
                 "Referer": "https://ev-map.app",
             },
         )
+        response.raise_for_status()
         return response.text
 
 
@@ -258,5 +261,6 @@ class Datex2LuxembourgEcoMovementDataSource(BaseDatex2DataSource):
                 "token": os.environ["ECOMOVEMENT_LUXEMBOURG_TOKEN"],
             },
         )
+        response.raise_for_status()
         response.encoding = response.apparent_encoding
         return response.text
