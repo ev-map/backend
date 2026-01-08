@@ -36,6 +36,9 @@ def sites(request, sw_lat: float, sw_lng: float, ne_lat: float, ne_lng: float):
 
 @api.post("/push/{data_source}")
 def push(request, data_source: str):
+    """
+    HTTP push endpoint for data updates
+    """
     data_source = get_data_source(data_source)
     if not UpdateMethod.HTTP_PUSH in data_source.supported_update_methods:
         raise ValueError("Data source does not support push")
@@ -52,3 +55,19 @@ def push(request, data_source: str):
 
     UpdateState(data_source=data_source.id, push=True).save()
     logging.info(f"Successfully processed push for {data_source.id}")
+
+    return 200, ""
+
+
+@api.api_operation(["HEAD"], "/push/{data_source}")
+def push_head(request, data_source: str):
+    """
+    required by Mobilithek to verify push endpoint
+    """
+    data_source = get_data_source(data_source)
+    if not UpdateMethod.HTTP_PUSH in data_source.supported_update_methods:
+        raise ValueError("Data source does not support push")
+
+    data_source.verify_push(request)
+
+    return 200, ""
