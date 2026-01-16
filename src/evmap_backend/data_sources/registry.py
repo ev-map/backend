@@ -15,6 +15,8 @@ from evmap_backend.data_sources.datex2.source import (
     Datex2MobilithekUlmRealtimeDataSource,
     Datex2MobilithekWirelaneDataSource,
     Datex2MobilithekWirelaneRealtimeDataSource,
+    Datex2SloveniaDataSource,
+    Datex2SloveniaRealtimeDataSource,
 )
 from evmap_backend.data_sources.eliso.source import ElisoDataSource
 from evmap_backend.data_sources.goingelectric.source import GoingElectricDataSource
@@ -84,6 +86,9 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     MfgUkOcpiDataSource,
     # Latvia
     # LatviaOcpiDataSource,  # Data is malformed (duplicate IDs)
+    # Slovenia
+    Datex2SloveniaDataSource,
+    Datex2SloveniaRealtimeDataSource,
 ]
 
 DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {

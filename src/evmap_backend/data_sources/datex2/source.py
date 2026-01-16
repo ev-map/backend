@@ -3,6 +3,7 @@ from abc import abstractmethod
 from typing import Optional
 from urllib.parse import unquote_to_bytes
 
+import pytz
 import requests
 from cryptography.x509 import load_pem_x509_certificate, load_pem_x509_certificates
 from cryptography.x509.verification import PolicyBuilder, Store
@@ -22,6 +23,7 @@ class BaseDatex2DataSource(DataSource):
     supported_update_methods = [UpdateMethod.PULL]
     license_attribution_link: Optional[str] = None
     parser = Datex2XmlParser()
+    default_timezone = None
 
     realtime_station_as_site = False
     """Workaround for wrong data where sites are represented as stations in the realtime data."""
@@ -62,7 +64,9 @@ class BaseDatex2DataSource(DataSource):
             )
         elif self.supported_data_types == [DataType.DYNAMIC]:
             statuses_datex = self.parser.parse_status(
-                root, station_as_site=self.realtime_station_as_site
+                root,
+                station_as_site=self.realtime_station_as_site,
+                default_timezone=self.default_timezone,
             )
             sync_statuses(
                 self.id,
@@ -261,6 +265,51 @@ class Datex2LuxembourgEcoMovementDataSource(BaseDatex2DataSource):
             params={
                 "token": os.environ["ECOMOVEMENT_LUXEMBOURG_TOKEN"],
             },
+        )
+        response.raise_for_status()
+        response.encoding = response.apparent_encoding
+        return response.text
+
+
+class Datex2SloveniaDataSource(BaseDatex2DataSource):
+    id = "slovenia"
+    license_attribution = "Slovenian Ministry of Infrastructure, CC-BY 4.0"
+    license_attribution_link = (
+        "https://www.gov.si/en/state-authorities/ministries/ministry-of-infrastructure/"
+    )
+    # https://nap.si/en/datasets_details?id=46963663-38dd-eb04-43a9-cca9bdc0e4ba
+
+    def get_data(self) -> str:
+        response = requests.get(
+            "https://b2b.nap.si/data/b2b.prometej.energyInfrastructureTablePublication",
+            auth=(
+                os.environ["SLOVENIA_NAP_USERNAME"],
+                os.environ["SLOVENIA_NAP_PASSWORD"],
+            ),
+        )
+        response.raise_for_status()
+        response.encoding = response.apparent_encoding
+        return response.text
+
+
+class Datex2SloveniaRealtimeDataSource(BaseDatex2DataSource):
+    id = "slovenia_realtime"
+    license_attribution = "Slovenian Ministry of Infrastructure, CC-BY 4.0"
+    license_attribution_link = (
+        "https://www.gov.si/en/state-authorities/ministries/ministry-of-infrastructure/"
+    )
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "slovenia"
+    default_timezone = pytz.timezone("Europe/Ljubljana")
+    # https://nap.si/en/datasets_details?id=acc8a643-9dac-ecad-58da-0ce20f88f4bd
+
+    def get_data(self) -> str:
+        response = requests.get(
+            "https://b2b.nap.si/data/b2b.prometej.energyInfrastructureStatusPublication",
+            auth=(
+                os.environ["SLOVENIA_NAP_USERNAME"],
+                os.environ["SLOVENIA_NAP_PASSWORD"],
+            ),
         )
         response.raise_for_status()
         response.encoding = response.apparent_encoding

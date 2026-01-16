@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Tuple
 
 from django.contrib.gis.geos import Point
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 from evmap_backend.chargers.fields import EVSEIDType, normalize_evseid, validate_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
@@ -202,7 +203,7 @@ class Datex2RefillPointStatus:
         UNKNOWN = "unknown"
 
     refill_point_id: str
-    last_updated: datetime.datetime
+    last_updated: Optional[datetime.datetime]
     status: Status
 
     def convert(
@@ -214,7 +215,9 @@ class Datex2RefillPointStatus:
         return RealtimeStatus(
             chargepoint=Chargepoint(id_from_source=self.refill_point_id),
             status=status_map[self.status],
-            timestamp=self.last_updated,
+            timestamp=(
+                self.last_updated if self.last_updated is not None else timezone.now()
+            ),
             data_source=data_source,
             license_attribution=license_attribution,
             license_attribution_link=(

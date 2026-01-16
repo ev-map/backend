@@ -2,6 +2,7 @@ import datetime
 from typing import Iterable, Optional, Tuple
 from xml.etree.ElementTree import Element
 
+import pytz
 from defusedxml import ElementTree
 from tqdm import tqdm
 
@@ -39,7 +40,12 @@ def text_if_exists(elem: Element, tag: str):
 
 
 def find_payload(root: Element) -> Element:
-    if root.tag not in [tag("con:payload"), tag("d2p:payload")]:
+    if root.tag not in [
+        tag("con:payload"),
+        tag("d2p:payload"),
+        tag("egi:EnergyInfrastructureTablePublication"),
+        tag("egi:EnergyInfrastructureStatusPublication"),
+    ]:
         if (result := root.find("con:payload", ns)) is not None:
             root = result
         elif (result := root.find("d2p:payload", ns)) is not None:
@@ -97,19 +103,31 @@ def parse_refill_point(elem: Element) -> Datex2RefillPoint:
     )
 
 
+def parse_datetime(text, default_timezone=None):
+    dt = datetime.datetime.fromisoformat(text)
+    if dt.tzinfo is None:
+        if default_timezone is None:
+            raise ValueError(
+                f"Encountered naive datetime without default timezone: {text}"
+            )
+        dt = default_timezone.localize(dt)
+    return dt
+
+
 def parse_energy_infrastructure_site_status(
     elem: Element,
+    default_timezone=None,
 ) -> Datex2EnergyInfrastructureSiteStatus:
     last_updated_elem = elem.find("fac:lastUpdated", ns)
     last_updated = (
-        datetime.datetime.fromisoformat(last_updated_elem.text)
+        parse_datetime(last_updated_elem.text, default_timezone)
         if last_updated_elem
         else None
     )
     return Datex2EnergyInfrastructureSiteStatus(
         site_id=elem.find("fac:reference", ns).attrib["id"],
         refill_point_statuses=[
-            parse_refill_point_status(refill_point, last_updated)
+            parse_refill_point_status(refill_point, last_updated, default_timezone)
             for station in elem.findall("egi:energyInfrastructureStationStatus", ns)
             for refill_point in station.findall("egi:refillPointStatus", ns)
         ],
@@ -118,28 +136,29 @@ def parse_energy_infrastructure_site_status(
 
 def parse_energy_infrastructure_station_status(
     elem: Element,
+    default_timezone=None,
 ) -> Datex2EnergyInfrastructureSiteStatus:
     last_updated_elem = elem.find("fac:lastUpdated", ns)
     last_updated = (
-        datetime.datetime.fromisoformat(last_updated_elem.text)
+        parse_datetime(last_updated_elem.text, default_timezone)
         if last_updated_elem
         else None
     )
     return Datex2EnergyInfrastructureSiteStatus(
         site_id=elem.find("fac:reference", ns).attrib["id"],
         refill_point_statuses=[
-            parse_refill_point_status(refill_point, last_updated)
+            parse_refill_point_status(refill_point, last_updated, default_timezone)
             for refill_point in elem.findall("egi:refillPointStatus", ns)
         ],
     )
 
 
 def parse_refill_point_status(
-    elem: Element, last_updated: datetime.datetime = None
+    elem: Element, last_updated: datetime.datetime = None, default_timezone=None
 ) -> Datex2RefillPointStatus:
     last_updated_elem = elem.find("fac:lastUpdated", ns)
     if last_updated_elem is not None:
-        last_updated = datetime.datetime.fromisoformat(last_updated_elem.text)
+        last_updated = parse_datetime(last_updated_elem.text, default_timezone)
     return Datex2RefillPointStatus(
         refill_point_id=elem.find("fac:reference", ns).attrib["id"],
         last_updated=last_updated,
@@ -165,7 +184,11 @@ def parse_energy_infrastructure_site(elem: Element) -> Datex2EnergyInfrastructur
     contactInfo = operator.find("fac:organisationUnit", ns).find(
         "fac:contactInformation", ns
     )
-    phone = text_if_exists(contactInfo, "fac:telephoneNumber")
+    phone = (
+        text_if_exists(contactInfo, "fac:telephoneNumber")
+        if contactInfo is not None
+        else None
+    )
 
     refill_points = []
     for station in elem.findall("egi:energyInfrastructureStation", ns):
@@ -206,7 +229,7 @@ class Datex2XmlParser:
                 yield parse_energy_infrastructure_site(site)
 
     def parse_status(
-        self, xml, station_as_site=False
+        self, xml, station_as_site=False, default_timezone=None
     ) -> Iterable[Datex2EnergyInfrastructureSiteStatus]:
         root = ElementTree.fromstring(xml)
         root = find_payload(root)
@@ -216,6 +239,8 @@ class Datex2XmlParser:
                 for station in site.findall(
                     "egi:energyInfrastructureStationStatus", ns
                 ):
-                    yield parse_energy_infrastructure_station_status(station)
+                    yield parse_energy_infrastructure_station_status(
+                        station, default_timezone
+                    )
             else:
-                yield parse_energy_infrastructure_site_status(site)
+                yield parse_energy_infrastructure_site_status(site, default_timezone)
