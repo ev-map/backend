@@ -1,7 +1,6 @@
 import datetime as dt
 import os
 from collections import defaultdict
-from typing import List
 
 import requests
 from django.contrib.gis.geos import Point
@@ -12,7 +11,8 @@ from evmap_backend.chargers.fields import normalize_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.monta.models import MontaTokens
-from evmap_backend.sync import sync_chargers
+from evmap_backend.realtime.models import RealtimeStatus
+from evmap_backend.sync import sync_chargers, sync_statuses
 
 API_URL = "https://partner-api.monta.com/api/v1/afir/charge-points"
 TOKEN_URL = "https://partner-api.monta.com/api/v1/auth/token"
@@ -76,6 +76,23 @@ def get_all_monta_chargers(access_token):
             yield charger
 
 
+status_map = {
+    "available": RealtimeStatus.Status.AVAILABLE,
+    "busy": RealtimeStatus.Status.CHARGING,
+    "busy-blocked": RealtimeStatus.Status.BLOCKED,
+    "busy-charging": RealtimeStatus.Status.CHARGING,
+    "busy-non-charging": RealtimeStatus.Status.BLOCKED,
+    "busy-non-released": RealtimeStatus.Status.BLOCKED,
+    "busy-reserved": RealtimeStatus.Status.RESERVED,
+    "busy-scheduled": RealtimeStatus.Status.RESERVED,
+    "error": RealtimeStatus.Status.OUTOFORDER,
+    "disconnected": RealtimeStatus.Status.UNKNOWN,
+    "passive": RealtimeStatus.Status.UNKNOWN,
+    "maintenance": RealtimeStatus.Status.OUTOFORDER,
+    "exempt": RealtimeStatus.Status.UNKNOWN,
+}
+
+
 def convert_monta_data(chargers_by_location, source, license_attribution):
     for location in chargers_by_location:
         evses = chargers_by_location[location]
@@ -83,7 +100,7 @@ def convert_monta_data(chargers_by_location, source, license_attribution):
             data_source=source,
             license_attribution=license_attribution,
             id_from_source=location,
-            name=location,
+            name=f"{evses[0]['roamingOperatorName']} {evses[0]['location']['address']['address1']}",
             location=Point(
                 evses[0]["location"]["coordinates"]["longitude"],
                 evses[0]["location"]["coordinates"]["latitude"],
@@ -97,9 +114,10 @@ def convert_monta_data(chargers_by_location, source, license_attribution):
         )
 
         chargepoints = []
+        statuses = []
         for evse in evses:
             chargepoint = Chargepoint(
-                id_from_source=evse["id"], evseid=normalize_evseid(evse["evseId"])
+                id_from_source=str(evse["id"]), evseid=normalize_evseid(evse["evseId"])
             )
             connectors = [
                 Connector(
@@ -109,16 +127,25 @@ def convert_monta_data(chargers_by_location, source, license_attribution):
                 for connector in evse["connectors"]
             ]
             chargepoints.append((chargepoint, connectors))
+            status = RealtimeStatus(
+                chargepoint=chargepoint,
+                status=status_map[evse["state"]],
+                timestamp=timezone.now(),
+                data_source=source,
+                license_attribution=license_attribution,
+            )
+            statuses.append((location, status))
 
-        yield site, chargepoints
+        yield site, chargepoints, statuses
 
 
 class MontaDataSource(DataSource):
     id = "monta"
-    supported_data_types = [DataType.STATIC]
+    supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
     supported_update_methods = [UpdateMethod.PULL]
     license_attribution = "Monta ApS"
     # https://docs.partner-api.monta.com/docs/afir-access
+    # Rate limit: 100 requests per 10 minutes
 
     def pull_data(self):
         tokens = MontaTokens.get_solo()
@@ -150,7 +177,14 @@ class MontaDataSource(DataSource):
         for charger in tqdm(get_all_monta_chargers(access_token=tokens.access_token)):
             chargers_by_location[charger["location"]["addressLabel"]].append(charger)
 
-        sites = convert_monta_data(
-            chargers_by_location, self.id, self.license_attribution
+        sites = list(
+            convert_monta_data(chargers_by_location, self.id, self.license_attribution)
         )
-        sync_chargers(self.id, sites)
+        sync_chargers(
+            self.id, ((site, chargepoints) for site, chargepoints, statuses in sites)
+        )
+        sync_statuses(
+            self.id,
+            self.id,
+            (status for site, chargepoints, statuses in sites for status in statuses),
+        )
