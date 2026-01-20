@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import os
+import time
 from typing import List, Optional
 
 import aiohttp
@@ -69,6 +70,7 @@ class NobilRealtimeDataSource(DataSource):
         return response.json()["accessToken"]
 
     async def _stream_data_async(self, url):
+        updatestate_last_update = None
         async with aiohttp.ClientSession() as session:
             async with session.ws_connect(url) as ws:
                 async for msg in ws:
@@ -95,6 +97,16 @@ class NobilRealtimeDataSource(DataSource):
                                 timestamp=timezone.now(),
                             )
                             await sync_to_async(obj.save)()
+
+                            now = time.perf_counter()
+                            if (
+                                updatestate_last_update is None
+                                or now - updatestate_last_update > 60
+                            ):
+                                # save the update state, but only once per minute
+                                await sync_to_async(
+                                    UpdateState(data_source=self.id, push=True).save
+                                )()
                         except Chargepoint.DoesNotExist:
                             print(f"ignoring update")
                     elif msg.type == aiohttp.WSMsgType.ERROR:
