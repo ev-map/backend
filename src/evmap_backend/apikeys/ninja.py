@@ -8,6 +8,8 @@ class ApiKeyAuth(APIKeyHeader):
 
     def authenticate(self, request, key):
         try:
-            return ApiKey.objects.get(key=key)
+            key = ApiKey.objects.get(key=key)
+            if key.active:
+                return key
         except ApiKey.DoesNotExist:
             pass
