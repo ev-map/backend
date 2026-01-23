@@ -287,6 +287,12 @@ class Datex2DenmarkEcoMovementDataSource(BaseEcoMovementNapDatex2DataSource):
     # https://du-portal-ui.dataudveksler.app.vd.dk/data/950/overview
 
 
+class Datex2BelgiumEcoMovementDataSource(BaseEcoMovementNapDatex2DataSource):
+    id = "belgium_ecomovement"
+    token = os.environ.get("ECOMOVEMENT_BELGIUM_TOKEN")
+    # https://transportdata.be/de/dataset/afir-static-dataset-selected-cpos
+
+
 class Datex2SloveniaDataSource(BaseDatex2DataSource):
     id = "slovenia"
     license_attribution = "Slovenian Ministry of Infrastructure, CC-BY 4.0"

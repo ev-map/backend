@@ -4,6 +4,7 @@ from evmap_backend.data_sources import DataSource
 from evmap_backend.data_sources.datex2.source import (
     Datex2AustriaDataSource,
     Datex2AustriaRealtimeDataSource,
+    Datex2BelgiumEcoMovementDataSource,
     Datex2DenmarkEcoMovementDataSource,
     Datex2LuxembourgEcoMovementDataSource,
     Datex2MobilithekEcoMovementDatex2DataSource,
@@ -92,6 +93,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2SloveniaRealtimeDataSource,
     # Denmark
     Datex2DenmarkEcoMovementDataSource,
+    # Belgium
+    Datex2BelgiumEcoMovementDataSource,
 ]
 
 DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
