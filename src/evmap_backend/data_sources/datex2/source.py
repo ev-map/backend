@@ -254,21 +254,37 @@ class Datex2MobilithekWirelaneRealtimeDataSource(BaseMobilithekDatex2DataSource)
     # https://mobilithek.info/offers/876587237907525632
 
 
-class Datex2LuxembourgEcoMovementDataSource(BaseDatex2DataSource):
-    id = "luxembourg_ecomovement"
+class BaseEcoMovementNapDatex2DataSource(BaseDatex2DataSource):
     license_attribution = "Eco-Movement BV"
-    # https://data.public.lu/en/datasets/bornes-de-chargement-publiques-pour-voitures-electriques-du-plusieurs-operateurs-1/
+    # https://developers.eco-movement.com/v5/docs/eco-movement-data-api-datex
+
+    @abstractmethod
+    @classproperty
+    def token(self) -> str:
+        pass
 
     def get_data(self) -> str:
         response = requests.get(
             "https://api.eco-movement.com/api/nap/datexii/locations",
             params={
-                "token": os.environ["ECOMOVEMENT_LUXEMBOURG_TOKEN"],
+                "token": self.token,
             },
         )
         response.raise_for_status()
         response.encoding = response.apparent_encoding
         return response.text
+
+
+class Datex2LuxembourgEcoMovementDataSource(BaseEcoMovementNapDatex2DataSource):
+    id = "luxembourg_ecomovement"
+    token = os.environ.get("ECOMOVEMENT_LUXEMBOURG_TOKEN")
+    # https://data.public.lu/en/datasets/bornes-de-chargement-publiques-pour-voitures-electriques-du-plusieurs-operateurs-1/
+
+
+class Datex2DenmarkEcoMovementDataSource(BaseEcoMovementNapDatex2DataSource):
+    id = "denmark_ecomovement"
+    token = os.environ.get("ECOMOVEMENT_DENMARK_TOKEN")
+    # https://du-portal-ui.dataudveksler.app.vd.dk/data/950/overview
 
 
 class Datex2SloveniaDataSource(BaseDatex2DataSource):
