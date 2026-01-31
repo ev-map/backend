@@ -61,6 +61,7 @@ ALLOWED_HOSTS = (
     [os.environ.get("ALLOWED_HOSTS", urlparse(SITE_URL).hostname)] if not DEBUG else []
 )
 CSRF_TRUSTED_ORIGINS = [urlparse(SITE_URL).scheme + "://" + urlparse(SITE_URL).hostname]
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Application definition
 
