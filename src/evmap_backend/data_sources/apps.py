@@ -1,3 +1,4 @@
+import sys
 from asyncio import get_running_loop
 
 from asgiref.sync import sync_to_async
@@ -19,6 +20,13 @@ class DataSourcesConfig(AppConfig):
     name = "evmap_backend.data_sources"
 
     def ready(self):
+        if (
+            "makemigrations" in sys.argv
+            or "migrate" in sys.argv
+            or "pytest" in sys.argv[0]
+        ):
+            return
+
         from evmap_backend.data_sources.registry import init_data_sources
 
         if is_async_context():
