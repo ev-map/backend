@@ -1,3 +1,4 @@
+import sys
 from typing import Dict, List, Type
 
 from evmap_backend.data_sources import DataSource
@@ -43,6 +44,7 @@ from evmap_backend.data_sources.ocpi.source import (
     NdwNetherlandsOcpiDataSource,
     ShellRechargeUkOcpiDataSource,
     ShellRechargeUkOcpiRealtimeDataSource,
+    TeslaUkOcpiDataSource,
 )
 
 DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
@@ -86,6 +88,7 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     CommunityByShellRechargeUkOcpiRealtimeDataSource,
     ChargyUkOcpiDataSource,
     MfgUkOcpiDataSource,
+    TeslaUkOcpiDataSource,
     # Latvia
     # LatviaOcpiDataSource,  # Data is malformed (duplicate IDs)
     # Slovenia
@@ -97,9 +100,11 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2BelgiumEcoMovementDataSource,
 ]
 
-DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
-    cls.id: cls for cls in DATA_SOURCE_CLASSES
-}
+DATA_SOURCE_REGISTRY: Dict[str, DataSource] = {}
+
+if not ("makemigrations" in sys.argv or "migrate" in sys.argv):
+    for cls in DATA_SOURCE_CLASSES:
+        DATA_SOURCE_REGISTRY[cls.id] = cls()
 
 
 def get_data_source(source_id: str) -> DataSource:
@@ -109,7 +114,7 @@ def get_data_source(source_id: str) -> DataSource:
             f"Unknown data source: {source_id}. Available sources: {', '.join(DATA_SOURCE_REGISTRY.keys())}"
         )
 
-    return DATA_SOURCE_REGISTRY[source_id]()
+    return DATA_SOURCE_REGISTRY[source_id]
 
 
 def list_available_sources() -> List[str]:

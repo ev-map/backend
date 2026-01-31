@@ -23,7 +23,7 @@ class ChargingSiteAdmin(GISModelAdmin):
 
 
 class ChargepointAdmin(admin.ModelAdmin):
-    list_display = ["formatted_evseid"]
+    list_display = ["formatted_evseid", "physical_reference"]
     inlines = [ConnectorInline]
 
     @admin.display(description="EVSEID")

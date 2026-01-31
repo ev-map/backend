@@ -60,6 +60,7 @@ class Chargepoint(models.Model):
     )
     id_from_source = models.CharField(max_length=255)
     evseid = EVSEIDField(evseid_type=EVSEIDType.EVSE, blank=True)
+    physical_reference = models.CharField(max_length=255, blank=True)
 
 
 class Connector(models.Model):

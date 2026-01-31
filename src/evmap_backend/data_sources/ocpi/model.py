@@ -1,24 +1,74 @@
 import datetime
 import enum
-import logging
-from dataclasses import dataclass
 from math import sqrt
-from re import match
-from typing import Iterable, List, Optional, Tuple, Union
+from typing import Generic, List, Optional, Tuple, TypeVar
 
 from django.contrib.gis.geos import Point
-from tqdm import tqdm
+from ninja import Schema
 
 from evmap_backend.chargers.fields import normalize_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
 from evmap_backend.helpers.database import none_to_blank
 from evmap_backend.realtime.models import RealtimeStatus
 
-# spec: https://evroaming.org/wp-content/uploads/2025/02/OCPI-2.3.0.pdf
+# OCPI spec: https://evroaming.org/wp-content/uploads/2025/02/OCPI-2.3.0.pdf
+
+DataT = TypeVar("DataT")
 
 
-@dataclass
-class OcpiConnector:
+class OcpiResponse(Schema, Generic[DataT]):
+    data: DataT
+    status_code: int
+    status_message: str
+    timestamp: datetime.datetime
+
+
+class OcpiVersion(Schema):
+    version: str
+    url: str
+
+
+class OcpiEndpoint(Schema):
+    identifier: str
+    role: str
+    url: str
+
+
+class OcpiVersionDetail(Schema):
+    version: str
+    endpoints: List[OcpiEndpoint]
+
+
+class OcpiImage(Schema):
+    url: str
+    thumbnail: str = None
+    category: str
+    type: str
+    width: int = None
+    height: int = None
+
+
+class OcpiBusinessDetails(Schema):
+    name: str
+    website: Optional[str] = None
+    logo: Optional[OcpiImage] = None
+
+
+class OcpiCredentialsRole(Schema):
+    role: str
+    party_id: str
+    country_code: str
+    business_details: OcpiBusinessDetails
+
+
+class OcpiCredentials(Schema):
+    token: str
+    url: str
+    hub_party_id: Optional[str] = None
+    roles: List[OcpiCredentialsRole]
+
+
+class OcpiConnector(Schema):
     class ConnectorType(enum.StrEnum):
         CHADEMO = "CHADEMO"
         CHAOJI = "CHAOJI"  # The ChaoJi connector. The new generation charging connector, harmonized between CHAdeMO and GB/T. DC
@@ -79,31 +129,16 @@ class OcpiConnector:
     id: str
     standard: ConnectorType
     format: ConnectorFormat
-    max_voltage: int
-    max_amperage: int
+    max_voltage: Optional[int] = None
+    max_amperage: Optional[int] = None
+    voltage: Optional[int] = None
+    amperage: Optional[int] = None
     power_type: PowerType
     max_electric_power: Optional[int]
 
     # TODO: tariff_ids
 
     last_updated: datetime.datetime
-
-    @classmethod
-    def from_json(cls, data: dict):
-        return OcpiConnector(
-            id=data["id"],
-            standard=OcpiConnector.ConnectorType(data["standard"]),
-            format=OcpiConnector.ConnectorFormat(data["format"]),
-            max_voltage=(
-                data["max_voltage"] if "max_voltage" in data else data["voltage"]
-            ),
-            max_amperage=(
-                data["max_amperage"] if "max_amperage" in data else data["amperage"]
-            ),
-            power_type=OcpiConnector.PowerType(data["power_type"]),
-            max_electric_power=data.get("max_electric_power"),
-            last_updated=datetime.datetime.fromisoformat(data["last_updated"]),
-        )
 
     def max_power(self) -> int:
         if self.max_electric_power is not None:
@@ -119,7 +154,9 @@ class OcpiConnector:
                     "power calculation for 2 phases not implemented"
                 )
 
-        return self.max_voltage * self.max_amperage * power_factor
+        voltage = self.max_voltage or self.voltage
+        amperage = self.max_amperage or self.amperage
+        return voltage * amperage * power_factor
 
     def convert(self) -> Connector:
         return Connector(
@@ -154,8 +191,7 @@ format_mapping = {
 }
 
 
-@dataclass
-class OcpiEvse:
+class OcpiEvse(Schema):
     class OcpiEvseStatus(enum.StrEnum):
         AVAILABLE = "AVAILABLE"
         BLOCKED = "BLOCKED"
@@ -169,38 +205,24 @@ class OcpiEvse:
 
     uid: str
     evse_id: str
+    physical_reference: Optional[str] = None
     status: OcpiEvseStatus
     # TODO: status_schedule
     connectors: List[OcpiConnector]
 
     last_updated: datetime.datetime
 
-    @classmethod
-    def from_json(cls, data: dict, status_only: bool = False):
-        if "connectors" not in data and not status_only:
-            raise ValueError("OCPI EVSE has no connectors")
-
-        return OcpiEvse(
-            uid=data["uid"],
-            evse_id=data.get("evse_id"),
-            status=(
-                OcpiEvse.OcpiEvseStatus(data["status"])
-                if data["status"] in OcpiEvse.OcpiEvseStatus
-                else OcpiEvse.OcpiEvseStatus.UNKNOWN
-            ),
-            connectors=(
-                [OcpiConnector.from_json(connector) for connector in data["connectors"]]
-                if "connectors" in data
-                else None
-            ),
-            last_updated=datetime.datetime.fromisoformat(data["last_updated"]),
-        )
-
     def convert(self) -> Chargepoint:
         return Chargepoint(
             id_from_source=self.uid,
             evseid=normalize_evseid(self.evse_id) if self.evse_id is not None else "",
+            physical_reference=none_to_blank(self.physical_reference),
         )
+
+
+class PatchOcpiEvse(Schema):
+    status: OcpiEvse.OcpiEvseStatus
+    last_updated: datetime.datetime
 
 
 status_mapping = {
@@ -216,51 +238,27 @@ status_mapping = {
 }
 
 
-@dataclass
-class OcpiLocation:
+class GeoLocation(Schema):
+    longitude: float
+    latitude: float
+
+
+class OcpiLocation(Schema):
     id: str
-    country_code: Optional[str]
+    country: Optional[str] = None
+    country_code: Optional[str] = None
     name: Optional[str]
     address: Optional[str]
     city: Optional[str]
-    postal_code: Optional[str]
-    state: Optional[str]
-    coordinates: Optional[Tuple[float, float]]
+    postal_code: Optional[str] = None
+    state: Optional[str] = None
+    coordinates: Optional[GeoLocation]
     evses: List[OcpiEvse]
-    operator_name: Optional[str]
+    operator_name: Optional[str] = None
 
     # TODO: opening_times
 
     last_updated: datetime.datetime
-
-    @classmethod
-    def from_json(cls, data: dict, status_only: bool = False):
-        if (
-            "coordinates" not in data or "country_code" not in data
-        ) and not status_only:
-            logging.warning(f"OCPI location with missing required fields: {data}")
-            return None
-
-        return OcpiLocation(
-            data["id"],
-            data.get("country_code"),
-            data.get("name"),
-            data.get("address"),
-            data.get("city"),
-            data.get("postal_code"),
-            data.get("state"),
-            (
-                (
-                    float(data["coordinates"]["longitude"]),
-                    float(data["coordinates"]["latitude"]),
-                )
-                if "coordinates" in data
-                else None
-            ),
-            [OcpiEvse.from_json(evse, status_only) for evse in data["evses"]],
-            data["operator"]["name"] if "operator" in data else None,
-            datetime.datetime.fromisoformat(data["last_updated"]),
-        )
 
     def convert(
         self,
@@ -276,12 +274,12 @@ class OcpiLocation:
             ),
             id_from_source=self.id,
             name=none_to_blank(self.name if self.name is not None else self.address),
-            location=Point(*self.coordinates),
-            network=self.operator_name,
+            location=Point(self.coordinates.longitude, self.coordinates.latitude),
+            network=none_to_blank(self.operator_name),
             street=none_to_blank(self.address),
             zipcode=none_to_blank(self.postal_code),
             city=none_to_blank(self.city),
-            country=self.country_code,
+            country=self.country if self.country is not None else self.country_code,
         )
         chargepoints = [
             (rp.convert(), [con.convert() for con in rp.connectors])
@@ -313,13 +311,3 @@ class OcpiLocation:
             )
             for evse in self.evses
         ]
-
-
-class OcpiParser:
-    def parse_locations(
-        self, data: Iterable, status_only: bool = False
-    ) -> Iterable[OcpiLocation]:
-        for site in tqdm(data):
-            loc = OcpiLocation.from_json(site, status_only)
-            if loc is not None:
-                yield loc

@@ -2,13 +2,15 @@ import gzip
 import json
 import os
 from abc import abstractmethod
-from typing import Iterable, List, Optional
+from typing import Iterable, Optional
 
 import requests
 from django.utils.functional import classproperty
 
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
+from evmap_backend.data_sources.ocpi.models import OcpiConnection
 from evmap_backend.data_sources.ocpi.parser import OcpiLocation, OcpiParser
+from evmap_backend.data_sources.ocpi.utils import ocpi_get
 from evmap_backend.sync import sync_chargers, sync_statuses
 
 
@@ -108,6 +110,75 @@ class BaseOcpiRealtimeDataSource(DataSource):
                 )
             ),
         )
+
+
+class BaseOcpiConnectionDataSource(DataSource):
+    """
+    Base class for OCPI data sources that uses an OCPI connection and receives data updates via push
+    """
+
+    supported_data_types = [DataType.STATIC, DataType.DYNAMIC, DataType.PRICING]
+    supported_update_methods = [UpdateMethod.PULL, UpdateMethod.OCPI_PUSH]
+    license_attribution_link: Optional[str] = None
+
+    def __init__(self):
+        OcpiConnection.objects.get_or_create(data_source=self.id)
+
+    @abstractmethod
+    @classproperty
+    def license_attribution(self) -> str:
+        pass
+
+    def postprocess_locations(
+        self, locations: Iterable[OcpiLocation]
+    ) -> Iterable[OcpiLocation]:
+        return locations
+
+    def pull_data(self):
+        conn, _ = OcpiConnection.objects.get_or_create(data_source=self.id)
+        if not conn.token_b:
+            raise ValueError(f"OCPI connection has not completed handshake yet")
+        if not conn.locations_url and not conn.tariffs_url:
+            self._fetch_endpoints(conn)
+
+        root = ocpi_get(conn.locations_url, conn.token_b)
+        locations = list(OcpiParser().parse_locations(root))
+        locations = self.postprocess_locations(locations)
+        sync_chargers(
+            self.id,
+            (
+                location.convert(
+                    self.id, self.license_attribution, self.license_attribution_link
+                )
+                for location in locations
+            ),
+        )
+        sync_statuses(
+            self.id,
+            self.id,
+            (
+                s
+                for location in locations
+                for s in location.convert_status(
+                    self.id, self.license_attribution, self.license_attribution_link
+                )
+            ),
+        )
+
+    def _fetch_endpoints(self, conn: OcpiConnection):
+        response = ocpi_get(conn.url, conn.token_b)
+        versions = response
+
+        version = next(v for v in versions if v["version"] == conn.version)
+        version_detail = ocpi_get(version["url"], conn.token_b)
+
+        for endpoint in version_detail["endpoints"]:
+            if endpoint["identifier"] == "locations" and endpoint["role"] == "SENDER":
+                conn.locations_url = endpoint["url"]
+            if endpoint["identifier"] == "tariffs" and endpoint["role"] == "SENDER":
+                conn.tariffs_url = endpoint["url"]
+
+        conn.save()
 
 
 class BaseEcoMovementUkOcpiDataSource(BaseOcpiDataSource):
@@ -313,3 +384,9 @@ class LatviaOcpiDataSource(BaseOcpiDataSource):
         response = requests.get(self.locations_url)
         response.raise_for_status()
         return json.loads(response.text)["data"]
+
+
+class TeslaUkOcpiDataSource(BaseOcpiConnectionDataSource):
+    id = "tesla_uk"
+    license_attribution = "Tesla, Inc."
+    # https://developer.tesla.com/docs/charging/roaming

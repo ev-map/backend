@@ -40,6 +40,9 @@ class UpdateMethod(Enum):
     """A background service runs continuously (e.g., with an MQTT connection) to receive streaming updates with the
     stream_data method."""
 
+    OCPI_PUSH = 4
+    """Data source pushes data using the OCPI protocol."""
+
 
 class DataSource(ABC):
     @classproperty
