@@ -28,7 +28,7 @@ class ChargepointAdmin(admin.ModelAdmin):
 
     @admin.display(description="EVSEID")
     def formatted_evseid(self, obj):
-        return format_evseid(obj.evseid)
+        return format_evseid(obj.evseid) if obj.evseid else ""
 
 
 class ConnectorAdmin(admin.ModelAdmin):
