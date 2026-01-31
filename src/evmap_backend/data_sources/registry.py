@@ -102,7 +102,9 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
 
 DATA_SOURCE_REGISTRY: Dict[str, DataSource] = {}
 
-if not ("makemigrations" in sys.argv or "migrate" in sys.argv):
+if not (
+    "makemigrations" in sys.argv or "migrate" in sys.argv or "pytest" in sys.argv[0]
+):
     for cls in DATA_SOURCE_CLASSES:
         DATA_SOURCE_REGISTRY[cls.id] = cls()
 
