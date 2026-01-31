@@ -10,7 +10,7 @@ from django.utils.functional import classproperty
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.ocpi.models import OcpiConnection
 from evmap_backend.data_sources.ocpi.parser import OcpiLocation, OcpiParser
-from evmap_backend.data_sources.ocpi.utils import ocpi_get
+from evmap_backend.data_sources.ocpi.utils import ocpi_get, ocpi_get_paginated
 from evmap_backend.sync import sync_chargers, sync_statuses
 
 
@@ -141,7 +141,7 @@ class BaseOcpiConnectionDataSource(DataSource):
         if not conn.locations_url and not conn.tariffs_url:
             self._fetch_endpoints(conn)
 
-        root = ocpi_get(conn.locations_url, conn.token_b)
+        root = ocpi_get_paginated(conn.locations_url, conn.token_b)
         locations = list(OcpiParser().parse_locations(root))
         locations = self.postprocess_locations(locations)
         sync_chargers(
@@ -166,9 +166,7 @@ class BaseOcpiConnectionDataSource(DataSource):
         )
 
     def _fetch_endpoints(self, conn: OcpiConnection):
-        response = ocpi_get(conn.url, conn.token_b)
-        versions = response
-
+        versions = ocpi_get(conn.url, conn.token_b)
         version = next(v for v in versions if v["version"] == conn.version)
         version_detail = ocpi_get(version["url"], conn.token_b)
 

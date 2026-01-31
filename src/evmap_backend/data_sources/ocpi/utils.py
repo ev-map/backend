@@ -1,9 +1,11 @@
 import base64
 import binascii
 import re
+from typing import Any
 
 import requests
 from ninja.security import HttpBearer
+from requests import Response
 
 from evmap_backend.data_sources.ocpi.models import OcpiConnection
 
@@ -17,34 +19,42 @@ def auth_header(token: str, encode: bool = True) -> str:
         return f"Token {token}"
 
 
-def ocpi_get(url, token: str):
+def _ocpi_get_internal(url: str, token: str) -> tuple[Any, Response]:
     response = requests.get(
         url, headers={"Authorization": auth_header(token, encode=True)}
     )
-    print(response.status_code)
     if response.status_code == 401:
         # retry with unencoded token
         response = requests.get(
             url, headers={"Authorization": auth_header(token, encode=False)}
         )
-        print(response.status_code)
     response.raise_for_status()
     json = response.json()
 
     if json["status_code"] != 1000:
         raise Exception(f"OCPI error {json['status_code']}: {json['status_message']}")
+    return response, json
 
-    if isinstance(json["data"], list):
-        for item in json["data"]:
+
+def ocpi_get(url: str, token: str):
+    response, json = _ocpi_get_internal(url, token)
+    return json["data"]
+
+
+def ocpi_get_paginated(url: str, token: str):
+    response, json = _ocpi_get_internal(url, token)
+
+    if not isinstance(json["data"], list):
+        raise Exception("OCPI paginated response data is not a list")
+
+    for item in json["data"]:
+        yield item
+
+    if "Link" in response.headers:
+        # paginated response
+        link = link_regex.match(response.headers["Link"]).group(1)
+        for item in ocpi_get_paginated(link, token):
             yield item
-
-        if "Link" in response.headers:
-            # paginated response
-            link = link_regex.match(response.headers["Link"]).group(1)
-            for item in ocpi_get(link, token):
-                yield item
-    else:
-        return json["data"]
 
 
 class OcpiTokenAuth(HttpBearer):
