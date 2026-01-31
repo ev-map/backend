@@ -102,21 +102,25 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2BelgiumEcoMovementDataSource,
 ]
 
+DATA_SOURCE_CLASSES_DICT = {cls.id: cls for cls in DATA_SOURCE_CLASSES}
 DATA_SOURCE_REGISTRY: Dict[str, DataSource] = {}
 
-if not (
-    "makemigrations" in sys.argv or "migrate" in sys.argv or "pytest" in sys.argv[0]
-):
-    for cls in DATA_SOURCE_CLASSES:
-        DATA_SOURCE_REGISTRY[cls.id] = cls()
+
+def init_data_sources():
+    """Initialize all data source instances"""
+    for source_id, source_class in DATA_SOURCE_CLASSES_DICT.items():
+        DATA_SOURCE_REGISTRY[source_id] = source_class()
 
 
 def get_data_source(source_id: str) -> DataSource:
     """Get a data source instance by ID"""
-    if source_id not in DATA_SOURCE_REGISTRY:
+    if source_id not in DATA_SOURCE_CLASSES_DICT:
         raise ValueError(
             f"Unknown data source: {source_id}. Available sources: {', '.join(DATA_SOURCE_REGISTRY.keys())}"
         )
+
+    if source_id not in DATA_SOURCE_REGISTRY:
+        DATA_SOURCE_REGISTRY[source_id] = DATA_SOURCE_CLASSES_DICT[source_id]()
 
     return DATA_SOURCE_REGISTRY[source_id]
 
