@@ -1,5 +1,6 @@
 import datetime as dt
 import logging
+from typing import Union
 
 import pytz
 from django.core.exceptions import BadRequest
@@ -82,10 +83,10 @@ def version_detail(request, ocpi_version: str):
 
 @api.post(
     "/{ocpi_version}/credentials",
-    response=OcpiResponse[OcpiCredentials],
+    response=OcpiResponse[Union[OcpiCredentials22, OcpiCredentials21]],
     auth=OcpiTokenAuth(allow_token_a=True),
 )
-def post_credentials(request, ocpi_version: str, credentials: OcpiCredentials):
+def post_credentials(request, ocpi_version: str, credentials: OcpiCredentials22):
     if ocpi_version not in SUPPORTED_OCPI_VERSIONS:
         raise BadRequest(f"Unsupported OCPI version: {ocpi_version}")
 
@@ -105,21 +106,17 @@ def post_credentials(request, ocpi_version: str, credentials: OcpiCredentials):
     creds.token_c = generate_token()
     creds.save()
 
+    ocpi_creds = build_ocpi_credentials(
+        ocpi_version=ocpi_version,
+        token=creds.token_c,
+        role=source.role,
+        party_id=source.party_id,
+        country_code=source.country_code,
+        business_name=source.business_name,
+    )
+
     return OcpiResponse(
-        data=OcpiCredentials(
-            token=creds.token_c,
-            url=request.build_absolute_uri("/ocpi/versions"),
-            roles=[
-                OcpiCredentialsRole(
-                    role=source.role,
-                    party_id=source.party_id,
-                    country_code=source.country_code,
-                    business_details=OcpiBusinessDetails(
-                        name=source.business_name,
-                    ),
-                )
-            ],
-        ),
+        data=ocpi_creds,
         status_code=1000,
         status_message="Success",
         timestamp=dt.datetime.now(pytz.UTC),

@@ -6,6 +6,7 @@ from typing import Generic, List, Optional, Tuple, TypeVar
 from django.contrib.gis.geos import Point
 from ninja import Schema
 
+from evmap_backend import settings
 from evmap_backend.chargers.fields import normalize_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
 from evmap_backend.helpers.database import none_to_blank
@@ -61,11 +62,51 @@ class OcpiCredentialsRole(Schema):
     business_details: OcpiBusinessDetails
 
 
-class OcpiCredentials(Schema):
+class OcpiCredentials22(Schema):
     token: str
     url: str
     hub_party_id: Optional[str] = None
     roles: List[OcpiCredentialsRole]
+
+
+class OcpiCredentials21(Schema):
+    token: str
+    url: str
+    business_details: OcpiBusinessDetails
+    party_id: str
+    country_code: str
+
+
+def build_ocpi_credentials(
+    ocpi_version: str,
+    token: str,
+    role: str,
+    party_id: str,
+    country_code: str,
+    business_name: str,
+) -> OcpiCredentials22 | OcpiCredentials21:
+    url = settings.SITE_URL + "/ocpi/versions"
+    if ocpi_version >= "2.2":
+        return OcpiCredentials22(
+            token=token,
+            url=url,
+            roles=[
+                OcpiCredentialsRole(
+                    role=role,
+                    party_id=party_id,
+                    country_code=country_code,
+                    business_details=OcpiBusinessDetails(name=business_name),
+                )
+            ],
+        )
+    else:
+        return OcpiCredentials21(
+            token=token,
+            url=url,
+            party_id=party_id,
+            country_code=country_code,
+            business_details=OcpiBusinessDetails(name=business_name),
+        )
 
 
 class OcpiConnector(Schema):

@@ -12,8 +12,9 @@ from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.ocpi import SUPPORTED_OCPI_VERSIONS
 from evmap_backend.data_sources.ocpi.model import (
     OcpiBusinessDetails,
-    OcpiCredentials,
+    OcpiCredentials22,
     OcpiCredentialsRole,
+    build_ocpi_credentials,
 )
 from evmap_backend.data_sources.ocpi.models import OcpiConnection, generate_token
 from evmap_backend.data_sources.ocpi.parser import OcpiLocation, OcpiParser
@@ -244,23 +245,18 @@ class BaseOcpiConnectionDataSource(DataSource):
         conn.token_b = generate_token()
         conn.save()
 
+        ocpi_creds = build_ocpi_credentials(
+            ocpi_version=conn.version,
+            token=conn.token_b,
+            role=self.role,
+            country_code=self.country_code,
+            party_id=self.party_id,
+            business_name=self.business_name,
+        )
         response = ocpi_post(
             credentials_url,
             conn.token_a,
-            OcpiCredentials(
-                token=conn.token_b,
-                url=settings.SITE_URL + "/ocpi/versions",
-                roles=[
-                    OcpiCredentialsRole(
-                        role=self.role,
-                        country_code=self.country_code,
-                        party_id=self.party_id,
-                        business_details=OcpiBusinessDetails(
-                            name=self.business_name,
-                        ),
-                    )
-                ],
-            ),
+            ocpi_creds,
         )
         conn.token_c = response["token"]
         conn.save()
