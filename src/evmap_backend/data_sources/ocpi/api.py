@@ -98,8 +98,7 @@ def post_credentials(request, ocpi_version: str, credentials: OcpiCredentials):
     creds.party_id = credentials.roles[0].party_id
     creds.save()
 
-    response = ocpi_get(credentials.url, creds.token_b)
-    versions = response["data"]
+    versions = ocpi_get(credentials.url, creds.token_b)
     version = next(v for v in versions if v["version"] == ocpi_version)
     creds.version = version["version"]
 
