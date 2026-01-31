@@ -7,10 +7,21 @@ from typing import Iterable, Optional
 import requests
 from django.utils.functional import classproperty
 
+from evmap_backend import settings
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
-from evmap_backend.data_sources.ocpi.models import OcpiConnection
+from evmap_backend.data_sources.ocpi import SUPPORTED_OCPI_VERSIONS
+from evmap_backend.data_sources.ocpi.model import (
+    OcpiBusinessDetails,
+    OcpiCredentials,
+    OcpiCredentialsRole,
+)
+from evmap_backend.data_sources.ocpi.models import OcpiConnection, generate_token
 from evmap_backend.data_sources.ocpi.parser import OcpiLocation, OcpiParser
-from evmap_backend.data_sources.ocpi.utils import ocpi_get, ocpi_get_paginated
+from evmap_backend.data_sources.ocpi.utils import (
+    ocpi_get,
+    ocpi_get_paginated,
+    ocpi_post,
+)
 from evmap_backend.sync import sync_chargers, sync_statuses
 
 
@@ -120,9 +131,19 @@ class BaseOcpiConnectionDataSource(DataSource):
     supported_data_types = [DataType.STATIC, DataType.DYNAMIC, DataType.PRICING]
     supported_update_methods = [UpdateMethod.PULL, UpdateMethod.OCPI_PUSH]
     license_attribution_link: Optional[str] = None
+    is_credentials_sender: bool = False
+    role = "NSP"
+    country_code = os.environ.get("OCPI_COUNTRY_CODE")
+    party_id = os.environ.get("OCPI_PARTY_ID")
+    business_name = os.environ.get("OCPI_BUSINESS_NAME")
 
     def __init__(self):
-        OcpiConnection.objects.get_or_create(data_source=self.id)
+        if self.is_credentials_sender:
+            OcpiConnection.objects.get_or_create(
+                data_source=self.id, defaults={"token_a": ""}
+            )
+        else:
+            OcpiConnection.objects.get_or_create(data_source=self.id)
 
     @abstractmethod
     @classproperty
@@ -135,13 +156,18 @@ class BaseOcpiConnectionDataSource(DataSource):
         return locations
 
     def pull_data(self):
-        conn, _ = OcpiConnection.objects.get_or_create(data_source=self.id)
-        if not conn.token_b:
-            raise ValueError(f"OCPI connection has not completed handshake yet")
+        conn = OcpiConnection.objects.get(data_source=self.id)
+        token = conn.token_c if self.is_credentials_sender else conn.token_b
+
+        if not token:
+            if self.is_credentials_sender:
+                self._send_credentials(conn)
+            else:
+                raise ValueError(f"OCPI connection has not completed handshake yet")
         if not conn.locations_url and not conn.tariffs_url:
             self._fetch_endpoints(conn)
 
-        root = ocpi_get_paginated(conn.locations_url, conn.token_b)
+        root = ocpi_get_paginated(conn.locations_url, token)
         locations = list(OcpiParser().parse_locations(root))
         locations = self.postprocess_locations(locations)
         sync_chargers(
@@ -171,11 +197,72 @@ class BaseOcpiConnectionDataSource(DataSource):
         version_detail = ocpi_get(version["url"], conn.token_b)
 
         for endpoint in version_detail["endpoints"]:
-            if endpoint["identifier"] == "locations" and endpoint["role"] == "SENDER":
+            if endpoint["identifier"] == "locations" and (
+                "role" not in endpoint or endpoint["role"] == "SENDER"
+            ):
                 conn.locations_url = endpoint["url"]
-            if endpoint["identifier"] == "tariffs" and endpoint["role"] == "SENDER":
+            if endpoint["identifier"] == "tariffs" and (
+                "role" not in endpoint or endpoint["role"] == "SENDER"
+            ):
                 conn.tariffs_url = endpoint["url"]
 
+        conn.save()
+
+    def _send_credentials(self, conn: OcpiConnection):
+        if not conn.token_a:
+            raise ValueError(f"OCPI connection has no Token A set")
+        if not conn.url:
+            raise ValueError(f"OCPI connection has no URL set")
+
+        versions = ocpi_get(conn.url, conn.token_a)
+
+        supported_ocpi_versions = [
+            v for v in versions if v["version"] in SUPPORTED_OCPI_VERSIONS
+        ]
+        best_version = max(supported_ocpi_versions, key=lambda v: v["version"])
+        conn.version = best_version["version"]
+
+        version_detail = ocpi_get(best_version["url"], conn.token_a)
+        credentials_url = None
+        for endpoint in version_detail["endpoints"]:
+            if endpoint["identifier"] == "locations" and (
+                "role" not in endpoint or endpoint["role"] == "SENDER"
+            ):
+                conn.locations_url = endpoint["url"]
+            if endpoint["identifier"] == "tariffs" and (
+                "role" not in endpoint or endpoint["role"] == "SENDER"
+            ):
+                conn.tariffs_url = endpoint["url"]
+            if endpoint["identifier"] == "credentials" and (
+                "role" not in endpoint or endpoint["role"] == "RECEIVER"
+            ):
+                credentials_url = endpoint["url"]
+
+        if not credentials_url:
+            raise ValueError("No credentials endpoint found in OCPI version detail")
+
+        conn.token_b = generate_token()
+        conn.save()
+
+        response = ocpi_post(
+            credentials_url,
+            conn.token_a,
+            OcpiCredentials(
+                token=conn.token_b,
+                url=settings.SITE_URL + "/ocpi/versions",
+                roles=[
+                    OcpiCredentialsRole(
+                        role=self.role,
+                        country_code=self.country_code,
+                        party_id=self.party_id,
+                        business_details=OcpiBusinessDetails(
+                            name=self.business_name,
+                        ),
+                    )
+                ],
+            ),
+        )
+        conn.token_c = response["token"]
         conn.save()
 
 
@@ -388,3 +475,11 @@ class TeslaUkOcpiDataSource(BaseOcpiConnectionDataSource):
     id = "tesla_uk"
     license_attribution = "Tesla, Inc."
     # https://developer.tesla.com/docs/charging/roaming
+
+
+class InstavoltUkOcpiDataSource(BaseOcpiConnectionDataSource):
+    id = "instavolt_uk"
+    license_attribution = "Instavolt Ltd., Open Government Licence"
+    is_credentials_sender = True
+    party_id = os.environ.get("INSTAVOLT_UK_OCPI_PARTY_ID")
+    # https://instavolt.co.uk/public-charge-point-regulation-data/

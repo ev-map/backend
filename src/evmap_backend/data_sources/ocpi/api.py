@@ -1,6 +1,5 @@
 import datetime as dt
 import logging
-import os
 
 import pytz
 from django.core.exceptions import BadRequest
@@ -8,13 +7,12 @@ from ninja import NinjaAPI
 from ninja.errors import ValidationError
 
 from evmap_backend.data_sources.models import UpdateState
+from evmap_backend.data_sources.ocpi import SUPPORTED_OCPI_VERSIONS
 from evmap_backend.data_sources.ocpi.model import *
 from evmap_backend.data_sources.ocpi.models import OcpiConnection, generate_token
 from evmap_backend.data_sources.ocpi.source import BaseOcpiConnectionDataSource
 from evmap_backend.data_sources.ocpi.utils import OcpiTokenAuth, ocpi_get
 from evmap_backend.data_sources.registry import get_data_source
-
-SUPPORTED_OCPI_VERSIONS = ["2.3.0", "2.2.1"]
 
 api = NinjaAPI(urls_namespace="ocpi", auth=OcpiTokenAuth())
 
@@ -98,6 +96,8 @@ def post_credentials(request, ocpi_version: str, credentials: OcpiCredentials):
     creds.party_id = credentials.roles[0].party_id
     creds.save()
 
+    source: BaseOcpiConnectionDataSource = get_data_source(creds.data_source)
+
     versions = ocpi_get(credentials.url, creds.token_b)
     version = next(v for v in versions if v["version"] == ocpi_version)
     creds.version = version["version"]
@@ -111,11 +111,11 @@ def post_credentials(request, ocpi_version: str, credentials: OcpiCredentials):
             url=request.build_absolute_uri("/ocpi/versions"),
             roles=[
                 OcpiCredentialsRole(
-                    role="NSP",
-                    party_id=os.environ["OCPI_PARTY_ID"],
-                    country_code=os.environ["OCPI_COUNTRY_CODE"],
+                    role=source.role,
+                    party_id=source.party_id,
+                    country_code=source.country_code,
                     business_details=OcpiBusinessDetails(
-                        name=os.environ["OCPI_BUSINESS_NAME"],
+                        name=source.business_name,
                     ),
                 )
             ],
