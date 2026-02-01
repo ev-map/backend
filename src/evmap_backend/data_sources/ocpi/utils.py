@@ -4,6 +4,7 @@ import re
 from typing import Any
 
 import requests
+from django.db.models import Q
 from ninja import Schema
 from ninja.security import HttpBearer
 from requests import Response
@@ -84,6 +85,8 @@ class OcpiTokenAuth(HttpBearer):
         super().__init__()
 
     def authenticate(self, request, token):
+        from evmap_backend.data_sources.registry import get_data_source
+
         token_variants = [token]
         try:
             token_decoded = base64.b64decode(token).decode("utf-8")
@@ -95,12 +98,17 @@ class OcpiTokenAuth(HttpBearer):
 
         for t in token_variants:
             try:
-                return OcpiConnection.objects.get(token_c=t)
+                conn = OcpiConnection.objects.get(
+                    Q(token_a=t) | Q(token_b=t) | Q(token_c=t)
+                )
+                data_source = get_data_source(conn.data_source)
+                if data_source.is_credentials_sender and t == conn.token_b:
+                    return conn
+                if not data_source.is_credentials_sender:
+                    if t == conn.token_a and self.allow_token_a:
+                        return conn
+                    elif t == conn.token_c:
+                        return conn
             except OcpiConnection.DoesNotExist:
                 pass
-            if self.allow_token_a:
-                try:
-                    return OcpiConnection.objects.get(token_a=t)
-                except OcpiConnection.DoesNotExist:
-                    pass
         return None
