@@ -253,12 +253,23 @@ class BaseOcpiConnectionDataSource(DataSource):
             party_id=self.party_id,
             business_name=self.business_name,
         )
+
         response = ocpi_post(
             credentials_url,
             conn.token_a,
             ocpi_creds,
         )
         conn.token_c = response["token"]
+        conn.party_id = (
+            response["party_id"]
+            if "party_id" in response
+            else response["roles"][0]["party_id"]
+        )
+        conn.country_code = (
+            response["country_code"]
+            if "country_code" in response
+            else response["roles"][0]["country_code"]
+        )
         conn.save()
 
 
