@@ -261,3 +261,14 @@ class Datex2EnergyInfrastructureSiteStatus:
             )
             for rps in self.refill_point_statuses
         ]
+
+
+def parse_datetime(text, default_timezone=None):
+    dt = datetime.datetime.fromisoformat(text)
+    if dt.tzinfo is None:
+        if default_timezone is None:
+            raise ValueError(
+                f"Encountered naive datetime without default timezone: {text}"
+            )
+        dt = default_timezone.localize(dt)
+    return dt

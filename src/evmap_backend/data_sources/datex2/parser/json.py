@@ -11,6 +11,7 @@ from evmap_backend.data_sources.datex2.parser import (
     Datex2MultilingualString,
     Datex2RefillPoint,
     Datex2RefillPointStatus,
+    parse_datetime,
 )
 
 
@@ -121,10 +122,10 @@ def parse_energy_infrastructure_site(
 
 
 def parse_refill_point_status(
-    elem: dict, last_updated: datetime.datetime = None
+    elem: dict, last_updated: datetime.datetime = None, default_timezone=None
 ) -> Datex2RefillPointStatus:
     if "lastUpdated" in elem:
-        last_updated = datetime.datetime.fromisoformat(elem["lastUpdated"])
+        last_updated = parse_datetime(elem["lastUpdated"], default_timezone)
     return Datex2RefillPointStatus(
         refill_point_id=elem["reference"]["idG"],
         last_updated=last_updated,
@@ -133,13 +134,15 @@ def parse_refill_point_status(
 
 
 def parse_energy_infrastructure_site_status(
-    elem: dict,
+    elem: dict, default_timezone=None
 ) -> Datex2EnergyInfrastructureSiteStatus:
-    last_updated = datetime.datetime.fromisoformat(elem.get("lastUpdated"))
+    last_updated = parse_datetime(elem.get("lastUpdated"), default_timezone)
     return Datex2EnergyInfrastructureSiteStatus(
         site_id=elem["reference"]["idG"],
         refill_point_statuses=[
-            parse_refill_point_status(rp["aegiRefillPointStatus"], last_updated)
+            parse_refill_point_status(
+                rp["aegiRefillPointStatus"], last_updated, default_timezone
+            )
             for station in elem["energyInfrastructureStationStatus"]
             for rp in station["refillPointStatus"]
         ],
@@ -160,7 +163,7 @@ class Datex2JsonParser:
                     yield site
 
     def parse_status(
-        self, data, station_as_site=False
+        self, data, station_as_site=False, default_timezone=None
     ) -> Iterable[Datex2EnergyInfrastructureSiteStatus]:
         if station_as_site:
             raise NotImplementedError()
@@ -172,4 +175,4 @@ class Datex2JsonParser:
             for site in payload["aegiEnergyInfrastructureStatusPublication"][
                 "energyInfrastructureSiteStatus"
             ]:
-                yield parse_energy_infrastructure_site_status(site)
+                yield parse_energy_infrastructure_site_status(site, default_timezone)

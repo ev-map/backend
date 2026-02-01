@@ -13,6 +13,7 @@ from evmap_backend.data_sources.datex2.parser import (
     Datex2MultilingualString,
     Datex2RefillPoint,
     Datex2RefillPointStatus,
+    parse_datetime,
 )
 
 ns = {
@@ -101,17 +102,6 @@ def parse_refill_point(elem: Element) -> Datex2RefillPoint:
             for connector in elem.findall("egi:connector", ns)
         ],
     )
-
-
-def parse_datetime(text, default_timezone=None):
-    dt = datetime.datetime.fromisoformat(text)
-    if dt.tzinfo is None:
-        if default_timezone is None:
-            raise ValueError(
-                f"Encountered naive datetime without default timezone: {text}"
-            )
-        dt = default_timezone.localize(dt)
-    return dt
 
 
 def parse_energy_infrastructure_site_status(
