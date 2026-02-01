@@ -138,7 +138,7 @@ class BaseOcpiConnectionDataSource(DataSource):
     party_id = os.environ.get("OCPI_PARTY_ID")
     business_name = os.environ.get("OCPI_BUSINESS_NAME")
 
-    def __init__(self):
+    def setup(self):
         if self.is_credentials_sender:
             OcpiConnection.objects.get_or_create(
                 data_source=self.id, defaults={"token_a": ""}

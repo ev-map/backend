@@ -101,28 +101,25 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     # Belgium
     Datex2BelgiumEcoMovementDataSource,
 ]
+DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
+    cls.id: cls for cls in DATA_SOURCE_CLASSES
+}
 
-DATA_SOURCE_CLASSES_DICT = {cls.id: cls for cls in DATA_SOURCE_CLASSES}
-DATA_SOURCE_REGISTRY: Dict[str, DataSource] = {}
 
-
-def init_data_sources():
-    """Initialize all data source instances"""
-    for source_id, source_class in DATA_SOURCE_CLASSES_DICT.items():
-        DATA_SOURCE_REGISTRY[source_id] = source_class()
+def setup_data_sources():
+    """Perform initialization needed for all data sources"""
+    for source_id, source_class in DATA_SOURCE_REGISTRY.items():
+        source_class().setup()
 
 
 def get_data_source(source_id: str) -> DataSource:
     """Get a data source instance by ID"""
-    if source_id not in DATA_SOURCE_CLASSES_DICT:
+    if source_id not in DATA_SOURCE_REGISTRY:
         raise ValueError(
             f"Unknown data source: {source_id}. Available sources: {', '.join(DATA_SOURCE_REGISTRY.keys())}"
         )
 
-    if source_id not in DATA_SOURCE_REGISTRY:
-        DATA_SOURCE_REGISTRY[source_id] = DATA_SOURCE_CLASSES_DICT[source_id]()
-
-    return DATA_SOURCE_REGISTRY[source_id]
+    return DATA_SOURCE_REGISTRY[source_id]()
 
 
 def list_available_sources() -> List[str]:

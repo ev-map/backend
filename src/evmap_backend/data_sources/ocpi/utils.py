@@ -1,15 +1,10 @@
 import base64
-import binascii
 import re
 from typing import Any
 
 import requests
-from django.db.models import Q
 from ninja import Schema
-from ninja.security import HttpBearer
 from requests import Response
-
-from evmap_backend.data_sources.ocpi.models import OcpiConnection
 
 link_regex = re.compile('<([^>]+)>; rel="next"')
 
@@ -75,40 +70,3 @@ def ocpi_post(url: str, token: str, body: Schema):
     dump_json = body.model_dump_json()
     response, json = _ocpi_request(url, token, "POST", dump_json)
     return json["data"]
-
-
-class OcpiTokenAuth(HttpBearer):
-    openapi_scheme = "token"
-
-    def __init__(self, allow_token_a=False):
-        self.allow_token_a = allow_token_a
-        super().__init__()
-
-    def authenticate(self, request, token):
-        from evmap_backend.data_sources.registry import get_data_source
-
-        token_variants = [token]
-        try:
-            token_decoded = base64.b64decode(token).decode("utf-8")
-            token_variants.insert(0, token_decoded)
-        except binascii.Error:
-            pass
-        except UnicodeDecodeError:
-            pass
-
-        for t in token_variants:
-            try:
-                conn = OcpiConnection.objects.get(
-                    Q(token_a=t) | Q(token_b=t) | Q(token_c=t)
-                )
-                data_source = get_data_source(conn.data_source)
-                if data_source.is_credentials_sender and t == conn.token_b:
-                    return conn
-                if not data_source.is_credentials_sender:
-                    if t == conn.token_a and self.allow_token_a:
-                        return conn
-                    elif t == conn.token_c:
-                        return conn
-            except OcpiConnection.DoesNotExist:
-                pass
-        return None

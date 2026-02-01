@@ -27,4 +27,5 @@ EXPOSE 8000
 # Run migrations and start server
 CMD python -m django migrate && \
     python -m django collectstatic --noinput && \
+    python -m django setup_data_sources && \
     supervisord -n -c /etc/supervisord.conf

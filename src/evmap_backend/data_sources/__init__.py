@@ -71,3 +71,10 @@ class DataSource(ABC):
 
     def stream_data(self):
         raise NotImplementedError()
+
+    def setup(self):
+        """Optional setup steps for this data source to be run during server startup.
+
+        This has to be idempotent, i.e., check whether setup has already been done.
+        """
+        pass
