@@ -1,10 +1,12 @@
 import datetime
 import enum
+import logging
 from math import sqrt
 from typing import Generic, List, Optional, Tuple, TypeVar
 
 from django.contrib.gis.geos import Point
 from ninja import Schema
+from pytz import timezone
 
 from evmap_backend import settings
 from evmap_backend.chargers.fields import normalize_evseid
@@ -175,7 +177,7 @@ class OcpiConnector(Schema):
     voltage: Optional[int] = None
     amperage: Optional[int] = None
     power_type: PowerType
-    max_electric_power: Optional[int]
+    max_electric_power: Optional[int] = None
 
     # TODO: tariff_ids
 
@@ -249,7 +251,7 @@ class OcpiEvse(Schema):
     physical_reference: Optional[str] = None
     status: OcpiEvseStatus
     # TODO: status_schedule
-    connectors: List[OcpiConnector]
+    connectors: Optional[List[OcpiConnector]] = None
 
     last_updated: datetime.datetime
 
@@ -284,6 +286,10 @@ class GeoLocation(Schema):
     latitude: float
 
 
+class OcpiOperator(Schema):
+    name: str
+
+
 class OcpiLocation(Schema):
     id: str
     country: Optional[str] = None
@@ -294,8 +300,10 @@ class OcpiLocation(Schema):
     postal_code: Optional[str] = None
     state: Optional[str] = None
     coordinates: Optional[GeoLocation]
-    evses: List[OcpiEvse]
-    operator_name: Optional[str] = None
+    evses: Optional[List[OcpiEvse]] = None
+    operator: Optional[OcpiOperator] = None
+    suboperator: Optional[OcpiOperator] = None
+    time_zone: Optional[str] = None
 
     # TODO: opening_times
 
@@ -316,17 +324,41 @@ class OcpiLocation(Schema):
             id_from_source=self.id,
             name=none_to_blank(self.name if self.name is not None else self.address),
             location=Point(self.coordinates.longitude, self.coordinates.latitude),
-            network=none_to_blank(self.operator_name),
+            network=(
+                none_to_blank(self.operator.name) if self.operator is not None else ""
+            ),
+            operator=(
+                none_to_blank(self.suboperator.name)
+                if self.suboperator is not None
+                else ""
+            ),
             street=none_to_blank(self.address),
             zipcode=none_to_blank(self.postal_code),
             city=none_to_blank(self.city),
             country=self.country if self.country is not None else self.country_code,
         )
-        chargepoints = [
-            (rp.convert(), [con.convert() for con in rp.connectors])
-            for rp in self.evses
-        ]
+        chargepoints = []
+        for evse in self.evses:
+            if evse.connectors is not None:
+                con_ids = set()
+                connectors = []
+                for con in evse.connectors:
+                    if con.id in con_ids:
+                        logging.warning(
+                            "Duplicate connector ID %s for EVSE %s",
+                            con.id,
+                            evse.evse_id,
+                        )
+                        continue
+                    con_ids.add(con.id)
+                    connectors.append(con.convert())
+                chargepoints.append((evse.convert(), connectors))
         return site, chargepoints
+
+    def is_valid(self):
+        return self.evses is not None and any(
+            evse.status != OcpiEvse.OcpiEvseStatus.REMOVED for evse in self.evses
+        )
 
     def convert_status(
         self,
@@ -340,7 +372,11 @@ class OcpiLocation(Schema):
                 RealtimeStatus(
                     chargepoint=evse.convert(),
                     status=status_mapping[evse.status],
-                    timestamp=evse.last_updated,
+                    timestamp=(
+                        timezone(self.time_zone).localize(evse.last_updated)
+                        if self.time_zone is not None
+                        else evse.last_updated
+                    ),
                     data_source=data_source,
                     license_attribution=license_attribution,
                     license_attribution_link=(

@@ -72,6 +72,7 @@ class BaseOcpiDataSource(DataSource):
                     self.id, self.license_attribution, self.license_attribution_link
                 )
                 for location in locations
+                if location.is_valid()
             ),
         )
         if DataType.DYNAMIC in self.supported_data_types:
@@ -81,6 +82,7 @@ class BaseOcpiDataSource(DataSource):
                 (
                     s
                     for location in locations
+                    if location.is_valid()
                     for s in location.convert_status(
                         self.id, self.license_attribution, self.license_attribution_link
                     )
@@ -137,6 +139,7 @@ class BaseOcpiConnectionDataSource(DataSource):
     country_code = os.environ.get("OCPI_COUNTRY_CODE")
     party_id = os.environ.get("OCPI_PARTY_ID")
     business_name = os.environ.get("OCPI_BUSINESS_NAME")
+    extra_auth_header: str = None
 
     def setup(self):
         if self.is_credentials_sender:
@@ -168,7 +171,9 @@ class BaseOcpiConnectionDataSource(DataSource):
         if not conn.locations_url and not conn.tariffs_url:
             self._fetch_endpoints(conn)
 
-        root = ocpi_get_paginated(conn.locations_url, token)
+        root = ocpi_get_paginated(
+            conn.locations_url, token, extra_auth_header=self.extra_auth_header
+        )
         locations = list(OcpiParser().parse_locations(root))
         locations = self.postprocess_locations(locations)
         sync_chargers(
@@ -178,6 +183,7 @@ class BaseOcpiConnectionDataSource(DataSource):
                     self.id, self.license_attribution, self.license_attribution_link
                 )
                 for location in locations
+                if location.is_valid()
             ),
         )
         sync_statuses(
@@ -186,6 +192,7 @@ class BaseOcpiConnectionDataSource(DataSource):
             (
                 s
                 for location in locations
+                if location.is_valid()
                 for s in location.convert_status(
                     self.id, self.license_attribution, self.license_attribution_link
                 )
@@ -489,4 +496,7 @@ class InstavoltUkOcpiDataSource(BaseOcpiConnectionDataSource):
     license_attribution = "Instavolt Ltd., Open Government Licence"
     is_credentials_sender = True
     party_id = os.environ.get("INSTAVOLT_UK_OCPI_PARTY_ID")
+    extra_auth_header = "x-api-key"
     # https://instavolt.co.uk/public-charge-point-regulation-data/
+    # TODO: nonstandard: sends tariff information as part of locations data
+    # TODO: limited to 96 API calls per 24 hours
