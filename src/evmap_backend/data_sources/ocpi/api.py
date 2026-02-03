@@ -11,8 +11,9 @@ from evmap_backend.data_sources.models import UpdateState
 from evmap_backend.data_sources.ocpi import SUPPORTED_OCPI_VERSIONS
 from evmap_backend.data_sources.ocpi.model import *
 from evmap_backend.data_sources.ocpi.models import OcpiConnection, generate_token
+from evmap_backend.data_sources.ocpi.ninja import OcpiTokenAuth
 from evmap_backend.data_sources.ocpi.source import BaseOcpiConnectionDataSource
-from evmap_backend.data_sources.ocpi.utils import OcpiTokenAuth, ocpi_get
+from evmap_backend.data_sources.ocpi.utils import ocpi_get
 from evmap_backend.data_sources.registry import get_data_source
 
 api = NinjaAPI(urls_namespace="ocpi", auth=OcpiTokenAuth())
