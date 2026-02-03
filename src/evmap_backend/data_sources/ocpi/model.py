@@ -375,6 +375,7 @@ class OcpiLocation(Schema):
                     timestamp=(
                         timezone(self.time_zone).localize(evse.last_updated)
                         if self.time_zone is not None
+                        and evse.last_updated.tzinfo is None
                         else evse.last_updated
                     ),
                     data_source=data_source,
