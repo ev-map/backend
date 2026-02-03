@@ -47,7 +47,8 @@ def parse_refill_point(elem) -> Datex2RefillPoint:
 
 
 def parse_address(address_lines: list) -> str:
-    address_lines = sorted(address_lines, key=lambda line: line["order"])
+    if "order" in address_lines[0]:
+        address_lines = sorted(address_lines, key=lambda line: line["order"])
     texts = []
     for line in address_lines:
         text = line["text"]
@@ -69,10 +70,16 @@ def parse_energy_infrastructure_site(
         location_reference = elem["locationReference"]
     else:
         location_reference = elem["energyInfrastructureStation"][0]["locationReference"]
-    if "locPointLocation" in location_reference:
-        location_extension = location_reference["locPointLocation"][
-            "locLocationExtensionG"
-        ]
+    if (
+        "locPointLocation" in location_reference
+        or "locAreaLocation" in location_reference
+    ):
+        location = (
+            location_reference["locPointLocation"]
+            if "locPointLocation" in location_reference
+            else location_reference["locAreaLocation"]
+        )
+        location_extension = location["locLocationExtensionG"]
         facility_location = (
             location_extension["facilityLocation"]
             if "facilityLocation" in location_extension
@@ -111,7 +118,7 @@ def parse_energy_infrastructure_site(
             else None
         ),
         location=coordinates,
-        zipcode=address["postcode"] if address else None,
+        zipcode=address["postcode"] if address and "postcode" in address else None,
         city=parse_multilingual_string(city).first() if address else None,
         street=parse_address(address["addressLine"]),
         country=address["countryCode"] if address else "DE",
