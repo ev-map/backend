@@ -148,7 +148,13 @@ def parse_energy_infrastructure_site_status(
         site_id=elem["reference"]["idG"],
         refill_point_statuses=[
             parse_refill_point_status(
-                rp["aegiRefillPointStatus"], last_updated, default_timezone
+                (
+                    rp["aegiRefillPointStatus"]
+                    if "aegiRefillPointStatus" in rp
+                    else rp["aegiElectricChargingPointStatus"]
+                ),
+                last_updated,
+                default_timezone,
             )
             for station in elem["energyInfrastructureStationStatus"]
             for rp in station["refillPointStatus"]
