@@ -5,7 +5,7 @@ import requests
 from django.contrib.gis.geos import Point
 from tqdm import tqdm
 
-from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
+from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.sync import sync_chargers
 
@@ -33,7 +33,10 @@ def parse_eliso_chargers(
             zipcode=item["postalCode"],
             city=item["city"],
             country=item["country_iso_3166_alpha_2"],
-            network=item["operator_name"],
+            network=Network.objects.get_or_create(
+                evse_operator_id=item["operator"],
+                defaults=dict(name=item["operator_name"]),
+            )[0],
             location=Point(
                 item["coordinates"]["longitude"], item["coordinates"]["latitude"]
             ),

@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.contrib.gis.admin import GISModelAdmin
+from django.db.models import Count
 
-from evmap_backend.chargers.fields import format_evseid
+from evmap_backend.chargers.fields import format_evse_operator_id, format_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
 
 
@@ -42,7 +43,24 @@ class ConnectorAdmin(admin.ModelAdmin):
 
 
 class NetworkAdmin(admin.ModelAdmin):
-    list_display = ["name", "evse_operator_id"]
+    list_display = ["name", "formatted_evse_operator_id", "chargingsites_count"]
+
+    @admin.display(description="EVSE Operator ID")
+    def formatted_evse_operator_id(self, obj):
+        return (
+            format_evse_operator_id(obj.evse_operator_id)
+            if obj.evse_operator_id
+            else ""
+        )
+
+    @admin.display(ordering="-chargingsites__count")
+    def chargingsites_count(self, obj):
+        return obj.chargingsites__count
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        queryset = queryset.annotate(Count("chargingsites"))
+        return queryset
 
 
 # Register your models here.

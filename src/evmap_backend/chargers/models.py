@@ -6,7 +6,26 @@ from evmap_backend.chargers.fields import (
     EVSEIDType,
     EVSEOperatorIDField,
     OpeningHoursField,
+    format_evse_operator_id,
 )
+
+
+class Network(models.Model):
+    class Meta:
+        indexes = [
+            models.Index(fields=["evse_operator_id"]),
+        ]
+
+    name = models.CharField(max_length=255, blank=True)
+    evse_operator_id = EVSEOperatorIDField(blank=True, unique=True)
+    website = models.URLField(blank=True)
+
+    def __str__(self):
+        return (
+            f"{self.name} ({format_evse_operator_id(self.evse_operator_id)})"
+            if self.name
+            else self.evse_operator_id
+        )
 
 
 class ChargingSite(models.Model):
@@ -34,7 +53,9 @@ class ChargingSite(models.Model):
     city = models.CharField(max_length=255, blank=True)
     country = CountryField()
 
-    network = models.TextField(blank=True)
+    network = models.ForeignKey(
+        Network, on_delete=models.SET_NULL, null=True, related_name="chargingsites"
+    )
     operator = models.TextField(blank=True)
 
     opening_hours = OpeningHoursField(blank=True)
@@ -118,14 +139,3 @@ class Connector(models.Model):
         max_length=255, choices=ConnectorFormats, blank=True
     )
     max_power = models.FloatField()  # in watts
-
-
-class Network(models.Model):
-    class Meta:
-        indexes = [
-            models.Index(fields=["evse_operator_id"]),
-        ]
-
-    name = models.CharField(max_length=255, blank=True)
-    evse_operator_id = EVSEOperatorIDField(blank=True, unique=True)
-    website = models.URLField(blank=True)

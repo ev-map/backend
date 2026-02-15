@@ -60,7 +60,7 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2AustriaRealtimeDataSource,
     # Germany
     MontaDataSource,
-    ElisoDataSource,
+    # ElisoDataSource,  # Eliso is already included in the Eco-Movement data
     Datex2MobilithekEcoMovementDatex2DataSource,
     Datex2MobilithekEcoMovementRealtimeDataSource,
     Datex2MobilithekEnbwDataSource,

@@ -40,7 +40,7 @@
         const idsToDelete = new Set(markers.keys());
         chargers.forEach((charger) => {
             if (!markers.has(charger.id)) {
-                const popup = new maplibregl.Popup().setHTML("Name: " + charger.name + "<br>" + "Operator: " + charger.operator + "<br>" + "Data source: " + charger.data_source);
+                const popup = new maplibregl.Popup().setHTML("Name: " + charger.name + "<br>" + "Network: " + charger.network + "<br>" + "Data source: " + charger.data_source);
                 const marker = new maplibregl.Marker()
                     .setLngLat(charger.location)
                     .setPopup(popup)

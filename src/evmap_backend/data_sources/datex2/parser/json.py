@@ -39,8 +39,13 @@ def parse_connector(elem) -> Datex2Connector:
 
 
 def parse_refill_point(elem) -> Datex2RefillPoint:
+    evseid = next(
+        extid["identifier"]
+        for extid in elem["externalIdentifier"]
+        if extid["typeOfIdentifier"]["extendedValueG"] == "evseId"
+    )
     return Datex2RefillPoint(
-        # external_identifier=
+        external_identifier=evseid,
         id=elem["idG"],
         connectors=[parse_connector(connector) for connector in elem["connector"]],
     )

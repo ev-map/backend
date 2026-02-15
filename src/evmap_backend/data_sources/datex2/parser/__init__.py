@@ -8,7 +8,8 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from evmap_backend.chargers.fields import EVSEIDType, normalize_evseid, validate_evseid
-from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
+from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
+from evmap_backend.helpers.database import none_to_blank
 from evmap_backend.realtime.models import RealtimeStatus
 
 
@@ -144,7 +145,7 @@ class Datex2EnergyInfrastructureSite:
     country: str
 
     operator_name: Datex2MultilingualString
-    operator_phone: str
+    operator_phone: Optional[str]
     refill_points: List[Datex2RefillPoint]
     additional_information: Datex2MultilingualString = None
 
@@ -154,6 +155,12 @@ class Datex2EnergyInfrastructureSite:
         license_attribution: str,
         license_attribution_link: Optional[str],
     ) -> Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]:
+        operator_id = normalize_evseid(self.refill_points[0].external_identifier)[:5]
+        network, created = Network.objects.get_or_create(
+            evse_operator_id=operator_id,
+            defaults=dict(name=none_to_blank(self.operator_name.first())),
+        )
+
         site = ChargingSite(
             data_source=data_source,
             license_attribution=license_attribution,
@@ -171,7 +178,7 @@ class Datex2EnergyInfrastructureSite:
                 )
             ),
             location=Point(*self.location),
-            network=self.operator_name.first(),
+            network=network,
             street=self.street if self.street is not None else "",
             zipcode=self.zipcode if self.zipcode is not None else "",
             city=self.city if self.city is not None else "",

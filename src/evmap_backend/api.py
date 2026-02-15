@@ -1,6 +1,6 @@
 import gzip
 import logging
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from django.contrib.gis.geos import Polygon
 from ninja import ModelSchema, NinjaAPI
@@ -18,10 +18,15 @@ register_field("PointField", Tuple[float, float])
 
 class ChargingSitesSchema(ModelSchema):
     country: str
+    network: Optional[str]
 
     @staticmethod
-    def resolve_country(obj) -> str:
+    def resolve_country(obj: ChargingSite) -> str:
         return obj.country.code
+
+    @staticmethod
+    def resolve_network(obj: ChargingSite) -> str:
+        return obj.network.name if obj.network else None
 
     class Meta:
         model = ChargingSite

@@ -10,7 +10,7 @@ from pytz import timezone
 
 from evmap_backend import settings
 from evmap_backend.chargers.fields import normalize_evseid
-from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
+from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
 from evmap_backend.helpers.database import none_to_blank
 from evmap_backend.realtime.models import RealtimeStatus
 
@@ -315,6 +315,16 @@ class OcpiLocation(Schema):
         license_attribution: str,
         license_attribution_link: Optional[str] = None,
     ) -> Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]:
+        operator_id = normalize_evseid(self.evses[0].evse_id)[:5]
+        network, _ = Network.objects.get_or_create(
+            evse_operator_id=none_to_blank(operator_id),
+            defaults=dict(
+                name=none_to_blank(
+                    self.operator.name if self.operator is not None else None
+                )
+            ),
+        )
+
         site = ChargingSite(
             data_source=data_source,
             license_attribution=license_attribution,
@@ -324,9 +334,7 @@ class OcpiLocation(Schema):
             id_from_source=self.id,
             name=none_to_blank(self.name if self.name is not None else self.address),
             location=Point(self.coordinates.longitude, self.coordinates.latitude),
-            network=(
-                none_to_blank(self.operator.name) if self.operator is not None else ""
-            ),
+            network=network,
             operator=(
                 none_to_blank(self.suboperator.name)
                 if self.suboperator is not None

@@ -33,10 +33,20 @@ def format_evseid(value: str) -> str:
     """
     Format EVSEID for display by inserting asterisks after country code and operator ID.
     Example stored: DEABCE12345
-    Example display: DE ABC E12345
+    Example display: DE*ABC*E12345
     """
     validate_evseid(value)
     return f"{value[:2]}*{value[2:5]}*{value[5:]}"
+
+
+def format_evse_operator_id(value: str) -> str:
+    """
+    Format EVSE Operator ID for display by inserting asterisks after country code.
+    Example stored: DEABC
+    Example display: DE*ABC
+    """
+    validate_evse_operator_id(value)
+    return f"{value[:2]}*{value[2:5]}"
 
 
 class EVSEIDType(StrEnum):

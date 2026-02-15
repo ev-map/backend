@@ -43,20 +43,17 @@ def _sync_sites_batch(
         if site.id_from_source in existing_sites:
             # Update existing site
             existing_site = existing_sites[site.id_from_source]
-            site_dict = model_to_dict(
-                site, exclude=["data_source", "id_from_source", "id"]
-            )
-            for field, value in site_dict.items():
-                setattr(existing_site, field, value)
-            sites_to_update.append(existing_site)
-            site_mapping[site.id_from_source] = existing_site
+            site.data_source = data_source
+            site.id = existing_site.id
+            sites_to_update.append(site)
+            site_mapping[site.id_from_source] = site
 
             # Check for duplicates globally using site_ids_to_delete
-            if existing_site.id not in site_ids_to_delete:
+            if site.id not in site_ids_to_delete:
                 logging.warning(
                     f"ID {site.id_from_source} seems to appear more than once in input data!"
                 )
-            site_ids_to_delete.discard(existing_site.id)
+            site_ids_to_delete.discard(site.id)
         else:
             # Create new site
             site.data_source = data_source

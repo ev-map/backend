@@ -11,7 +11,7 @@ from django.core.exceptions import ValidationError
 from tqdm import tqdm
 
 from evmap_backend.chargers.fields import EVSEIDType, normalize_evseid, validate_evseid
-from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
+from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
 from evmap_backend.helpers.database import none_to_blank
 
 TIMEZONE = pytz.timezone("Europe/Berlin")
@@ -290,6 +290,23 @@ class NobilChargerStation:
         license_attribution: str,
         license_attribution_link: Optional[str] = None,
     ) -> Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]:
+        operator_id = None
+        if self.connectors[0].evse_id:
+            evseid = normalize_evseid(self.connectors[0].evse_id)
+            try:
+                validate_evseid(evseid, EVSEIDType.EVSE)
+                operator_id = evseid[:5]
+            except ValidationError:
+                pass
+
+        if operator_id:
+            network, _ = Network.objects.get_or_create(
+                evse_operator_id=none_to_blank(operator_id),
+                defaults=dict(name=none_to_blank(self.operator)),
+            )
+        else:
+            network = None
+
         site = ChargingSite(
             data_source=data_source,
             license_attribution=license_attribution,
@@ -299,7 +316,7 @@ class NobilChargerStation:
             id_from_source=str(self.id),
             name=self.name,
             location=Point(*self.location),
-            network=none_to_blank(self.operator),
+            network=network,
             operator=none_to_blank(self.owned_by),
             street=none_to_blank(self.street),
             zipcode=none_to_blank(self.zip_code),

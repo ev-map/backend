@@ -8,7 +8,7 @@ from django.utils import timezone
 from tqdm import tqdm
 
 from evmap_backend.chargers.fields import normalize_evseid
-from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
+from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.monta.models import MontaTokens
 from evmap_backend.realtime.models import RealtimeStatus
@@ -109,7 +109,9 @@ def convert_monta_data(chargers_by_location, source, license_attribution):
             zipcode=evses[0]["location"]["address"]["zip"],
             city=evses[0]["location"]["address"]["city"],
             country=country_map[evses[0]["location"]["address"]["country"]],
-            network="Monta",
+            network=Network.objects.get_or_create(
+                evse_operator_id="DKMON", defaults=dict(name="Monta")
+            )[0],
             operator=evses[0]["roamingOperatorName"],
         )
 
