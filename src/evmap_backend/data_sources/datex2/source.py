@@ -169,9 +169,9 @@ class Datex2AustriaRealtimeDataSource(BaseDatex2DataSource):
 class Datex2MobilithekEcoMovementDatex2DataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_ecomovement"
     subscription_id = os.environ.get("MOBILITHEK_ECOMOVEMENT_STATIC_SUBSCRIPTION_ID")
-    ignore_encoding = True
+    parser = Datex2JsonParser()
     license_attribution = "Eco-Movement BV, CC-BY 4.0"
-    # https://mobilithek.info/offers/855030183015186432
+    # https://mobilithek.info/offers/954064102947180544
 
 
 class Datex2MobilithekEcoMovementRealtimeDataSource(BaseMobilithekDatex2DataSource):
@@ -181,7 +181,7 @@ class Datex2MobilithekEcoMovementRealtimeDataSource(BaseMobilithekDatex2DataSour
     parser = Datex2JsonParser()
     static_data_source = "mobilithek_ecomovement"
     license_attribution = "Eco-Movement BV, CC-BY 4.0"
-    # https://mobilithek.info/offers/904394594561454080
+    # https://mobilithek.info/offers/955166494396665856
 
 
 class Datex2MobilithekEnbwDataSource(BaseMobilithekDatex2DataSource):
