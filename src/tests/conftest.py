@@ -5,7 +5,7 @@ Pytest configuration and shared fixtures.
 import pytest
 from django.contrib.gis.geos import Point
 
-from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
+from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
 
 
 @pytest.fixture
@@ -25,6 +25,10 @@ def create_site(test_location):
     """Fixture that returns a function to create ChargingSite instances."""
 
     def _create_site(id_from_source, name="Test Site", **kwargs):
+        if "network" in kwargs:
+            network, _ = Network.objects.get_or_create(name=kwargs["network"])
+        else:
+            network = None
         return ChargingSite(
             id_from_source=id_from_source,
             name=name,
@@ -33,7 +37,7 @@ def create_site(test_location):
             street=kwargs.get("street", ""),
             zipcode=kwargs.get("zipcode", ""),
             city=kwargs.get("city", ""),
-            network=kwargs.get("network", ""),
+            network=network,
             operator=kwargs.get("operator", ""),
         )
 
