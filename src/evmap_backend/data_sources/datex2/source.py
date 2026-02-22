@@ -255,6 +255,42 @@ class Datex2MobilithekWirelaneRealtimeDataSource(BaseMobilithekDatex2DataSource)
     # https://mobilithek.info/offers/876587237907525632
 
 
+class Datex2MobilithekSmatricsDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_smatrics"
+    subscription_id = os.environ.get("MOBILITHEK_SMATRICS_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "SMATRICS GmbH & Co KG, CC-0"
+    # https://mobilithek.info/offers/961317352759001088
+
+
+class Datex2MobilithekSmatricsRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_smatrics_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_SMATRICS_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_smatrics"
+    license_attribution = "SMATRICS GmbH & Co KG, CC-0"
+    # https://mobilithek.info/offers/961319990963605504
+
+
+class Datex2MobilithekEroundDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_eround"
+    subscription_id = os.environ.get("MOBILITHEK_EROUND_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "Hamburger Energienetze GmbH, CC-0"
+    # https://mobilithek.info/offers/961625658278940672
+
+
+class Datex2MobilithekEroundRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_eround_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_EROUND_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_eround"
+    license_attribution = "Hamburger Energienetze GmbH, CC-0"
+    # https://mobilithek.info/offers/961629419076456448
+
+
 class BaseEcoMovementNapDatex2DataSource(BaseDatex2DataSource):
     license_attribution = "Eco-Movement BV"
     # https://developers.eco-movement.com/v5/docs/eco-movement-data-api-datex
