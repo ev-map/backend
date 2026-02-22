@@ -246,6 +246,10 @@ class OcpiEvse(Schema):
         RESERVED = "RESERVED"
         UNKNOWN = "UNKNOWN"
 
+        @classmethod
+        def _missing_(cls, value):
+            return cls.UNKNOWN
+
     uid: str
     evse_id: str
     physical_reference: Optional[str] = None
