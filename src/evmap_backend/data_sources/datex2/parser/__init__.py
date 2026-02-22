@@ -113,6 +113,9 @@ class Datex2RefillPoint:
     external_identifier: str = None
 
     def convert(self) -> Chargepoint:
+        return Chargepoint(id_from_source=self.id, evseid=(self.get_evseid()))
+
+    def get_evseid(self) -> str:
         evseid = ""
         try:
             id = normalize_evseid(
@@ -127,8 +130,7 @@ class Datex2RefillPoint:
                 evseid = id
             except ValidationError:
                 pass
-
-        return Chargepoint(id_from_source=self.id, evseid=evseid)
+        return evseid
 
 
 @dataclass
@@ -155,7 +157,7 @@ class Datex2EnergyInfrastructureSite:
         license_attribution: str,
         license_attribution_link: Optional[str],
     ) -> Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]:
-        operator_id = normalize_evseid(self.refill_points[0].external_identifier)[:5]
+        operator_id = normalize_evseid(self.refill_points[0].get_evseid())[:5]
         network, created = Network.objects.get_or_create(
             evse_operator_id=operator_id,
             defaults=dict(name=none_to_blank(self.operator_name.first())),

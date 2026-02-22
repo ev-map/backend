@@ -2,8 +2,10 @@ import datetime
 import json
 from typing import Iterable, Optional, Tuple
 
+from django.core.exceptions import ValidationError
 from tqdm import tqdm
 
+from evmap_backend.chargers.fields import normalize_evseid, validate_evseid
 from evmap_backend.data_sources.datex2.parser import (
     Datex2Connector,
     Datex2EnergyInfrastructureSite,
@@ -39,13 +41,17 @@ def parse_connector(elem) -> Datex2Connector:
 
 
 def parse_refill_point(elem) -> Datex2RefillPoint:
-    evseid = next(
-        extid["identifier"]
-        for extid in elem["externalIdentifier"]
-        if extid["typeOfIdentifier"]["extendedValueG"] == "evseId"
-    )
+    if "externalIdentifier" in elem:
+        external_identifier = next(
+            extid["identifier"]
+            for extid in elem["externalIdentifier"]
+            if extid["typeOfIdentifier"]["extendedValueG"] == "evseId"
+        )
+    else:
+        external_identifier = None
+
     return Datex2RefillPoint(
-        external_identifier=evseid,
+        external_identifier=external_identifier,
         id=elem["idG"],
         connectors=[parse_connector(connector) for connector in elem["connector"]],
     )
