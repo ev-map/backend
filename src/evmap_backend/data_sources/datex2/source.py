@@ -255,6 +255,24 @@ class Datex2MobilithekWirelaneRealtimeDataSource(BaseMobilithekDatex2DataSource)
     # https://mobilithek.info/offers/876587237907525632
 
 
+class Datex2MobilithekTeslaDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_tesla"
+    subscription_id = os.environ.get("MOBILITHEK_TESLA_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "Tesla Germany GmbH, CC-0"
+    # https://mobilithek.info/offers/953828817873125376
+
+
+class Datex2MobilithekTeslaRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_tesla_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_TESLA_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_tesla"
+    license_attribution = "Tesla Germany GmbH, CC-0"
+    # https://mobilithek.info/offers/953843379766972416
+
+
 class Datex2MobilithekSmatricsDataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_smatrics"
     subscription_id = os.environ.get("MOBILITHEK_SMATRICS_STATIC_SUBSCRIPTION_ID")
@@ -289,6 +307,50 @@ class Datex2MobilithekEroundRealtimeDataSource(BaseMobilithekDatex2DataSource):
     static_data_source = "mobilithek_eround"
     license_attribution = "Hamburger Energienetze GmbH, CC-0"
     # https://mobilithek.info/offers/961629419076456448
+
+
+class Datex2MobilithekMontaDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_monta"
+    subscription_id = os.environ.get("MOBILITHEK_MONTA_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "Monta Aps"
+    # https://mobilithek.info/offers/963836072152719360
+
+
+class Datex2MobilithekMontaRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_monta_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_MONTA_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_monta"
+    license_attribution = "Monta Aps"
+    # https://mobilithek.info/offers/963870983660167168
+
+
+class Datex2MobilithekGridAndCoDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_gridandco"
+    subscription_id = os.environ.get("MOBILITHEK_GRIDANDCO_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "Grid & Co. GmbH"
+    # https://mobilithek.info/offers/963884581258190848
+
+
+class Datex2MobilithekGridAndCoRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_gridandco_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_GRIDANDCO_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_gridandco"
+    license_attribution = "Grid & Co. GmbH"
+    # https://mobilithek.info/offers/963780195509002240
+
+
+class Datex2MobilithekEnioDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_enio"
+    subscription_id = os.environ.get("MOBILITHEK_ENIO_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "ENIO GmbH"
+    # https://mobilithek.info/offers/963506672697769984
 
 
 class BaseEcoMovementNapDatex2DataSource(BaseDatex2DataSource):
