@@ -73,8 +73,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2MobilithekUlmRealtimeDataSource,
     Datex2MobilithekWirelaneDataSource,
     Datex2MobilithekWirelaneRealtimeDataSource,
-    # Datex2MobilithekTeslaDataSource,
-    # Datex2MobilithekTeslaRealtimeDataSource,
+    Datex2MobilithekTeslaDataSource,
+    Datex2MobilithekTeslaRealtimeDataSource,
     # Datex2MobilithekSmatricsDataSource,  # no data uploaded yet
     # Datex2MobilithekSmatricsRealtimeDataSource,  # no data uploaded yet
     # Datex2MobilithekEroundDataSource,  # no data uploaded yet
