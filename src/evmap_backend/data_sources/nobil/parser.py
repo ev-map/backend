@@ -88,6 +88,14 @@ class NobilConnector:
         DC_600 = 43
         DC_700 = 44
         DC_800 = 45
+        DC_320 = 46
+        DC_900 = 47
+        DC_1000 = 48
+        DC_1100 = 49
+        DC_1200 = 50
+        DC_1300 = 51
+        DC_1400 = 52
+        DC_1500 = 53
         UNSPECIFIED = 0
         AC_11_ALT = 16
         AC_22_ALT = 17
@@ -218,6 +226,14 @@ charging_capacity_mapping = {
     NobilConnector.ChargingCapacity.DC_600: 600_000,
     NobilConnector.ChargingCapacity.DC_700: 700_000,
     NobilConnector.ChargingCapacity.DC_800: 800_000,
+    NobilConnector.ChargingCapacity.DC_320: 320_000,
+    NobilConnector.ChargingCapacity.DC_900: 900_000,
+    NobilConnector.ChargingCapacity.DC_1000: 1_000_000,
+    NobilConnector.ChargingCapacity.DC_1100: 1_100_000,
+    NobilConnector.ChargingCapacity.DC_1200: 1_200_000,
+    NobilConnector.ChargingCapacity.DC_1300: 1_300_000,
+    NobilConnector.ChargingCapacity.DC_1400: 1_400_000,
+    NobilConnector.ChargingCapacity.DC_1500: 1_500_000,
     NobilConnector.ChargingCapacity.AC_11_ALT: 11_000,
     NobilConnector.ChargingCapacity.AC_22_ALT: 22_000,
     NobilConnector.ChargingCapacity.AC_43_ALT: 43_000,
