@@ -160,7 +160,11 @@ class Datex2EnergyInfrastructureSite:
         operator_id = normalize_evseid(self.refill_points[0].get_evseid())[:5]
         network, created = Network.objects.get_or_create(
             evse_operator_id=operator_id,
-            defaults=dict(name=none_to_blank(self.operator_name.first())),
+            defaults=dict(
+                name=none_to_blank(
+                    self.operator_name.first() if self.operator_name else None
+                )
+            ),
         )
 
         site = ChargingSite(

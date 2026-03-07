@@ -74,13 +74,20 @@ def parse_energy_infrastructure_site(
     operator = (
         elem["operator"]["afacAnOrganisation"]
         if "operator" in elem
-        else elem["energyInfrastructureStation"][0]["operator"]["afacOrganisation"]
+        else (
+            elem["energyInfrastructureStation"][0]["operator"]["afacOrganisation"]
+            if "operator" in elem["energyInfrastructureStation"][0]
+            else None
+        )
     )
 
     if "locationReference" in elem:
         location_reference = elem["locationReference"]
     else:
         location_reference = elem["energyInfrastructureStation"][0]["locationReference"]
+
+    address = None
+    city = None
     if (
         "locPointLocation" in location_reference
         or "locAreaLocation" in location_reference
@@ -90,18 +97,17 @@ def parse_energy_infrastructure_site(
             if "locPointLocation" in location_reference
             else location_reference["locAreaLocation"]
         )
-        location_extension = location["locLocationExtensionG"]
-        facility_location = (
-            location_extension["facilityLocation"]
-            if "facilityLocation" in location_extension
-            else location_extension["FacilityLocation"]
-        )
-        address = facility_location["address"]
-        city = address["city"]
-        if "value" in city:
-            city = city["value"][0]
-    else:
-        address = None
+        if "locLocationExtensionG" in location:
+            location_extension = location["locLocationExtensionG"]
+            facility_location = (
+                location_extension["facilityLocation"]
+                if "facilityLocation" in location_extension
+                else location_extension["FacilityLocation"]
+            )
+            address = facility_location["address"]
+            city = address["city"]
+            if "value" in city:
+                city = city["value"][0]
 
     refill_points = []
     if not "energyInfrastructureStation" in elem:
@@ -130,10 +136,14 @@ def parse_energy_infrastructure_site(
         ),
         location=coordinates,
         zipcode=address["postcode"] if address and "postcode" in address else None,
-        city=parse_multilingual_string(city).first() if address else None,
-        street=parse_address(address["addressLine"]),
+        city=parse_multilingual_string(city).first() if city else None,
+        street=parse_address(address["addressLine"]) if address else None,
         country=address["countryCode"] if address else "DE",
-        operator_name=parse_multilingual_string(operator["name"]),
+        operator_name=(
+            parse_multilingual_string(operator["name"])
+            if operator is not None
+            else None
+        ),
         refill_points=refill_points,
         operator_phone=None,
     )
