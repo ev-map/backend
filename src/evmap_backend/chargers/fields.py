@@ -24,9 +24,9 @@ def normalize_evseid(value: str) -> str:
     """
     Normalize EVSEID:
     - Uppercase
-    - Remove separators (*, -, space)
+    - Remove separators (*, -, ., space)
     """
-    return re.sub(r"[*\-\s]", "", value).upper()
+    return re.sub(r"[*\-\s.]", "", value).upper()
 
 
 def format_evseid(value: str) -> str:

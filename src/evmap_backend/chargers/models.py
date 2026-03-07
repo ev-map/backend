@@ -21,11 +21,14 @@ class Network(models.Model):
     website = models.URLField(blank=True)
 
     def __str__(self):
-        return (
-            f"{self.name} ({format_evse_operator_id(self.evse_operator_id)})"
-            if self.name
-            else self.evse_operator_id
-        )
+        if self.evse_operator_id:
+            return (
+                f"{self.name} ({format_evse_operator_id(self.evse_operator_id)})"
+                if self.name
+                else format_evse_operator_id(self.evse_operator_id)
+            )
+        else:
+            return self.name
 
 
 class ChargingSite(models.Model):
