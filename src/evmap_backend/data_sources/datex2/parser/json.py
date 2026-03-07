@@ -36,7 +36,7 @@ def parse_point_coordinates(elem: dict) -> Tuple[float, float]:
 def parse_connector(elem) -> Datex2Connector:
     return Datex2Connector(
         connector_type=Datex2Connector.ConnectorType(elem["connectorType"]["value"]),
-        max_power=elem["maxPowerAtSocket"],
+        max_power=elem["maxPowerAtSocket"] if "maxPowerAtSocket" in elem else None,
     )
 
 

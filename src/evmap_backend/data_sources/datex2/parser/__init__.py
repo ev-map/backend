@@ -83,7 +83,7 @@ class Datex2Connector:
             connector_type=connector_mapping.get(
                 self.connector_type, Connector.ConnectorTypes.OTHER
             ),
-            max_power=self.max_power,
+            max_power=self.max_power if self.max_power is not None else 0.0,
         )
 
 
