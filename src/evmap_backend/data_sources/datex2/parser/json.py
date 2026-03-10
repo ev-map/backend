@@ -124,7 +124,12 @@ def parse_energy_infrastructure_site(
         if "locAreaLocation" in location_reference
         else location_reference["locPointLocation"]
     )
-    coordinates = parse_point_coordinates(area_location["coordinatesForDisplay"])
+    coordinates = (
+        area_location["coordinatesForDisplay"]
+        if "coordinatesForDisplay" in area_location
+        else area_location["pointByCoordinates"]["pointCoordinates"]
+    )
+    coordinates = parse_point_coordinates(coordinates)
 
     return Datex2EnergyInfrastructureSite(
         id=elem["idG"],
@@ -132,6 +137,7 @@ def parse_energy_infrastructure_site(
         additional_information=(
             parse_multilingual_string(elem["additionalInformation"][0])
             if "additionalInformation" in elem
+            and len(elem["additionalInformation"]) > 0
             else None
         ),
         location=coordinates,
@@ -187,6 +193,9 @@ class Datex2JsonParser:
     def parse(self, data) -> Iterable[Datex2EnergyInfrastructureSite]:
         root = json.loads(data)
         root = root["payload"]
+
+        if isinstance(root, list):
+            root = root[0]
 
         for table in root["aegiEnergyInfrastructureTablePublication"][
             "energyInfrastructureTable"
