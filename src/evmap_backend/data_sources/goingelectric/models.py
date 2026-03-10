@@ -2,6 +2,13 @@ from django.contrib.gis.db.models import PointField
 from django.db import models
 
 
+class GoingElectricNetwork(models.Model):
+    name = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return self.name
+
+
 class GoingElectricChargeLocation(models.Model):
     """
     Only includes fields available from chargepoint list API (chargepoint detail API has more details)
@@ -14,7 +21,12 @@ class GoingElectricChargeLocation(models.Model):
     address_country = models.CharField(max_length=255, blank=True)
     address_postcode = models.CharField(max_length=255, blank=True)
     address_street = models.CharField(max_length=255, blank=True)
-    network = models.CharField(max_length=255, blank=True)
+    network = models.ForeignKey(
+        GoingElectricNetwork,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="chargelocations",
+    )
     url = models.URLField(max_length=255)
     fault_report = models.BooleanField()
     verified = models.BooleanField()
