@@ -306,3 +306,35 @@ def match_ge_locations(
         total_count,
         (matched_count / total_count * 100) if total_count else 0,
     )
+
+
+def suggest_network_mappings(
+    ge_network: Optional[GoingElectricNetwork] = None,
+) -> Dict[int, Dict[int, int]]:
+    """
+    Analyse already-matched GE locations to infer which chargers.Network
+    each GoingElectricNetwork should map to.
+
+    Args:
+        ge_network: If given, only return suggestions for this GE network.
+
+    Returns:
+        Dict mapping GoingElectricNetwork.id -> {chargers.Network.id: count}
+        where *count* is the number of matched stations supporting that pairing.
+    """
+    counts: Dict[int, Dict[int, int]] = defaultdict(lambda: defaultdict(int))
+
+    qs = GoingElectricChargeLocation.objects.filter(
+        matched_site__isnull=False,
+        network__isnull=False,
+        matched_site__network__isnull=False,
+    )
+    if ge_network is not None:
+        qs = qs.filter(network=ge_network)
+
+    for ge_network_id, site_network_id in qs.values_list(
+        "network_id", "matched_site__network_id"
+    ):
+        counts[ge_network_id][site_network_id] += 1
+
+    return {k: dict(v) for k, v in counts.items()}

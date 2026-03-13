@@ -1,0 +1,58 @@
+{% extends "admin/change_form.html" %}
+
+{% block content %}
+  {{ block.super }}
+  <div style="clear: both;"></div>
+  <fieldset class="module">
+    <h2>Network mapping suggestions</h2>
+    {% if not suggestions %}
+      <div style="padding: 10px;">
+        <p>No suggestions available. Run station matching first, or this network has no matched stations.</p>
+      </div>
+    {% else %}
+      <div style="padding: 10px;">
+        <p>Based on matched charging stations:</p>
+        <form method="post" action="{{ add_mappings_url }}">
+          {% csrf_token %}
+          {% if preserved_filters %}
+            <input type="hidden" name="_changelist_filters" value="{{ preserved_filters }}">
+          {% endif %}
+          <table style="width: 100%;">
+            <thead>
+              <tr>
+                <th style="width: 40px;">Add</th>
+                <th>Charger network</th>
+                <th style="width: 120px;">Matched stations</th>
+                <th style="width: 140px;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in suggestions %}
+              <tr>
+                <td>
+                  {% if s.already_mapped %}
+                    <input type="checkbox" disabled checked>
+                  {% else %}
+                    <input type="checkbox" name="network_ids" value="{{ s.network.id }}">
+                  {% endif %}
+                </td>
+                <td>{{ s.network }}</td>
+                <td>{{ s.count }}</td>
+                <td>
+                  {% if s.already_mapped %}
+                    <span style="color: green;">&#10003; Already mapped</span>
+                  {% else %}
+                    <span style="color: orange;">New suggestion</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <br>
+          <input type="submit" value="Add selected mappings" class="default">
+        </form>
+      </div>
+    {% endif %}
+  </fieldset>
+{% endblock %}
