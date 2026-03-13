@@ -25,6 +25,10 @@ from evmap_backend.data_sources.openstreetmap.api import api as osm_api
 from . import views
 from .api import api as main_api
 
+admin.site.site_header = "EVMap Backend"
+admin.site.site_title = "EVMap Backend"
+admin.site.index_title = "Dashboard"
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("nobil/api/", nobil_api.urls),

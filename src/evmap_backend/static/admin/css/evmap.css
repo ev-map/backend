@@ -1,0 +1,80 @@
+/* EVMap admin theme — colors from EVMap Android app */
+
+html[data-theme="light"],
+:root {
+    --primary: #4caf50;
+    --primary-fg: #fff;
+    --accent: #00e676;
+    --secondary: #087f22;
+
+    --header-color: #fff;
+    --header-bg: var(--secondary);
+    --header-branding-color: var(--accent);
+    --header-link-color: var(--primary-fg);
+
+    --breadcrumbs-link-fg: #c8e6c9;
+    --breadcrumbs-bg: #4caf50;
+
+    --link-fg: #1b5e1f;
+    --link-hover-color: #087f22;
+    --link-selected-fg: #087f22;
+
+    --button-fg: #fff;
+    --button-bg: var(--secondary);
+    --button-hover-bg: #065a18;
+    --default-button-bg: #065a18;
+    --default-button-hover-bg: var(--secondary);
+
+    --object-tools-bg: #4caf50;
+    --object-tools-hover-bg: #087f22;
+
+    --darkened-bg: #e8f5e9;
+    --selected-bg: #c8e6c9;
+    --selected-row: #e8f5e9;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --primary: #1b5e1f;
+        --primary-fg: #c8e6c9;
+        --secondary: #0a4f16;
+
+        --breadcrumbs-link-fg: #b5f4c7;
+        --breadcrumbs-bg: var(--primary);
+
+        --link-fg: #81c784;
+        --link-hover-color: #b5f4c7;
+        --link-selected-fg: #b5f4c7;
+
+        --darkened-bg: #1a2e1a;
+        --selected-bg: #1b1b1b;
+        --selected-row: #1e3b1e;
+
+        --close-button-bg: #333;
+        --close-button-hover-bg: #666;
+    }
+}
+
+#site-name a:link, #site-name a:visited {
+    color: var(--header-color);
+}
+
+html[data-theme="dark"] {
+    --primary: #1b5e1f;
+    --primary-fg: #c8e6c9;
+    --secondary: #0a4f16;
+
+    --breadcrumbs-link-fg: #b5f4c7;
+    --breadcrumbs-bg: var(--primary);
+
+    --link-fg: #81c784;
+    --link-hover-color: #b5f4c7;
+    --link-selected-fg: #b5f4c7;
+
+    --darkened-bg: #1a2e1a;
+    --selected-bg: #1b1b1b;
+    --selected-row: #1e3b1e;
+
+    --close-button-bg: #333;
+    --close-button-hover-bg: #666;
+}
