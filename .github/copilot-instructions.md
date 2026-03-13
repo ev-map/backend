@@ -1,0 +1,1 @@
+When developing on Windows I use WSL, the Python environment is in ~/.virtualenvs/evmap-backend.
