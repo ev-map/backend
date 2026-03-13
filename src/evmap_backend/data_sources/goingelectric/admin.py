@@ -30,7 +30,9 @@ class GoingElectricNetworkAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
-        queryset = queryset.annotate(Count("chargelocations"))
+        queryset = queryset.annotate(Count("chargelocations")).order_by(
+            "-chargelocations__count"
+        )
         return queryset
 
     def get_urls(self):

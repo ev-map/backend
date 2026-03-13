@@ -59,7 +59,9 @@ class NetworkAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
-        queryset = queryset.annotate(Count("chargingsites"))
+        queryset = queryset.annotate(Count("chargingsites")).order_by(
+            "-chargingsites__count"
+        )
         return queryset
 
 
