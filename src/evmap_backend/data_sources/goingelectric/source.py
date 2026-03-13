@@ -5,6 +5,7 @@ from django.contrib.gis.geos import Point
 from django.db import transaction
 
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
+from evmap_backend.data_sources.goingelectric.matching import match_ge_locations
 from evmap_backend.data_sources.goingelectric.models import (
     GoingElectricChargeLocation,
     GoingElectricChargepoint,
@@ -146,3 +147,6 @@ class GoingElectricDataSource(DataSource):
             sites_deleted = 0
 
         print(f"{sites_created} sites created, {sites_deleted} sites deleted")
+
+        # Run matching after data pull
+        match_ge_locations()

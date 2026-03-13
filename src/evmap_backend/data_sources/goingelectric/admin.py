@@ -14,6 +14,7 @@ class GoingElectricChargepointInline(admin.StackedInline):
 
 class GoingElectricNetworkAdmin(admin.ModelAdmin):
     list_display = ["name", "chargelocations_count"]
+    filter_horizontal = ["mapped_networks"]
 
     @admin.display(ordering="-chargelocations__count")
     def chargelocations_count(self, obj):
@@ -26,8 +27,17 @@ class GoingElectricNetworkAdmin(admin.ModelAdmin):
 
 
 class GoingElectricChargeLocationAdmin(admin.ModelAdmin):
-    list_display = ["name", "network", "id", "address_country"]
+    list_display = [
+        "name",
+        "network",
+        "id",
+        "address_country",
+        "matched_site",
+        "match_confidence",
+    ]
     list_filter = ["network", "address_country"]
+    raw_id_fields = ["matched_site"]
+    readonly_fields = ["match_confidence"]
     inlines = [GoingElectricChargepointInline]
 
 

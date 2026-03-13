@@ -46,7 +46,7 @@ class ChargingSite(models.Model):
     data_source = models.CharField(max_length=255)
     id_from_source = models.CharField(max_length=255)
     name = models.TextField()
-    location = models.PointField()
+    location = models.PointField(geography=True)
 
     site_evseid = EVSEIDField(evseid_type=EVSEIDType.STATION, blank=True)
 
@@ -111,6 +111,7 @@ class Connector(models.Model):
         MCS = "MCS", "MCS"
 
         SCHUKO = "Schuko", "Schuko (Type F)"
+        DOMESTIC_J = "Domestic J", "Domestic (Type J - Switzerland Type 13)"
         # TODO: add other household plugs
 
         NACS = "NACS", "NACS (Tesla US)"
