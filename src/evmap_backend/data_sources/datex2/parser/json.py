@@ -71,15 +71,24 @@ def parse_address(address_lines: list) -> str:
 def parse_energy_infrastructure_site(
     elem: dict,
 ) -> Optional[Datex2EnergyInfrastructureSite]:
-    operator = (
-        elem["operator"]["afacAnOrganisation"]
-        if "operator" in elem
-        else (
-            elem["energyInfrastructureStation"][0]["operator"]["afacOrganisation"]
-            if "operator" in elem["energyInfrastructureStation"][0]
-            else None
+    if "operator" in elem:
+        operator = elem["operator"]
+    elif "operator" in elem["energyInfrastructureStation"][0]:
+        operator = elem["energyInfrastructureStation"][0]["operator"]
+    else:
+        operator = None
+    if operator is not None:
+        if isinstance(operator, list):
+            operator = operator[0]
+        operator = (
+            operator["afacAnOrganisation"]
+            if "afacAnOrganisation" in operator
+            else operator["afacOrganisation"]
         )
-    )
+        if "name" in operator:
+            operator = operator["name"]
+        elif "organisationName" in operator:
+            operator = operator["organisationName"]
 
     if "locationReference" in elem:
         location_reference = elem["locationReference"]
@@ -146,9 +155,7 @@ def parse_energy_infrastructure_site(
         street=parse_address(address["addressLine"]) if address else None,
         country=address["countryCode"] if address else "DE",
         operator_name=(
-            parse_multilingual_string(operator["name"])
-            if operator is not None
-            else None
+            parse_multilingual_string(operator) if operator is not None else None
         ),
         refill_points=refill_points,
         operator_phone=None,

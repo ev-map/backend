@@ -353,6 +353,14 @@ class Datex2MobilithekEnioDataSource(BaseMobilithekDatex2DataSource):
     # https://mobilithek.info/offers/963506672697769984
 
 
+class Datex2MobilithekPumpDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_pump"
+    subscription_id = os.environ.get("MOBILITHEK_PUMP_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "800 Volt Technologies GmbH, CC-0"
+    # https://mobilithek.info/offers/969322788846231552
+
+
 class BaseEcoMovementNapDatex2DataSource(BaseDatex2DataSource):
     license_attribution = "Eco-Movement BV"
     # https://developers.eco-movement.com/v5/docs/eco-movement-data-api-datex
