@@ -10,30 +10,26 @@ class Command(BaseCommand):
         parser.add_argument(
             "--max-distance",
             type=float,
-            default=200.0,
-            help="Maximum distance in meters for candidate search (default: 200)",
+            default=None,
+            help="Maximum distance in meters for candidate search",
         )
         parser.add_argument(
             "--min-confidence",
             type=float,
-            default=0.4,
-            help="Minimum confidence score for a match to be accepted (default: 0.4)",
+            default=None,
+            help="Minimum confidence score for a match to be accepted",
         )
 
     def handle(self, *args, **options):
-        max_distance = options["max_distance"]
-        min_confidence = options["min_confidence"]
+        kwargs = {
+            k: v
+            for k, v in {
+                "max_distance_m": options["max_distance"],
+                "min_confidence": options["min_confidence"],
+            }.items()
+            if v is not None
+        }
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Starting GoingElectric matching (max_distance={max_distance}m, "
-                f"min_confidence={min_confidence})"
-            )
-        )
-
-        match_ge_locations(
-            max_distance_m=max_distance,
-            min_confidence=min_confidence,
-        )
-
+        self.stdout.write(self.style.SUCCESS("Starting GoingElectric matching..."))
+        match_ge_locations(**kwargs)
         self.stdout.write(self.style.SUCCESS("Matching complete."))

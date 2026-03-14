@@ -152,7 +152,7 @@ def _prefetch_site_connectors(site_ids: Set[int]) -> Dict[int, List[Connector]]:
 def match_ge_locations(
     queryset=None,
     max_distance_m: float = 200.0,
-    min_confidence: float = 0.4,
+    min_confidence: float = 0.5,
 ):
     """
     Match GoingElectricChargeLocation records to ChargingSite records using
