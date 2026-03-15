@@ -26,6 +26,7 @@ class ChargingSiteAdmin(GISModelAdmin):
 class ChargepointAdmin(admin.ModelAdmin):
     list_display = ["formatted_evseid", "physical_reference"]
     inlines = [ConnectorInline]
+    raw_id_fields = ["site"]
 
     @admin.display(description="EVSEID")
     def formatted_evseid(self, obj):
@@ -33,6 +34,7 @@ class ChargepointAdmin(admin.ModelAdmin):
 
 
 class ConnectorAdmin(admin.ModelAdmin):
+    list_select_related = ["chargepoint", "chargepoint__site"]
     list_display = [
         "chargepoint__site__operator",
         "chargepoint__evseid",
@@ -40,6 +42,7 @@ class ConnectorAdmin(admin.ModelAdmin):
         "max_power",
     ]
     list_filter = ["connector_type", "chargepoint__site__operator"]
+    raw_id_fields = ["chargepoint"]
 
 
 class NetworkAdmin(admin.ModelAdmin):

@@ -110,6 +110,7 @@ class GoingElectricNetworkAdmin(admin.ModelAdmin):
 
 
 class GoingElectricChargeLocationAdmin(admin.ModelAdmin):
+    list_select_related = ["network"]
     list_display = [
         "name",
         "network",
@@ -125,8 +126,10 @@ class GoingElectricChargeLocationAdmin(admin.ModelAdmin):
 
 
 class GoingElectricChargepointAdmin(admin.ModelAdmin):
+    list_select_related = ["chargelocation"]
     list_display = ["chargelocation__name", "type", "power", "count"]
     list_filter = ["type", "power"]
+    raw_id_fields = ["chargelocation"]
 
 
 # Register your models here.

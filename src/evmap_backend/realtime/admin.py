@@ -5,6 +5,7 @@ from evmap_backend.realtime.models import RealtimeStatus
 
 class RealtimeStatusAdmin(admin.ModelAdmin):
     readonly_fields = ["chargepoint", "status", "timestamp", "data_source"]
+    list_select_related = ["chargepoint", "chargepoint__site"]
     list_display = [
         "chargepoint__evseid",
         "chargepoint__site__name",
