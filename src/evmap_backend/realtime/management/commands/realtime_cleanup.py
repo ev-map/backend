@@ -21,8 +21,9 @@ class Command(BaseCommand):
             RealtimeStatus.objects, ["chargepoint"], "timestamp"
         ).values_list("pk", flat=True)
         # delete all older ones
-        to_delete = RealtimeStatus.objects.filter(
-            timestamp__lt=expire_threshold
-        ).exclude(pk__in=latest)
-        print(f"deleting {to_delete.count()} old records")
-        to_delete.delete()
+        deleted, _ = (
+            RealtimeStatus.objects.filter(timestamp__lt=expire_threshold)
+            .exclude(pk__in=latest)
+            .delete()
+        )
+        print(f"deleted {deleted} old records")
