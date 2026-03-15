@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional
 
 from django.db.models import OuterRef, QuerySet, Subquery
@@ -9,10 +10,14 @@ def distinct_on(
     queryset: QuerySet, distinct_fields: List[str], order_field: str, order_reverse=True
 ):
     order = f"-{order_field}" if order_reverse else order_field
-    if "postgres" in settings.DATABASES["default"]["ENGINE"]:
+    db_engine = settings.DATABASES["default"]["ENGINE"]
+    if "postgres" in db_engine or "postgis" in db_engine:
         # use native DISTINCT BY functionality in Postgres
         return queryset.order_by(*distinct_fields, order).distinct(*distinct_fields)
     else:
+        logging.warning(
+            "distinct_on: Using inefficient subquery-based implementation for non-Postgres database"
+        )
         # Use subquery to find first element by order_field for each distinct_field
         subquery = (
             queryset.filter(**{f: OuterRef(f) for f in distinct_fields})
