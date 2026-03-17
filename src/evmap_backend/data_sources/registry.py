@@ -64,7 +64,7 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2AustriaDataSource,
     Datex2AustriaRealtimeDataSource,
     # Germany
-    MontaDataSource,
+    # MontaDataSource, # replaced by Mobilithek-Monta
     # ElisoDataSource,  # Eliso is already included in the Eco-Movement data
     Datex2MobilithekEcoMovementDatex2DataSource,
     Datex2MobilithekEcoMovementRealtimeDataSource,
@@ -82,8 +82,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2MobilithekSmatricsRealtimeDataSource,
     # Datex2MobilithekEroundDataSource,  # no data uploaded yet
     # Datex2MobilithekEroundRealtimeDataSource,  # no data uploaded yet
-    # Datex2MobilithekMontaDataSource,  # no data uploaded yet
-    # Datex2MobilithekMontaRealtimeDataSource,  # no data uploaded yet
+    Datex2MobilithekMontaDataSource,  # no data uploaded yet
+    Datex2MobilithekMontaRealtimeDataSource,  # no data uploaded yet
     # Datex2MobilithekGridAndCoDataSource,  # no data uploaded yet
     # Datex2MobilithekGridAndCoRealtimeDataSource,  # no data uploaded yet
     # Datex2MobilithekEnioDataSource,  # no data uploaded yet

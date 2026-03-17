@@ -1,3 +1,5 @@
+import datetime
+import logging
 import os
 from abc import abstractmethod
 from typing import Optional
@@ -14,6 +16,7 @@ from django.utils.functional import classproperty
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.datex2.parser.json import Datex2JsonParser
 from evmap_backend.data_sources.datex2.parser.xml import Datex2XmlParser
+from evmap_backend.data_sources.models import UpdateState
 from evmap_backend.settings import BASE_DIR
 from evmap_backend.sync import sync_chargers, sync_statuses
 
@@ -43,8 +46,11 @@ class BaseDatex2DataSource(DataSource):
         pass
 
     def pull_data(self):
-        root = self.get_data()
-        self._parse_data(root)
+        try:
+            root = self.get_data()
+            self._parse_data(root)
+        except NotModifiedError:
+            logging.info("Not modified")
 
     def process_push(self, body: bytes):
         root = body.decode("utf-8")
@@ -90,6 +96,10 @@ mobilithek_store = Store(
 )
 
 
+class NotModifiedError(Exception):
+    pass
+
+
 class BaseMobilithekDatex2DataSource(BaseDatex2DataSource):
     supported_update_methods = [UpdateMethod.PULL, UpdateMethod.HTTP_PUSH]
     ignore_encoding = False
@@ -100,14 +110,24 @@ class BaseMobilithekDatex2DataSource(BaseDatex2DataSource):
         pass
 
     def get_data(self) -> str:
+        try:
+            update_state = UpdateState.objects.get(data_source=self.id)
+            last_update = update_state.last_update.astimezone(datetime.timezone.utc)
+        except UpdateState.DoesNotExist:
+            last_update = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
         response = requests.get(
             "https://mobilithek.info:8443/mobilithek/api/v1.0/subscription",
             params={
                 "subscriptionID": self.subscription_id,
             },
+            headers={
+                "If-Modified-Since": last_update.strftime("%a, %d %b %Y %H:%M:%S GMT")
+            },
             cert=os.environ["MOBILITHEK_CERTIFICATE"],
         )
         response.raise_for_status()
+        if response.status_code == 304:
+            raise NotModifiedError()
         if self.ignore_encoding:
             response.encoding = response.apparent_encoding
         return response.text
