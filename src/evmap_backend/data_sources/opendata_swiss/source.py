@@ -1,41 +1,57 @@
-import asyncio
-import datetime
-import os
-import time
-from typing import List, Optional
-
-import aiohttp
 import requests
-from asgiref.sync import sync_to_async
-from django.utils import timezone
 
-from evmap_backend.chargers.models import Chargepoint
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
-from evmap_backend.data_sources.models import UpdateState
-from evmap_backend.data_sources.nobil.parser import parse_nobil_chargers
-from evmap_backend.realtime.models import RealtimeStatus
-from evmap_backend.sync import sync_chargers
+from evmap_backend.data_sources.opendata_swiss.parser import (
+    parse_oicp_data,
+    parse_oicp_status,
+)
+from evmap_backend.sync import sync_chargers, sync_statuses
+
+DATA_URL = "https://data.geo.admin.ch/ch.bfe.ladestellen-elektromobilitaet/data/oicp/ch.bfe.ladestellen-elektromobilitaet.json"
+STATUS_URL = "https://data.geo.admin.ch/ch.bfe.ladestellen-elektromobilitaet/status/oicp/ch.bfe.ladestellen-elektromobilitaet.json"
 
 
 class OpendataSwissDataSource(DataSource):
     id = "opendata_swiss"
     supported_data_types = [DataType.STATIC]
     supported_update_methods = [UpdateMethod.PULL]
-    license_attribution = "ich-tanke-strom.ch"
-    license_attribution_link = "https://ich-tanke-strom.ch"
+    license_attribution = "opendata.swiss"
+    license_attribution_link = (
+        "https://opendata.swiss/de/dataset/ladestationen-fuer-elektroautos"
+    )
 
     def pull_data(self):
-        url = "https://data.geo.admin.ch/ch.bfe.ladestellen-elektromobilitaet/data/oicp/ch.bfe.ladestellen-elektromobilitaet.json"
-        pass
+        response = requests.get(DATA_URL)
+        response.raise_for_status()
+        data = response.json()
+
+        sites = parse_oicp_data(
+            data,
+            self.id,
+            self.license_attribution,
+            self.license_attribution_link,
+        )
+        sync_chargers(self.id, sites)
 
 
 class OpendataSwissRealtimeDataSource(DataSource):
     id = "opendata_swiss_realtime"
     supported_data_types = [DataType.DYNAMIC]
     supported_update_methods = [UpdateMethod.PULL]
-    license_attribution = "ich-tanke-strom.ch"
-    license_attribution_link = "https://ich-tanke-strom.ch"
+    license_attribution = "opendata.swiss"
+    license_attribution_link = (
+        "https://opendata.swiss/de/dataset/ladestationen-fuer-elektroautos"
+    )
 
     def pull_data(self):
-        url = "https://data.geo.admin.ch/ch.bfe.ladestellen-elektromobilitaet/status/oicp/ch.bfe.ladestellen-elektromobilitaet.json"
-        pass
+        response = requests.get(STATUS_URL)
+        response.raise_for_status()
+        status_data = response.json()
+
+        statuses = parse_oicp_status(
+            status_data,
+            self.id,
+            self.license_attribution,
+            self.license_attribution_link,
+        )
+        sync_statuses(self.id, "opendata_swiss", statuses)

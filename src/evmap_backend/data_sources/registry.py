@@ -58,6 +58,10 @@ from evmap_backend.data_sources.ocpi.source import (
     ShellRechargeUkOcpiRealtimeDataSource,
     TeslaUkOcpiDataSource,
 )
+from evmap_backend.data_sources.opendata_swiss.source import (
+    OpendataSwissDataSource,
+    OpendataSwissRealtimeDataSource,
+)
 
 DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     # multiple countries
@@ -125,6 +129,9 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2DenmarkEcoMovementDataSource,
     # Belgium
     Datex2BelgiumEcoMovementDataSource,
+    # Switzerland
+    OpendataSwissDataSource,
+    OpendataSwissRealtimeDataSource,
 ]
 DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
     cls.id: cls for cls in DATA_SOURCE_CLASSES
