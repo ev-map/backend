@@ -52,6 +52,7 @@ def parse_refill_point(elem) -> Datex2RefillPoint:
 
     return Datex2RefillPoint(
         external_identifier=external_identifier,
+        name=parse_multilingual_string(elem["name"]) if "name" in elem else None,
         id=elem["idG"],
         connectors=[parse_connector(connector) for connector in elem["connector"]],
     )

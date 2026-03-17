@@ -111,9 +111,16 @@ class Datex2RefillPoint:
     id: str
     connectors: List[Datex2Connector]
     external_identifier: str = None
+    name: Datex2MultilingualString = None
 
     def convert(self) -> Chargepoint:
-        return Chargepoint(id_from_source=self.id, evseid=(self.get_evseid()))
+        return Chargepoint(
+            id_from_source=self.id,
+            evseid=(self.get_evseid()),
+            physical_reference=none_to_blank(
+                self.name.first() if self.name is not None else None
+            ),
+        )
 
     def get_evseid(self) -> str:
         evseid = ""
