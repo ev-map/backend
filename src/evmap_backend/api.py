@@ -5,7 +5,9 @@ from typing import List, Optional, Tuple
 from django.contrib.gis.geos import Polygon
 from ninja import ModelSchema, NinjaAPI
 from ninja.orm import register_field
+from ninja.security import django_auth
 
+from evmap_backend.apikeys.ninja import ApiKeyAuth
 from evmap_backend.chargers.models import ChargingSite
 from evmap_backend.data_sources import UpdateMethod
 from evmap_backend.data_sources.models import UpdateState
@@ -33,7 +35,7 @@ class ChargingSitesSchema(ModelSchema):
         fields = "__all__"
 
 
-@api.get("/sites", response=List[ChargingSitesSchema])
+@api.get("/sites", response=List[ChargingSitesSchema], auth=[django_auth, ApiKeyAuth()])
 def sites(request, sw_lat: float, sw_lng: float, ne_lat: float, ne_lng: float):
     region = Polygon.from_bbox((sw_lng, sw_lat, ne_lng, ne_lat))
     return ChargingSite.objects.filter(location__coveredby=region)[:1000]
