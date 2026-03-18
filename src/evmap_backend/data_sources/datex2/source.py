@@ -381,6 +381,24 @@ class Datex2MobilithekPumpDataSource(BaseMobilithekDatex2DataSource):
     # https://mobilithek.info/offers/969322788846231552
 
 
+class Datex2MobilithekM8MitDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_m8mit"
+    subscription_id = os.environ.get("MOBILITHEK_M8MIT_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "msu solutions GmbH"
+    # https://mobilithek.info/offers/970305056590979072
+
+
+class Datex2MobilithekM8MitRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_m8mit_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_M8MIT_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_m8mit"
+    license_attribution = "msu solutions GmbH"
+    # https://mobilithek.info/offers/970388804493828096
+
+
 class BaseEcoMovementNapDatex2DataSource(BaseDatex2DataSource):
     license_attribution = "Eco-Movement BV"
     # https://developers.eco-movement.com/v5/docs/eco-movement-data-api-datex
