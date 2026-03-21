@@ -399,6 +399,24 @@ class Datex2MobilithekM8MitRealtimeDataSource(BaseMobilithekDatex2DataSource):
     # https://mobilithek.info/offers/970388804493828096
 
 
+class Datex2MobilithekEluMobilityDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_elumobility"
+    subscription_id = os.environ.get("MOBILITHEK_ELUMOBILITY_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "ELU Mobility"
+    # https://mobilithek.info/offers/936298491949047808
+
+
+class Datex2MobilithekEluMobilityRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_elumobility_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_ELUMOBILITY_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_elumobility"
+    license_attribution = "ELU Mobility"
+    # https://mobilithek.info/offers/971513500454850560
+
+
 class BaseEcoMovementNapDatex2DataSource(BaseDatex2DataSource):
     license_attribution = "Eco-Movement BV"
     # https://developers.eco-movement.com/v5/docs/eco-movement-data-api-datex

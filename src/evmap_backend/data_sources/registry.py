@@ -10,6 +10,8 @@ from evmap_backend.data_sources.datex2.source import (
     Datex2LuxembourgEcoMovementDataSource,
     Datex2MobilithekEcoMovementDatex2DataSource,
     Datex2MobilithekEcoMovementRealtimeDataSource,
+    Datex2MobilithekEluMobilityDataSource,
+    Datex2MobilithekEluMobilityRealtimeDataSource,
     Datex2MobilithekEnbwDataSource,
     Datex2MobilithekEnbwRealtimeDataSource,
     Datex2MobilithekEroundDataSource,
@@ -96,6 +98,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2MobilithekPumpDataSource,
     Datex2MobilithekM8MitDataSource,
     Datex2MobilithekM8MitRealtimeDataSource,
+    # Datex2MobilithekEluMobilityDataSource,  # data not valid (missing coordinates)
+    # Datex2MobilithekEluMobilityRealtimeDataSource,  # no data uploaded yet
     # Luxembourg
     Datex2LuxembourgEcoMovementDataSource,
     # Netherlands
