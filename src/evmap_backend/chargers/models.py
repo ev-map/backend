@@ -143,3 +143,35 @@ class Connector(models.Model):
         max_length=255, choices=ConnectorFormats, blank=True
     )
     max_power = models.FloatField()  # in watts
+    is_dc = models.BooleanField(null=True, blank=True, default=None)
+
+
+def infer_is_dc(connector_type: str) -> bool | None:
+    """Infer whether a connector type is DC based on the connector type.
+
+    Returns True for DC, False for AC, None for ambiguous/unknown.
+    """
+    dc_types = {
+        Connector.ConnectorTypes.CCS_TYPE_1,
+        Connector.ConnectorTypes.CCS_TYPE_2,
+        Connector.ConnectorTypes.CHADEMO,
+        Connector.ConnectorTypes.MCS,
+        Connector.ConnectorTypes.TESLA_SUPERCHARGER_EU,
+    }
+    ac_types = {
+        Connector.ConnectorTypes.TYPE_1,
+        Connector.ConnectorTypes.TYPE_2,
+        Connector.ConnectorTypes.TYPE_3A,
+        Connector.ConnectorTypes.TYPE_3C,
+        Connector.ConnectorTypes.SCHUKO,
+        Connector.ConnectorTypes.DOMESTIC_J,
+        Connector.ConnectorTypes.CEE_SINGLE_16,
+        Connector.ConnectorTypes.CEE_THREE_16,
+        Connector.ConnectorTypes.CEE_THREE_32,
+        Connector.ConnectorTypes.CEE_THREE_64,
+    }
+    if connector_type in dc_types:
+        return True
+    if connector_type in ac_types:
+        return False
+    return None
