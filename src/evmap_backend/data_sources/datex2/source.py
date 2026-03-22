@@ -213,7 +213,7 @@ class Datex2MobilithekEcoMovementDatex2DataSource(BaseMobilithekDatex2DataSource
 class Datex2MobilithekEcoMovementRealtimeDataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_ecomovement_realtime"
     subscription_id = os.environ.get("MOBILITHEK_ECOMOVEMENT_DYNAMIC_SUBSCRIPTION_ID")
-    supported_data_types = [DataType.DYNAMIC]
+    supported_data_types = [DataType.DYNAMIC, DataType.PRICING]
     parser = Datex2JsonParser()
     static_data_source = "mobilithek_ecomovement"
     license_attribution = "Eco-Movement BV, CC-BY 4.0"

@@ -232,9 +232,9 @@ def parse_energy_price(elem: dict) -> Datex2EnergyPrice:
     )
 
 
-def parse_energy_rate(elem: dict) -> Datex2EnergyRate:
+def parse_energy_rate(elem: dict, is_dynamic) -> Datex2EnergyRate:
     return Datex2EnergyRate(
-        id=elem.get("idG"),
+        id=elem.get("idG") if not is_dynamic else elem["energyRateReference"]["idG"],
         rate_policy=elem["ratePolicy"]["value"] if "ratePolicy" in elem else None,
         currencies=elem.get("applicableCurrency", []),
         prices=[parse_energy_price(p) for p in elem.get("energyPrice", [])],
@@ -244,22 +244,37 @@ def parse_energy_rate(elem: dict) -> Datex2EnergyRate:
     )
 
 
-def parse_site_pricing(elem: dict) -> Optional[Datex2SitePricing]:
-    if "energyInfrastructureStation" not in elem:
+def parse_site_pricing(elem: dict, is_dynamic: bool) -> Optional[Datex2SitePricing]:
+    station_key = (
+        "energyInfrastructureStationStatus"
+        if is_dynamic
+        else "energyInfrastructureStation"
+    )
+    rp_key = "refillPointStatus" if is_dynamic else "refillPoint"
+    cp_key = (
+        "aegiElectricChargingPointStatus" if is_dynamic else "aegiElectricChargingPoint"
+    )
+    if station_key not in elem:
         return None
 
     refill_point_pricings = []
-    for station in elem["energyInfrastructureStation"]:
-        for rp_wrapper in station.get("refillPoint", []):
-            cp = rp_wrapper.get("aegiElectricChargingPoint", rp_wrapper)
+    for station in elem[station_key]:
+        for rp_wrapper in station.get(rp_key, []):
+            cp = rp_wrapper.get(cp_key, rp_wrapper)
             energy_rates = []
-            for ee in cp.get("electricEnergy", []):
-                for rate in ee.get("energyRate", []):
-                    energy_rates.append(parse_energy_rate(rate))
+            if is_dynamic:
+                for eru in cp.get("energyRateUpdate", []):
+                    energy_rates.append(parse_energy_rate(eru, is_dynamic))
+            else:
+                for ee in cp.get("electricEnergy", []):
+                    for rate in ee.get("energyRate", []):
+                        energy_rates.append(parse_energy_rate(rate, is_dynamic))
             if energy_rates:
                 refill_point_pricings.append(
                     Datex2RefillPointPricing(
-                        refill_point_id=cp["idG"],
+                        refill_point_id=(
+                            cp["idG"] if not is_dynamic else cp["reference"]["idG"]
+                        ),
                         energy_rates=energy_rates,
                     )
                 )
@@ -268,7 +283,7 @@ def parse_site_pricing(elem: dict) -> Optional[Datex2SitePricing]:
         return None
 
     return Datex2SitePricing(
-        site_id=elem["idG"],
+        site_id=elem["idG"] if not is_dynamic else elem["reference"]["idG"],
         refill_point_pricings=refill_point_pricings,
     )
 
@@ -313,15 +328,30 @@ class Datex2JsonParser:
 
     def parse_pricing(self, data) -> Iterable[Datex2SitePricing]:
         root = json.loads(data)
+        if "messageContainer" in root:
+            root = root["messageContainer"]
+
         root = root["payload"]
 
         if isinstance(root, list):
             root = root[0]
 
-        for table in root["aegiEnergyInfrastructureTablePublication"][
-            "energyInfrastructureTable"
-        ]:
-            for site in tqdm(table["energyInfrastructureSite"]):
-                pricing = parse_site_pricing(site)
+        is_dynamic = "aegiEnergyInfrastructureStatusPublication" in root
+
+        if is_dynamic:
+            for site in tqdm(
+                root["aegiEnergyInfrastructureStatusPublication"][
+                    "energyInfrastructureSiteStatus"
+                ]
+            ):
+                pricing = parse_site_pricing(site, is_dynamic)
                 if pricing is not None:
                     yield pricing
+        else:
+            for table in root["aegiEnergyInfrastructureTablePublication"][
+                "energyInfrastructureTable"
+            ]:
+                for site in tqdm(table["energyInfrastructureSite"]):
+                    pricing = parse_site_pricing(site, is_dynamic)
+                    if pricing is not None:
+                        yield pricing
