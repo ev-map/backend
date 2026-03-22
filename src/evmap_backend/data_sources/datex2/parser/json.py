@@ -206,10 +206,10 @@ def parse_energy_price(elem: dict) -> Datex2EnergyPrice:
     return Datex2EnergyPrice(
         price_type=Datex2EnergyPrice.PriceType(elem["priceType"]["value"]),
         value=elem["value"],
-        tax_included=elem["taxIncluded"],
+        tax_included=elem.get("taxIncluded"),
         tax_rate=elem.get("taxRate"),
-        from_minute=tba["fromMinute"] if tba else None,
-        to_minute=tba["toMinute"] if tba else None,
+        from_minute=tba["fromMinute"] if tba and "fromMinute" in tba else None,
+        to_minute=tba["toMinute"] if tba and "toMinute" in tba else None,
     )
 
 

@@ -281,6 +281,7 @@ class Datex2MobilithekUlmRealtimeDataSource(BaseMobilithekDatex2DataSource):
 class Datex2MobilithekWirelaneDataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_wirelane"
     subscription_id = os.environ.get("MOBILITHEK_WIRELANE_STATIC_SUBSCRIPTION_ID")
+    supported_data_types = [DataType.STATIC, DataType.PRICING]
     parser = Datex2JsonParser()
     license_attribution = "Wirelane GmbH, CC-0"
     # https://mobilithek.info/offers/869246425829892096
@@ -406,6 +407,7 @@ class Datex2MobilithekM8MitDataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_m8mit"
     subscription_id = os.environ.get("MOBILITHEK_M8MIT_STATIC_SUBSCRIPTION_ID")
     parser = Datex2JsonParser()
+    supported_data_types = [DataType.STATIC, DataType.PRICING]
     license_attribution = "msu solutions GmbH"
     # https://mobilithek.info/offers/970305056590979072
 

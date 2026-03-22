@@ -293,20 +293,27 @@ class Datex2EnergyPrice:
     """A single price component from a Datex2 energyRate."""
 
     class PriceType(enum.StrEnum):
+        FREE = "free"
+        FLAT_RATE = "flatRate"
         PRICE_PER_KWH = "pricePerKWh"
         PRICE_PER_MINUTE = "pricePerMinute"
-        SESSION_FEE = "sessionFee"
-        PARKING_FEE_PER_MINUTE = "parkingFeePerMinute"
+        BASE_PRICE = "basePrice"
+        OTHER = "other"
 
     price_type: PriceType
     value: float
-    tax_included: bool
+    tax_included: Optional[bool] = None
     tax_rate: Optional[float] = None
     # timeBasedApplicability: fromMinute means "applies after N minutes"
     from_minute: Optional[int] = None
     to_minute: Optional[int] = None
 
     def convert(self) -> PriceComponent:
+        if (
+            self.value == 0
+        ):  # ignore zero prices, even if they are not explicitly marked as "free"
+            return None
+
         component_type = _PRICE_TYPE_MAP.get(self.price_type)
         if component_type is None:
             logger.warning(f"Unknown Datex2 price type: {self.price_type}")
@@ -315,7 +322,7 @@ class Datex2EnergyPrice:
         component = PriceComponent(
             type=component_type,
             price=Decimal(str(self.value)),
-            tax_included=self.tax_included,
+            tax_included=self.tax_included if self.tax_included is not None else True,
             tax_rate=Decimal(str(self.tax_rate)) if self.tax_rate is not None else None,
             step_size=1,
         )
@@ -331,9 +338,9 @@ class Datex2EnergyPrice:
 
 _PRICE_TYPE_MAP = {
     Datex2EnergyPrice.PriceType.PRICE_PER_KWH: PriceComponent.PriceComponentType.ENERGY,
-    Datex2EnergyPrice.PriceType.SESSION_FEE: PriceComponent.PriceComponentType.FLAT,
+    Datex2EnergyPrice.PriceType.FLAT_RATE: PriceComponent.PriceComponentType.FLAT,
     Datex2EnergyPrice.PriceType.PRICE_PER_MINUTE: PriceComponent.PriceComponentType.TIME,
-    Datex2EnergyPrice.PriceType.PARKING_FEE_PER_MINUTE: PriceComponent.PriceComponentType.PARKING_TIME,
+    Datex2EnergyPrice.PriceType.BASE_PRICE: PriceComponent.PriceComponentType.FLAT,
 }
 
 
@@ -353,7 +360,7 @@ class Datex2EnergyRate:
 
         tariff = Tariff(
             data_source=data_source,
-            id_from_source=None,  # Datex2 has no explicit tariff ID
+            id_from_source=None,  # Datex2 has a tariff ID, but IDs are often not unique (e.g., EnBW), so we ignore them
             is_adhoc=self.rate_policy == "adHoc",
             currency=currency,
         )
