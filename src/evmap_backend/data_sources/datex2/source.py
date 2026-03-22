@@ -17,6 +17,7 @@ from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.datex2.parser.json import Datex2JsonParser
 from evmap_backend.data_sources.datex2.parser.xml import Datex2XmlParser
 from evmap_backend.data_sources.models import UpdateState
+from evmap_backend.pricing.sync import sync_pricing
 from evmap_backend.settings import BASE_DIR
 from evmap_backend.sync import sync_chargers, sync_statuses
 
@@ -57,7 +58,7 @@ class BaseDatex2DataSource(DataSource):
         self._parse_data(root)
 
     def _parse_data(self, root: str):
-        if self.supported_data_types == [DataType.STATIC]:
+        if DataType.STATIC in self.supported_data_types:
             sites_datex = self.parser.parse(root)
             sync_chargers(
                 self.id,
@@ -68,7 +69,23 @@ class BaseDatex2DataSource(DataSource):
                     for site in sites_datex
                 ),
             )
-        elif self.supported_data_types == [DataType.DYNAMIC]:
+        if DataType.PRICING in self.supported_data_types:
+            site_pricings = self.parser.parse_pricing(root)
+            chargepoint_data_source = (
+                self.static_data_source
+                if DataType.STATIC not in self.supported_data_types
+                else self.id
+            )
+            sync_pricing(
+                self.id,
+                chargepoint_data_source,
+                (
+                    item
+                    for site_pricing in site_pricings
+                    for item in site_pricing.convert(self.id)
+                ),
+            )
+        if DataType.DYNAMIC in self.supported_data_types:
             statuses_datex = self.parser.parse_status(
                 root,
                 station_as_site=self.realtime_station_as_site,
@@ -85,7 +102,10 @@ class BaseDatex2DataSource(DataSource):
                     )
                 ),
             )
-        else:
+        if not any(
+            dt in self.supported_data_types
+            for dt in [DataType.STATIC, DataType.DYNAMIC, DataType.PRICING]
+        ):
             raise NotImplementedError()
 
 
@@ -207,6 +227,7 @@ class Datex2MobilithekEcoMovementRealtimeDataSource(BaseMobilithekDatex2DataSour
 class Datex2MobilithekEnbwDataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_enbw"
     subscription_id = os.environ.get("MOBILITHEK_ENBW_STATIC_SUBSCRIPTION_ID")
+    supported_data_types = [DataType.STATIC, DataType.PRICING]
     parser = Datex2JsonParser()
     license_attribution = "EnBW AG, CC-BY 4.0"
     # https://mobilithek.info/offers/907574882292453376
