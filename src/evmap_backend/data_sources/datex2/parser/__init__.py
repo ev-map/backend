@@ -316,7 +316,9 @@ class Datex2EnergyPrice:
 
         component_type = _PRICE_TYPE_MAP.get(self.price_type)
         if component_type is None:
-            logger.warning(f"Unknown Datex2 price type: {self.price_type}")
+            logger.warning(
+                f"Unknown Datex2 price type: {self.price_type} ({self.value})"
+            )
             return None
 
         component = PriceComponent(
