@@ -1,6 +1,8 @@
 import datetime
 import enum
+import logging
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Dict, List, Optional, Tuple
 
 from django.contrib.gis.geos import Point
@@ -11,7 +13,10 @@ from evmap_backend.chargers.fields import EVSEIDType, normalize_evseid, validate
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
 from evmap_backend.countries.models import Country
 from evmap_backend.helpers.database import none_to_blank
+from evmap_backend.pricing.models import PriceComponent, Tariff
 from evmap_backend.realtime.models import RealtimeStatus
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -295,6 +300,115 @@ class Datex2EnergyInfrastructureSiteStatus:
             )
             for rps in self.refill_point_statuses
         ]
+
+
+@dataclass
+class Datex2EnergyPrice:
+    """A single price component from a Datex2 energyRate."""
+
+    class PriceType(enum.StrEnum):
+        PRICE_PER_KWH = "pricePerKWh"
+        PRICE_PER_MINUTE = "pricePerMinute"
+        SESSION_FEE = "sessionFee"
+        PARKING_FEE_PER_MINUTE = "parkingFeePerMinute"
+
+    price_type: PriceType
+    value: float
+    tax_included: bool
+    tax_rate: Optional[float] = None
+    # timeBasedApplicability: fromMinute means "applies after N minutes"
+    from_minute: Optional[int] = None
+    to_minute: Optional[int] = None
+
+    def convert(self) -> PriceComponent:
+        component_type = _PRICE_TYPE_MAP.get(self.price_type)
+        if component_type is None:
+            logger.warning(f"Unknown Datex2 price type: {self.price_type}")
+            return None
+
+        component = PriceComponent(
+            type=component_type,
+            price=Decimal(str(self.value)),
+            tax_included=self.tax_included,
+            tax_rate=Decimal(str(self.tax_rate)) if self.tax_rate is not None else None,
+            step_size=1,
+        )
+
+        # timeBasedApplicability: fromMinute means "applies after N minutes"
+        if self.from_minute is not None and self.from_minute > 0:
+            component.min_duration = self.from_minute * 60  # convert to seconds
+        if self.to_minute is not None and self.to_minute > 0:
+            component.max_duration = self.to_minute * 60
+
+        return component
+
+
+_PRICE_TYPE_MAP = {
+    Datex2EnergyPrice.PriceType.PRICE_PER_KWH: PriceComponent.PriceComponentType.ENERGY,
+    Datex2EnergyPrice.PriceType.SESSION_FEE: PriceComponent.PriceComponentType.FLAT,
+    Datex2EnergyPrice.PriceType.PRICE_PER_MINUTE: PriceComponent.PriceComponentType.TIME,
+    Datex2EnergyPrice.PriceType.PARKING_FEE_PER_MINUTE: PriceComponent.PriceComponentType.PARKING_TIME,
+}
+
+
+@dataclass
+class Datex2EnergyRate:
+    """A tariff / energy rate from a Datex2 refill point."""
+
+    id: Optional[str]
+    rate_policy: Optional[str]  # e.g. "adHoc"
+    currencies: List[str]  # ISO 4217, e.g. ["EUR"]
+    prices: List[Datex2EnergyPrice]
+    last_updated: Optional[datetime.datetime] = None
+
+    def convert(self, data_source: str) -> Tuple[Tariff, List[PriceComponent]]:
+        """Convert to an unsaved Tariff and list of unsaved PriceComponents."""
+        currency = self.currencies[0] if self.currencies else "EUR"
+
+        tariff = Tariff(
+            data_source=data_source,
+            id_from_source=None,  # Datex2 has no explicit tariff ID
+            is_adhoc=self.rate_policy == "adHoc",
+            currency=currency,
+        )
+
+        components = [p.convert() for p in self.prices]
+        components = [c for c in components if c is not None]
+
+        return tariff, components
+
+
+@dataclass
+class Datex2RefillPointPricing:
+    """Pricing data for a single refill point (chargepoint)."""
+
+    refill_point_id: str
+    energy_rates: List[Datex2EnergyRate]
+
+
+@dataclass
+class Datex2SitePricing:
+    """Pricing data for a single energy infrastructure site."""
+
+    site_id: str
+    refill_point_pricings: List[Datex2RefillPointPricing]
+
+    def convert(
+        self, data_source: str
+    ) -> List[Tuple[str, str, Tariff, List[PriceComponent]]]:
+        """
+        Convert to a list of (site_id, refill_point_id, Tariff, [PriceComponent]) tuples.
+
+        Each energy rate for each refill point produces one tuple.
+        """
+        results = []
+        for rp_pricing in self.refill_point_pricings:
+            for rate in rp_pricing.energy_rates:
+                tariff, components = rate.convert(data_source)
+                results.append(
+                    (self.site_id, rp_pricing.refill_point_id, tariff, components)
+                )
+        return results
 
 
 def parse_datetime(text, default_timezone=None):
