@@ -417,6 +417,42 @@ class Datex2MobilithekEluMobilityRealtimeDataSource(BaseMobilithekDatex2DataSour
     # https://mobilithek.info/offers/971513500454850560
 
 
+class Datex2MobilithekQwelloDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_qwello"
+    subscription_id = os.environ.get("MOBILITHEK_QWELLO_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "Qwello Deutschland GmbH, CC-0"
+    # https://mobilithek.info/offers/972963216296222720
+
+
+class Datex2MobilithekQwelloRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_qwello_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_QWELLO_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_qwello"
+    license_attribution = "Qwello Deutschland GmbH, CC-0"
+    # https://mobilithek.info/offers/972966368902897664
+
+
+class Datex2MobilithekEonDriveDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_eon_drive"
+    subscription_id = os.environ.get("MOBILITHEK_EON_DRIVE_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "Аmpeco Ltd., CC-0"
+    # https://mobilithek.info/offers/972837891969273856
+
+
+class Datex2MobilithekEonDriveRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_eon_drive_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_EON_DRIVE_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_eon_drive"
+    license_attribution = "Аmpeco Ltd., CC-0"
+    # https://mobilithek.info/offers/972842599324557312
+
+
 class BaseEcoMovementNapDatex2DataSource(BaseDatex2DataSource):
     license_attribution = "Eco-Movement BV"
     # https://developers.eco-movement.com/v5/docs/eco-movement-data-api-datex
