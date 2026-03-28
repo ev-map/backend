@@ -1,5 +1,6 @@
 import gzip
 import logging
+import threading
 from typing import List, Optional, Tuple
 
 from django.contrib.gis.geos import Polygon
@@ -110,16 +111,17 @@ def push(request, data_source: str):
 
     data_source.verify_push(request)
 
-    logging.info(f"Processing push for {data_source.id}...")
-
     body = request.body
     if request.headers.get("Content-Encoding") == "gzip":
         body = gzip.decompress(body)
 
-    data_source.process_push(body)
+    def _process():
+        logging.info(f"Processing push for {data_source.id}...")
+        data_source.process_push(body)
+        UpdateState(data_source=data_source.id, push=True).save()
+        logging.info(f"Successfully processed push for {data_source.id}")
 
-    UpdateState(data_source=data_source.id, push=True).save()
-    logging.info(f"Successfully processed push for {data_source.id}")
+    threading.Thread(target=_process, daemon=True).start()
 
     return 200, ""
 
