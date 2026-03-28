@@ -28,9 +28,6 @@ class BaseDatex2DataSource(DataSource):
     parser = Datex2XmlParser()
     default_timezone = None
 
-    realtime_station_as_site = False
-    """Workaround for wrong data where sites are represented as stations in the realtime data."""
-
     @abstractmethod
     def get_data(self) -> str:
         """Get the data from the data source"""
@@ -235,7 +232,7 @@ class Datex2MobilithekLadenetzRealtimeDataSource(BaseMobilithekDatex2DataSource)
     subscription_id = os.environ.get("MOBILITHEK_LADENETZ_DYNAMIC_SUBSCRIPTION_ID")
     supported_data_types = [DataType.DYNAMIC]
     static_data_source = "mobilithek_ladenetz"
-    realtime_station_as_site = True
+    parser = Datex2XmlParser(realtime_station_as_site=True)
     license_attribution = "Smartlab Innovationsgesellschaft mbH, CC-0"
     # https://mobilithek.info/offers/903240716507836416
 
@@ -252,7 +249,7 @@ class Datex2MobilithekUlmRealtimeDataSource(BaseMobilithekDatex2DataSource):
     subscription_id = os.environ.get("MOBILITHEK_ULM_DYNAMIC_SUBSCRIPTION_ID")
     supported_data_types = [DataType.DYNAMIC]
     static_data_source = "mobilithek_ulm"
-    realtime_station_as_site = True
+    parser = Datex2XmlParser(realtime_station_as_site=True)
     license_attribution = "Smartlab Innovationsgesellschaft mbH, CC-0"
     # https://mobilithek.info/offers/854416606814023680
 
@@ -538,8 +535,8 @@ class Datex2SloveniaRealtimeDataSource(BaseDatex2DataSource):
 
 
 class Datex2FinlandDataSource(BaseDatex2DataSource):
-    id = "finland"
-    parser = Datex2JsonParser()
+    id = "fintraffic"
+    parser = Datex2JsonParser(station_as_chargepoint=True)
     license_attribution = "Fintraffic / digitraffic.fi, CC-BY 4.0"
     license_attribution_link = "https://www.digitraffic.fi/en/terms-of-service/"
     # https://www.digitraffic.fi/en/road-traffic/afir/

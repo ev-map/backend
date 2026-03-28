@@ -80,7 +80,7 @@ def parse_address(address_lines: list) -> str:
 
 
 def parse_energy_infrastructure_site(
-    elem: dict,
+    elem: dict, station_as_chargepoint=False
 ) -> Optional[Datex2EnergyInfrastructureSite]:
     if "operator" in elem:
         operator = elem["operator"]
@@ -135,26 +135,22 @@ def parse_energy_infrastructure_site(
             for refill_point in station["refillPoint"]
         ]
 
-        if not all([rp.get_evseid() for rp in station_refill_points]):
-            # we are not getting valid EVSEIDs from the refill points. In some sources, EVSEs are incorrectly mapped as energyInfrastructureStation. Try if we can get a valid EVSEID from here:
+        if station_as_chargepoint:
+            # In some sources, EVSEs are incorrectly mapped as energyInfrastructureStation
             station_id = station["idG"]
-            try:
-                evseid = normalize_evseid(station_id)
-                validate_evseid(evseid, EVSEIDType.EVSE)
-                refill_points.append(
-                    Datex2RefillPoint(
-                        id=station_id,
-                        external_identifier=evseid,
-                        connectors=[
-                            con for rp in station_refill_points for con in rp.connectors
-                        ],
-                    )
+            evseid = normalize_evseid(station_id)
+            validate_evseid(evseid, EVSEIDType.EVSE)
+            refill_points.append(
+                Datex2RefillPoint(
+                    id=station_id,
+                    external_identifier=evseid,
+                    connectors=[
+                        con for rp in station_refill_points for con in rp.connectors
+                    ],
                 )
-                continue
-            except ValidationError:
-                pass
-
-        refill_points += station_refill_points
+            )
+        else:
+            refill_points += station_refill_points
 
     area_location = get_alternatives(
         location_reference, ["locAreaLocation", "locPointLocation"]
@@ -221,6 +217,9 @@ def parse_energy_infrastructure_site_status(
 
 
 class Datex2JsonParser:
+    def __init__(self, station_as_chargepoint=False):
+        self.station_as_chargepoint = station_as_chargepoint
+
     def parse(self, data) -> Iterable[Datex2EnergyInfrastructureSite]:
         root = json.loads(data)
         root = root["payload"]
@@ -237,16 +236,15 @@ class Datex2JsonParser:
         )
         for table in root["energyInfrastructureTable"]:
             for site in tqdm(table["energyInfrastructureSite"]):
-                site = parse_energy_infrastructure_site(site)
+                site = parse_energy_infrastructure_site(
+                    site, self.station_as_chargepoint
+                )
                 if site is not None:
                     yield site
 
     def parse_status(
-        self, data, station_as_site=False, default_timezone=None
+        self, data, default_timezone=None
     ) -> Iterable[Datex2EnergyInfrastructureSiteStatus]:
-        if station_as_site:
-            raise NotImplementedError()
-
         root = json.loads(data)
         root = root["messageContainer"]["payload"]
 

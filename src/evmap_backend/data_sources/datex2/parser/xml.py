@@ -210,6 +210,9 @@ def parse_energy_infrastructure_site(elem: Element) -> Datex2EnergyInfrastructur
 
 
 class Datex2XmlParser:
+    def __init__(self, realtime_station_as_site=False):
+        self.realtime_station_as_site = realtime_station_as_site
+
     def parse(self, xml) -> Iterable[Datex2EnergyInfrastructureSite]:
         root = ElementTree.fromstring(xml)
         root = find_payload(root)
@@ -219,13 +222,13 @@ class Datex2XmlParser:
                 yield parse_energy_infrastructure_site(site)
 
     def parse_status(
-        self, xml, station_as_site=False, default_timezone=None
+        self, xml, default_timezone=None
     ) -> Iterable[Datex2EnergyInfrastructureSiteStatus]:
         root = ElementTree.fromstring(xml)
         root = find_payload(root)
 
         for site in root.findall("egi:energyInfrastructureSiteStatus", ns):
-            if station_as_site:
+            if self.realtime_station_as_site:
                 for station in site.findall(
                     "egi:energyInfrastructureStationStatus", ns
                 ):
