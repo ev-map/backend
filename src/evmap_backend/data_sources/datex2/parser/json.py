@@ -5,7 +5,7 @@ from typing import Iterable, Optional, Tuple
 from django.core.exceptions import ValidationError
 from tqdm import tqdm
 
-from evmap_backend.chargers.fields import normalize_evseid, validate_evseid
+from evmap_backend.chargers.fields import EVSEIDType, normalize_evseid, validate_evseid
 from evmap_backend.data_sources.datex2.parser import (
     Datex2Connector,
     Datex2EnergyInfrastructureSite,
@@ -15,6 +15,13 @@ from evmap_backend.data_sources.datex2.parser import (
     Datex2RefillPointStatus,
     parse_datetime,
 )
+
+
+def get_alternatives(obj: dict, keys: Iterable[str]):
+    for key in keys:
+        if key in obj:
+            return obj[key]
+    return None
 
 
 def parse_multilingual_string(elem) -> Datex2MultilingualString:
@@ -42,11 +49,14 @@ def parse_connector(elem) -> Datex2Connector:
 
 def parse_refill_point(elem) -> Datex2RefillPoint:
     if "externalIdentifier" in elem:
-        external_identifier = next(
-            extid["identifier"]
-            for extid in elem["externalIdentifier"]
-            if extid["typeOfIdentifier"]["extendedValueG"] == "evseId"
-        )
+        if isinstance(elem["externalIdentifier"], str):
+            external_identifier = elem["externalIdentifier"]
+        else:
+            external_identifier = next(
+                extid["identifier"]
+                for extid in elem["externalIdentifier"]
+                if extid["typeOfIdentifier"]["extendedValueG"] == "evseId"
+            )
     else:
         external_identifier = None
 
@@ -81,15 +91,11 @@ def parse_energy_infrastructure_site(
     if operator is not None:
         if isinstance(operator, list):
             operator = operator[0]
-        operator = (
-            operator["afacAnOrganisation"]
-            if "afacAnOrganisation" in operator
-            else operator["afacOrganisation"]
+        operator = get_alternatives(
+            operator,
+            ["afacAnOrganisation", "afacOrganisation", "facOrganisationSpecification"],
         )
-        if "name" in operator:
-            operator = operator["name"]
-        elif "organisationName" in operator:
-            operator = operator["organisationName"]
+        operator = get_alternatives(operator, ["name", "organisationName"])
 
     if "locationReference" in elem:
         location_reference = elem["locationReference"]
@@ -98,41 +104,60 @@ def parse_energy_infrastructure_site(
 
     address = None
     city = None
-    if (
-        "locPointLocation" in location_reference
-        or "locAreaLocation" in location_reference
-    ):
-        location = (
-            location_reference["locPointLocation"]
-            if "locPointLocation" in location_reference
-            else location_reference["locAreaLocation"]
+
+    location = get_alternatives(
+        location_reference, ["locPointLocation", "locAreaLocation"]
+    )
+    if location is not None and "locLocationExtensionG" in location:
+        location_extension = location["locLocationExtensionG"]
+        facility_location = (
+            location_extension["facilityLocation"]
+            if "facilityLocation" in location_extension
+            else location_extension["FacilityLocation"]
         )
-        if "locLocationExtensionG" in location:
-            location_extension = location["locLocationExtensionG"]
-            facility_location = (
-                location_extension["facilityLocation"]
-                if "facilityLocation" in location_extension
-                else location_extension["FacilityLocation"]
-            )
-            address = facility_location["address"]
-            city = address["city"]
-            if "value" in city:
-                city = city["value"][0]
+        address = facility_location["address"]
+        city = address["city"]
+        if "value" in city:
+            city = city["value"][0]
 
     refill_points = []
     if not "energyInfrastructureStation" in elem:
         return None
 
     for station in elem["energyInfrastructureStation"]:
-        for refill_point in station["refillPoint"]:
-            refill_points.append(
-                parse_refill_point(refill_point["aegiElectricChargingPoint"])
+        station_refill_points = [
+            parse_refill_point(
+                get_alternatives(
+                    refill_point,
+                    ["aegiElectricChargingPoint", "egiElectricChargingPoint"],
+                )
             )
+            for refill_point in station["refillPoint"]
+        ]
 
-    area_location = (
-        location_reference["locAreaLocation"]
-        if "locAreaLocation" in location_reference
-        else location_reference["locPointLocation"]
+        if not all([rp.get_evseid() for rp in station_refill_points]):
+            # we are not getting valid EVSEIDs from the refill points. In some sources, EVSEs are incorrectly mapped as energyInfrastructureStation. Try if we can get a valid EVSEID from here:
+            station_id = station["idG"]
+            try:
+                evseid = normalize_evseid(station_id)
+                validate_evseid(evseid, EVSEIDType.EVSE)
+                refill_points.append(
+                    Datex2RefillPoint(
+                        id=station_id,
+                        external_identifier=evseid,
+                        connectors=[
+                            con for rp in station_refill_points for con in rp.connectors
+                        ],
+                    )
+                )
+                continue
+            except ValidationError:
+                pass
+
+        refill_points += station_refill_points
+
+    area_location = get_alternatives(
+        location_reference, ["locAreaLocation", "locPointLocation"]
     )
     coordinates = (
         area_location["coordinatesForDisplay"]
@@ -183,10 +208,8 @@ def parse_energy_infrastructure_site_status(
         site_id=elem["reference"]["idG"],
         refill_point_statuses=[
             parse_refill_point_status(
-                (
-                    rp["aegiRefillPointStatus"]
-                    if "aegiRefillPointStatus" in rp
-                    else rp["aegiElectricChargingPointStatus"]
+                get_alternatives(
+                    rp, ["aegiRefillPointStatus", "aegiElectricChargingPointStatus"]
                 ),
                 last_updated,
                 default_timezone,
@@ -205,9 +228,14 @@ class Datex2JsonParser:
         if isinstance(root, list):
             root = root[0]
 
-        for table in root["aegiEnergyInfrastructureTablePublication"][
-            "energyInfrastructureTable"
-        ]:
+        root = get_alternatives(
+            root,
+            [
+                "aegiEnergyInfrastructureTablePublication",
+                "egiEnergyInfrastructureTablePublication",
+            ],
+        )
+        for table in root["energyInfrastructureTable"]:
             for site in tqdm(table["energyInfrastructureSite"]):
                 site = parse_energy_infrastructure_site(site)
                 if site is not None:

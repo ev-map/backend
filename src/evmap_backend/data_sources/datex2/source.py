@@ -535,3 +535,18 @@ class Datex2SloveniaRealtimeDataSource(BaseDatex2DataSource):
         response.raise_for_status()
         response.encoding = response.apparent_encoding
         return response.text
+
+
+class Datex2FinlandDataSource(BaseDatex2DataSource):
+    id = "finland"
+    parser = Datex2JsonParser()
+    license_attribution = "Fintraffic / digitraffic.fi, CC-BY 4.0"
+    license_attribution_link = "https://www.digitraffic.fi/en/terms-of-service/"
+    # https://www.digitraffic.fi/en/road-traffic/afir/
+
+    def get_data(self) -> str:
+        response = requests.get(
+            "https://afir.digitraffic.fi/api/charging-network/v1/locations/datex2-3.6",
+        )
+        response.raise_for_status()
+        return response.text

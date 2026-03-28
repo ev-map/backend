@@ -7,6 +7,7 @@ from evmap_backend.data_sources.datex2.source import (
     Datex2AustriaRealtimeDataSource,
     Datex2BelgiumEcoMovementDataSource,
     Datex2DenmarkEcoMovementDataSource,
+    Datex2FinlandDataSource,
     Datex2LuxembourgEcoMovementDataSource,
     Datex2MobilithekEcoMovementDatex2DataSource,
     Datex2MobilithekEcoMovementRealtimeDataSource,
@@ -142,6 +143,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     # Switzerland
     OpendataSwissDataSource,
     OpendataSwissRealtimeDataSource,
+    # Finland
+    Datex2FinlandDataSource,
 ]
 DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
     cls.id: cls for cls in DATA_SOURCE_CLASSES

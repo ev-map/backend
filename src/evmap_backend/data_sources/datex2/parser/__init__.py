@@ -164,15 +164,19 @@ class Datex2EnergyInfrastructureSite:
         license_attribution: str,
         license_attribution_link: Optional[str],
     ) -> Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]:
-        operator_id = normalize_evseid(self.refill_points[0].get_evseid())[:5]
-        network, created = Network.objects.get_or_create(
-            evse_operator_id=operator_id,
-            defaults=dict(
-                name=none_to_blank(
-                    self.operator_name.first() if self.operator_name else None
-                )
-            ),
-        )
+        evseid = self.refill_points[0].get_evseid()
+        if evseid != "":
+            operator_id = normalize_evseid(evseid)[:5]
+            network, created = Network.objects.get_or_create(
+                evse_operator_id=operator_id,
+                defaults=dict(
+                    name=none_to_blank(
+                        self.operator_name.first() if self.operator_name else None
+                    )
+                ),
+            )
+        else:
+            network = None
 
         site = ChargingSite(
             data_source=data_source,
