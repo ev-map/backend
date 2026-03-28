@@ -72,6 +72,8 @@ class Chargepoint(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["site", "id_from_source"]),
+            models.Index(fields=["site", "evseid"]),
+            models.Index(fields=["evseid"]),
         ]
         constraints = [
             models.UniqueConstraint(

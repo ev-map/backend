@@ -38,6 +38,7 @@ from evmap_backend.data_sources.datex2.source import (
     Datex2SloveniaRealtimeDataSource,
 )
 from evmap_backend.data_sources.eliso.source import ElisoDataSource
+from evmap_backend.data_sources.fintraffic.source import FintrafficRealtimeDataSource
 from evmap_backend.data_sources.goingelectric.source import GoingElectricDataSource
 from evmap_backend.data_sources.monta.source import MontaDataSource
 from evmap_backend.data_sources.nobil.source import (
@@ -145,6 +146,7 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     OpendataSwissRealtimeDataSource,
     # Finland
     Datex2FinlandDataSource,
+    FintrafficRealtimeDataSource,
 ]
 DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
     cls.id: cls for cls in DATA_SOURCE_CLASSES

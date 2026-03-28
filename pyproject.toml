@@ -12,6 +12,7 @@ dependencies = [
     "python-dotenv==1.2.*",
     "psycopg2-binary==2.9.*",
     "django-solo==2.5.*",
+    "paho-mqtt==2.1.*",
     "python-dateutil",
     "pytz",
     "tqdm",
