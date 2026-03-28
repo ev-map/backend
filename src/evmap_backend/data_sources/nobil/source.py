@@ -73,8 +73,16 @@ class NobilRealtimeDataSource(DataSource):
         updatestate_last_update = None
         async with aiohttp.ClientSession() as session:
             async with session.ws_connect(url) as ws:
-                async for msg in ws:
-                    if msg.type == aiohttp.WSMsgType.TEXT:
+                while True:
+                    msg = await asyncio.wait_for(ws.receive(), timeout=300)
+                    if msg.type in (
+                        aiohttp.WSMsgType.CLOSE,
+                        aiohttp.WSMsgType.CLOSING,
+                        aiohttp.WSMsgType.CLOSED,
+                        aiohttp.WSMsgType.ERROR,
+                    ):
+                        break
+                    elif msg.type == aiohttp.WSMsgType.TEXT:
                         evse_data = msg.json()
                         print(evse_data)
 
@@ -109,8 +117,6 @@ class NobilRealtimeDataSource(DataSource):
                                 )()
                         except Chargepoint.DoesNotExist:
                             print(f"ignoring update")
-                    elif msg.type == aiohttp.WSMsgType.ERROR:
-                        break
 
     def stream_data(self):
         url = self._get_realtime_websocket_url()
