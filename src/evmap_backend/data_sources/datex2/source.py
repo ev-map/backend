@@ -68,7 +68,6 @@ class BaseDatex2DataSource(DataSource):
         elif self.supported_data_types == [DataType.DYNAMIC]:
             statuses_datex = self.parser.parse_status(
                 root,
-                station_as_site=self.realtime_station_as_site,
                 default_timezone=self.default_timezone,
             )
             sync_statuses(
