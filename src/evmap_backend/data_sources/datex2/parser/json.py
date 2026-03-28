@@ -175,7 +175,7 @@ def parse_energy_infrastructure_site(
         zipcode=address["postcode"] if address and "postcode" in address else None,
         city=parse_multilingual_string(city).first() if city else None,
         street=parse_address(address["addressLine"]) if address else None,
-        country=address["countryCode"] if address else "DE",
+        country=address["countryCode"] if address else None,
         operator_name=(
             parse_multilingual_string(operator) if operator is not None else None
         ),
