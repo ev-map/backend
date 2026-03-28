@@ -27,6 +27,8 @@ class ChargepointAdmin(admin.ModelAdmin):
     list_display = ["formatted_evseid", "physical_reference"]
     inlines = [ConnectorInline]
     raw_id_fields = ["site"]
+    search_fields = ["evseid"]
+    search_help_text = "Search by EVSEID without separators"
 
     @admin.display(description="EVSEID")
     def formatted_evseid(self, obj):
@@ -42,7 +44,7 @@ class ConnectorAdmin(admin.ModelAdmin):
         "max_power",
     ]
     list_filter = ["connector_type", "chargepoint__site__operator"]
-    raw_id_fields = ["chargepoint"]
+    autocomplete_fields = ["chargepoint"]
 
 
 class NetworkAdmin(admin.ModelAdmin):

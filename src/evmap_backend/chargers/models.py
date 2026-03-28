@@ -7,6 +7,7 @@ from evmap_backend.chargers.fields import (
     EVSEOperatorIDField,
     OpeningHoursField,
     format_evse_operator_id,
+    format_evseid,
 )
 
 
@@ -85,6 +86,13 @@ class Chargepoint(models.Model):
     id_from_source = models.CharField(max_length=255)
     evseid = EVSEIDField(evseid_type=EVSEIDType.EVSE, blank=True)
     physical_reference = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return (
+            f"Chargepoint {format_evseid(self.evseid)}"
+            if self.evseid
+            else f"Chargepoint {self.id_from_source}"
+        )
 
 
 class Connector(models.Model):
