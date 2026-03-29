@@ -1,9 +1,11 @@
 import gzip
 import logging
 import threading
+from datetime import timedelta
 from typing import List, Optional, Tuple
 
 from django.contrib.gis.geos import Polygon
+from django.utils import timezone
 from ninja import ModelSchema, NinjaAPI, Schema
 from ninja.errors import HttpError
 from ninja.orm import register_field
@@ -118,7 +120,13 @@ def push(request, data_source: str):
     def _process():
         logging.info(f"Processing push for {data_source.id}...")
         data_source.process_push(body)
-        UpdateState(data_source=data_source.id, push=True).save()
+
+        update_state, created = UpdateState.objects.get_or_create(
+            data_source=data_source.id
+        )
+        if timezone.now() - update_state.last_update > timedelta(minutes=1):
+            update_state.last_update = timezone.now()
+            update_state.save()
         logging.info(f"Successfully processed push for {data_source.id}")
 
     threading.Thread(target=_process, daemon=True).start()
