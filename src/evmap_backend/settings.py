@@ -39,7 +39,7 @@ else:
             pass  # os.chown is not available on Windows
         f.write(SECRET_KEY)
 
-DEBUG = "runserver" in sys.argv
+DEBUG = "runserver" in sys.argv or "DEBUG" in os.environ
 
 logging.basicConfig(level=logging.DEBUG if DEBUG else logging.INFO)
 

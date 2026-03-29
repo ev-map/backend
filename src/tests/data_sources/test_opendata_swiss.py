@@ -2,7 +2,7 @@
 
 import pytest
 
-from evmap_backend.chargers.models import Connector
+from evmap_backend.chargers.models import Connector, Network
 from evmap_backend.data_sources.opendata_swiss.parser import (
     _convert_opening_hours,
     _get_station_name,
@@ -492,6 +492,8 @@ class TestParseOicpStatus:
     def test_status_parsing(self):
         from evmap_backend.sync import sync_chargers
 
+        Network._network_cache = {}
+
         # First create the static data
         data = {
             "EVSEData": [
@@ -560,6 +562,8 @@ class TestParseOicpStatus:
 
     def test_status_mapping(self):
         from evmap_backend.sync import sync_chargers
+
+        Network._network_cache = {}
 
         data = {
             "EVSEData": [

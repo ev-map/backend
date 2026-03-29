@@ -11,6 +11,7 @@ class RealtimeStatus(models.Model):
         indexes = [
             models.Index(fields=["chargepoint", "-timestamp"]),
             models.Index(fields=["data_source", "-timestamp"]),
+            models.Index(fields=["data_source", "chargepoint", "-timestamp"]),
         ]
 
     class Status(models.TextChoices):

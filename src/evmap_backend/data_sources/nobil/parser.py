@@ -316,7 +316,7 @@ class NobilChargerStation:
                 pass
 
         if operator_id:
-            network, _ = Network.objects.get_or_create(
+            network, _ = Network.get_or_create(
                 evse_operator_id=none_to_blank(operator_id),
                 defaults=dict(name=none_to_blank(self.operator)),
             )

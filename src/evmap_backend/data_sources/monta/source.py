@@ -94,6 +94,9 @@ status_map = {
 
 
 def convert_monta_data(chargers_by_location, source, license_attribution):
+    network = Network.objects.get_or_create(
+        evse_operator_id="DKMON", defaults=dict(name="Monta")
+    )[0]
     for location in chargers_by_location:
         evses = chargers_by_location[location]
         site = ChargingSite(
@@ -109,9 +112,7 @@ def convert_monta_data(chargers_by_location, source, license_attribution):
             zipcode=evses[0]["location"]["address"]["zip"],
             city=evses[0]["location"]["address"]["city"],
             country=country_map[evses[0]["location"]["address"]["country"]],
-            network=Network.objects.get_or_create(
-                evse_operator_id="DKMON", defaults=dict(name="Monta")
-            )[0],
+            network=network,
             operator=evses[0]["roamingOperatorName"],
         )
 

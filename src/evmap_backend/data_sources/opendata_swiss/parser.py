@@ -309,7 +309,7 @@ def parse_oicp_data(
             validate_evseid(first_evseid)
             evse_operator_id = first_evseid[:5]
             if evse_operator_id:
-                network, _ = Network.objects.get_or_create(
+                network, _ = Network.get_or_create(
                     evse_operator_id=evse_operator_id,
                     defaults=dict(name=none_to_blank(operator_name)),
                 )

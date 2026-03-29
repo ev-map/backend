@@ -168,7 +168,7 @@ class Datex2EnergyInfrastructureSite:
         evseid = self.refill_points[0].get_evseid()
         if evseid != "":
             operator_id = normalize_evseid(evseid)[:5]
-            network, created = Network.objects.get_or_create(
+            network, created = Network.get_or_create(
                 evse_operator_id=operator_id,
                 defaults=dict(
                     name=none_to_blank(

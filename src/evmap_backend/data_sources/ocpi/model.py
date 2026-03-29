@@ -320,7 +320,7 @@ class OcpiLocation(Schema):
         license_attribution_link: Optional[str] = None,
     ) -> Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]:
         operator_id = normalize_evseid(self.evses[0].evse_id)[:5]
-        network, _ = Network.objects.get_or_create(
+        network, _ = Network.get_or_create(
             evse_operator_id=none_to_blank(operator_id),
             defaults=dict(
                 name=none_to_blank(

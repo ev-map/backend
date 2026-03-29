@@ -2,6 +2,7 @@ import logging
 from itertools import batched
 from typing import Iterable, List, Tuple
 
+import pgbulk
 from django.db import transaction
 from django.forms import model_to_dict
 from tqdm import tqdm
@@ -11,279 +12,194 @@ from evmap_backend.helpers.database import distinct_on
 from evmap_backend.realtime.models import RealtimeStatus
 
 
-def _sync_sites_batch(
+def _get_update_fields(model, exclude_fields):
+    """Get all updatable field names for a model, excluding specified fields."""
+    return [
+        field.name
+        for field in model._meta.get_fields()
+        if field.name not in exclude_fields and hasattr(field, "attname")
+    ]
+
+
+SITE_UPDATE_FIELDS = None
+CP_UPDATE_FIELDS = None
+CONN_UPDATE_FIELDS = None
+
+
+def _get_cached_update_fields():
+    """Lazily compute and cache the update field lists for each model."""
+    global SITE_UPDATE_FIELDS, CP_UPDATE_FIELDS, CONN_UPDATE_FIELDS
+    if SITE_UPDATE_FIELDS is None:
+        SITE_UPDATE_FIELDS = _get_update_fields(
+            ChargingSite, {"id", "data_source", "id_from_source"}
+        )
+        CP_UPDATE_FIELDS = _get_update_fields(
+            Chargepoint, {"id", "site", "id_from_source"}
+        )
+        CONN_UPDATE_FIELDS = _get_update_fields(
+            Connector, {"id", "chargepoint", "id_from_source"}
+        )
+    return SITE_UPDATE_FIELDS, CP_UPDATE_FIELDS, CONN_UPDATE_FIELDS
+
+
+def _sync_batch(
     data_source: str,
     batch: Tuple[Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]], ...],
-    site_ids_to_delete: set,
+    seen_site_ids: set,
     progress_bar: tqdm,
 ) -> int:
     """
-    Sync a batch of sites using bulk operations.
+    Sync a batch of sites with their chargepoints and connectors using pgbulk.upsert.
     Returns the number of sites created in this batch.
     """
-    sites_created = 0
+    site_fields, cp_fields, conn_fields = _get_cached_update_fields()
 
-    # Extract all unique site id_from_source values in this batch
-    batch_site_ids = {site.id_from_source for site, _ in batch}
-
-    # Fetch existing sites for this batch
-    existing_sites = {
-        s.id_from_source: s
-        for s in ChargingSite.objects.filter(
-            data_source=data_source, id_from_source__in=batch_site_ids
-        )
-    }
-
-    # Separate sites into create and update lists
-    sites_to_create = []
-    sites_to_update = []
-    site_mapping = {}  # Map id_from_source to site object
-
+    # Prepare sites
     for site, _ in batch:
-        if site.id_from_source in existing_sites:
-            # Update existing site
-            existing_site = existing_sites[site.id_from_source]
-            site.data_source = data_source
-            site.id = existing_site.id
-            sites_to_update.append(site)
-            site_mapping[site.id_from_source] = site
+        site.data_source = data_source
 
-            # Check for duplicates globally using site_ids_to_delete
-            if site.id not in site_ids_to_delete:
-                logging.warning(
-                    f"ID {site.id_from_source} seems to appear more than once in input data!"
-                )
-            site_ids_to_delete.discard(site.id)
-        else:
-            # Create new site
-            site.data_source = data_source
-            sites_to_create.append(site)
-            site_mapping[site.id_from_source] = site
-            sites_created += 1
+    # Upsert sites
+    upserted_sites = pgbulk.upsert(
+        ChargingSite,
+        [site for site, _ in batch],
+        ["data_source", "id_from_source"],
+        site_fields,
+        returning=True,
+    )
 
-    # Bulk create new sites
-    if sites_to_create:
-        ChargingSite.objects.bulk_create(sites_to_create)
+    site_map = {s.id_from_source: s for s in upserted_sites}
+    sites_created = len(upserted_sites.created)
+    seen_site_ids.update(s.id for s in upserted_sites)
 
-    # Bulk update existing sites
-    if sites_to_update:
-        update_fields = [
-            field.name
-            for field in ChargingSite._meta.get_fields()
-            if field.name not in ["id", "data_source", "id_from_source"]
-            and hasattr(field, "attname")
-        ]
-        ChargingSite.objects.bulk_update(sites_to_update, update_fields)
+    # Collect and prepare chargepoints
+    all_chargepoints = []
+    cp_connectors = []  # parallel list of connector lists
 
-    # Process all chargepoints and connectors in this batch together
-    _sync_chargepoints_and_connectors_batch(batch, site_mapping, progress_bar)
+    for site_data, chargepoints_data in batch:
+        site = site_map[site_data.id_from_source]
+        for cp, connectors in chargepoints_data:
+            cp.site_id = site.id
+            all_chargepoints.append(cp)
+            cp_connectors.append(connectors)
 
+    batch_site_ids = [s.id for s in upserted_sites]
+
+    if all_chargepoints:
+        # Upsert chargepoints
+        upserted_cps = pgbulk.upsert(
+            Chargepoint,
+            all_chargepoints,
+            ["site", "id_from_source"],
+            cp_fields,
+            returning=True,
+        )
+
+        cp_map = {(cp.site_id, cp.id_from_source): cp for cp in upserted_cps}
+
+        # Delete chargepoints not in the input
+        Chargepoint.objects.filter(site_id__in=batch_site_ids).exclude(
+            id__in=[cp.id for cp in upserted_cps]
+        ).delete()
+
+        # Process connectors
+        _sync_connectors(
+            all_chargepoints,
+            cp_connectors,
+            cp_map,
+            [cp.id for cp in upserted_cps],
+            conn_fields,
+        )
+    else:
+        # No chargepoints — delete all existing ones for these sites
+        Chargepoint.objects.filter(site_id__in=batch_site_ids).delete()
+
+    progress_bar.update(len(batch))
     return sites_created
 
 
-def _sync_chargepoints_and_connectors_batch(
-    batch: Tuple[Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]], ...],
-    site_mapping: dict,
-    progress_bar: tqdm,
+def _sync_connectors(
+    original_cps: List[Chargepoint],
+    cp_connectors: List[List[Connector]],
+    cp_map: dict,
+    batch_cp_ids: List[int],
+    conn_update_fields: List[str],
 ):
     """
-    Sync all chargepoints and connectors for all sites in the batch using bulk operations.
-    This is more efficient than processing each site individually since sites typically have few chargepoints.
+    Sync connectors for all chargepoints in the batch.
+
+    Connectors that have an id_from_source are upserted via pgbulk.
+    Connectors without an id_from_source use a fallback: if the set of
+    connectors hasn't changed, existing rows are kept; otherwise they are
+    replaced wholesale.
     """
-    # Collect all site IDs in this batch
-    batch_site_ids = [site_mapping[site.id_from_source].id for site, _ in batch]
-
-    # Fetch all existing chargepoints for all sites in the batch in one query
-    all_existing_chargepoints = Chargepoint.objects.filter(site_id__in=batch_site_ids)
-
-    # Group by (site_id, id_from_source) for quick lookup
-    existing_chargepoints_map = {
-        (cp.site_id, cp.id_from_source): cp for cp in all_existing_chargepoints
-    }
-
-    # Track which chargepoint IDs should be deleted
-    chargepoint_ids_to_delete = set(cp.id for cp in all_existing_chargepoints)
-
-    # Collect all chargepoints to create/update across all sites
-    chargepoints_to_create = []
-    chargepoints_to_update = []
-    chargepoint_mapping = {}  # Map (site_id, id_from_source) to chargepoint object
-    created_chargepoint_keys = set()
-
-    # Collect all connector data for later processing
-    all_connectors_data = []  # List of (chargepoint_key, connectors_data, is_new)
-
-    for site_data, chargepoints_data in batch:
-        site = site_mapping[site_data.id_from_source]
-
-        for chargepoint, connectors_data in chargepoints_data:
-            cp_key = (site.id, chargepoint.id_from_source)
-
-            if cp_key in existing_chargepoints_map:
-                # Update existing chargepoint
-                existing_cp = existing_chargepoints_map[cp_key]
-                cp_dict = model_to_dict(
-                    chargepoint, exclude=["site", "id_from_source", "id"]
-                )
-                for field, value in cp_dict.items():
-                    setattr(existing_cp, field, value)
-                chargepoints_to_update.append(existing_cp)
-                chargepoint_mapping[cp_key] = existing_cp
-
-                # Check for duplicates globally
-                if existing_cp.id not in chargepoint_ids_to_delete:
-                    logging.warning(
-                        f"ID {chargepoint.id_from_source} seems to appear more than once in input data!"
-                    )
-                chargepoint_ids_to_delete.discard(existing_cp.id)
-                all_connectors_data.append((cp_key, connectors_data, False))
-            else:
-                # Create new chargepoint
-                chargepoint.site = site
-                chargepoints_to_create.append(chargepoint)
-                chargepoint_mapping[cp_key] = chargepoint
-                created_chargepoint_keys.add(cp_key)
-                all_connectors_data.append((cp_key, connectors_data, True))
-
-    # Bulk create new chargepoints
-    if chargepoints_to_create:
-        Chargepoint.objects.bulk_create(chargepoints_to_create)
-
-    # Bulk update existing chargepoints
-    if chargepoints_to_update:
-        update_fields = [
-            field.name
-            for field in Chargepoint._meta.get_fields()
-            if field.name not in ["id", "site", "id_from_source"]
-            and hasattr(field, "attname")
-        ]
-        Chargepoint.objects.bulk_update(chargepoints_to_update, update_fields)
-
-    # Now process all connectors across all chargepoints in the batch
-    _sync_connectors_batch(all_connectors_data, chargepoint_mapping, batch_site_ids)
-
-    # Delete missing chargepoints in one query
-    if chargepoint_ids_to_delete:
-        Chargepoint.objects.filter(id__in=chargepoint_ids_to_delete).delete()
-
-    # Update progress for all sites in the batch
-    for _ in batch:
-        progress_bar.update(1)
-
-
-def _sync_connectors_batch(
-    all_connectors_data: List[Tuple[Tuple[int, str], List[Connector], bool]],
-    chargepoint_mapping: dict,
-    batch_site_ids: List[int],
-):
-    """
-    Sync all connectors for all chargepoints in the batch using bulk operations.
-    """
-    # Fetch all existing connectors for all chargepoints in the batch in one query
-    all_existing_connectors = Connector.objects.filter(
-        chargepoint__site_id__in=batch_site_ids
-    )
-
-    # Group by (chargepoint_id, id_from_source) for quick lookup
-    existing_connectors_map = {
-        (conn.chargepoint_id, conn.id_from_source): conn
-        for conn in all_existing_connectors
-    }
-
-    # Track which connector IDs should be deleted
-    connector_ids_to_delete = set(conn.id for conn in all_existing_connectors)
-
-    # For the fallback case, we need to prefetch existing connectors by chargepoint
-    # Build a map of chargepoint_id -> list of connector dicts
-    existing_connectors_by_cp = {}
-    for conn in all_existing_connectors:
-        if conn.chargepoint_id not in existing_connectors_by_cp:
-            existing_connectors_by_cp[conn.chargepoint_id] = []
-        existing_connectors_by_cp[conn.chargepoint_id].append(
-            model_to_dict(conn, exclude=["chargepoint", "id"])
-        )
-
-    # Separate connectors with IDs from those without
     connectors_with_ids = []
-    connectors_without_ids = []
+    connectors_without_ids_data = []  # list of (resolved_cp, connectors)
 
-    for cp_key, connectors_data, is_new_chargepoint in all_connectors_data:
-        chargepoint = chargepoint_mapping[cp_key]
+    for original_cp, connectors in zip(original_cps, cp_connectors):
+        resolved_cp = cp_map[(original_cp.site_id, original_cp.id_from_source)]
 
-        if all(conn.id_from_source is not None for conn in connectors_data):
-            connectors_with_ids.append((chargepoint, connectors_data))
+        if connectors and all(c.id_from_source is not None for c in connectors):
+            for conn in connectors:
+                conn.chargepoint_id = resolved_cp.id
+            connectors_with_ids.extend(connectors)
         else:
-            connectors_without_ids.append(
-                (chargepoint, connectors_data, is_new_chargepoint)
-            )
+            connectors_without_ids_data.append((resolved_cp, connectors))
 
-    # Process connectors with IDs using bulk operations
+    # Upsert connectors that have IDs
+    upserted_connector_ids = set()
+    if connectors_with_ids:
+        upserted = pgbulk.upsert(
+            Connector,
+            connectors_with_ids,
+            ["chargepoint", "id_from_source"],
+            conn_update_fields,
+            returning=True,
+        )
+        upserted_connector_ids = {c.id for c in upserted}
+
+    # Handle connectors without IDs (fallback: compare and replace if changed)
+    keep_connector_ids = set()
     connectors_to_create = []
-    connectors_to_update = []
 
-    for chargepoint, connectors_data in connectors_with_ids:
-        for connector in connectors_data:
-            conn_key = (chargepoint.id, connector.id_from_source)
+    if connectors_without_ids_data:
+        no_id_cp_ids = [cp.id for cp, _ in connectors_without_ids_data]
+        existing_connectors = list(
+            Connector.objects.filter(chargepoint_id__in=no_id_cp_ids)
+        )
+        existing_by_cp = {}
+        for conn in existing_connectors:
+            existing_by_cp.setdefault(conn.chargepoint_id, []).append(conn)
 
-            if conn_key in existing_connectors_map:
-                # Update existing connector
-                existing_conn = existing_connectors_map[conn_key]
-                conn_dict = model_to_dict(
-                    connector, exclude=["chargepoint", "id_from_source", "id"]
-                )
-                for field, value in conn_dict.items():
-                    setattr(existing_conn, field, value)
-                connectors_to_update.append(existing_conn)
-                connector_ids_to_delete.discard(existing_conn.id)
-            else:
-                # Create new connector
-                connector.chargepoint = chargepoint
-                connectors_to_create.append(connector)
-
-    # Process connectors without IDs using the fallback logic
-    for chargepoint, connectors_data, is_new_chargepoint in connectors_without_ids:
-        if not is_new_chargepoint:
-            # Check if the existing connectors match the updated ones
-            new_connectors = [
-                model_to_dict(connector, exclude=["chargepoint", "id"])
-                for connector in connectors_data
+        for cp, new_connectors in connectors_without_ids_data:
+            existing = existing_by_cp.get(cp.id, [])
+            new_dicts = [
+                model_to_dict(c, exclude=["chargepoint", "id"]) for c in new_connectors
             ]
-            # Use prefetched data instead of querying
-            existing_connectors = existing_connectors_by_cp.get(chargepoint.id, [])
-            if len(new_connectors) == len(existing_connectors) and all(
-                conn in existing_connectors for conn in new_connectors
+            existing_dicts = [
+                model_to_dict(c, exclude=["chargepoint", "id"]) for c in existing
+            ]
+
+            if len(new_dicts) == len(existing_dicts) and all(
+                d in existing_dicts for d in new_dicts
             ):
-                # No changes needed, remove these connectors from deletion list
-                for conn_id in [
-                    c.id
-                    for c in all_existing_connectors
-                    if c.chargepoint_id == chargepoint.id
-                ]:
-                    connector_ids_to_delete.discard(conn_id)
-                continue
+                # No changes — keep existing connectors
+                keep_connector_ids.update(c.id for c in existing)
+            else:
+                # Changes detected — create new (old ones will be deleted below)
+                for conn in new_connectors:
+                    conn.chargepoint_id = cp.id
+                    connectors_to_create.append(conn)
 
-        # Add new connectors to create list
-        for connector in connectors_data:
-            connector.chargepoint = chargepoint
-            connectors_to_create.append(connector)
-
-    # Bulk create new connectors
     if connectors_to_create:
-        Connector.objects.bulk_create(connectors_to_create)
+        created = Connector.objects.bulk_create(connectors_to_create)
+        keep_connector_ids.update(c.id for c in created)
 
-    # Bulk update existing connectors
-    if connectors_to_update:
-        update_fields = [
-            field.name
-            for field in Connector._meta.get_fields()
-            if field.name not in ["id", "chargepoint", "id_from_source"]
-            and hasattr(field, "attname")
-        ]
-        Connector.objects.bulk_update(connectors_to_update, update_fields)
-
-    # Delete missing connectors in one query
-    if connector_ids_to_delete:
-        Connector.objects.filter(id__in=connector_ids_to_delete).delete()
+    # Delete connectors not accounted for
+    all_valid_ids = upserted_connector_ids | keep_connector_ids
+    delete_qs = Connector.objects.filter(chargepoint_id__in=batch_cp_ids)
+    if all_valid_ids:
+        delete_qs = delete_qs.exclude(id__in=all_valid_ids)
+    delete_qs.delete()
 
 
 def sync_chargers(
@@ -292,36 +208,30 @@ def sync_chargers(
     delete_missing: bool = True,
 ):
     """
-    Sync charging sites from a data source using bulk operations.
+    Sync charging sites from a data source using pgbulk upsert.
     Processes sites in batches of 100 for efficiency.
     """
-    total_sites_created = 0
-    total_sites_deleted = 0
-
     with transaction.atomic():
-        # Get all site IDs that should be deleted (will be reduced as we process batches)
-        site_ids_to_delete = set(
+        existing_site_ids = set(
             ChargingSite.objects.filter(data_source=data_source).values_list(
                 "id", flat=True
             )
         )
+        seen_site_ids = set()
+        total_sites_created = 0
 
-        # Process sites in batches
         batch_size = 100
-
-        # Create a progress bar for all sites
-        # We'll update it as we process each site within batches
         with tqdm(desc="Syncing sites", disable=None) as progress_bar:
             for batch in batched(sites, batch_size):
-                sites_created = _sync_sites_batch(
-                    data_source, batch, site_ids_to_delete, progress_bar
-                )
-                total_sites_created += sites_created
+                created = _sync_batch(data_source, batch, seen_site_ids, progress_bar)
+                total_sites_created += created
 
-        # Delete all remaining sites that weren't in the input
-        if site_ids_to_delete and delete_missing:
-            ChargingSite.objects.filter(id__in=site_ids_to_delete).delete()
-            total_sites_deleted = len(site_ids_to_delete)
+        # Delete sites that weren't in the input
+        sites_to_delete = existing_site_ids - seen_site_ids
+        total_sites_deleted = 0
+        if sites_to_delete and delete_missing:
+            ChargingSite.objects.filter(id__in=sites_to_delete).delete()
+            total_sites_deleted = len(sites_to_delete)
 
         logging.info(
             f"{total_sites_created} sites created, {total_sites_deleted} sites deleted"
@@ -409,8 +319,8 @@ def _sync_statuses_batch(
             status.data_source = realtime_data_source
             statuses_to_create.append(status)
 
-    # Bulk create new statuses
+    # Bulk insert new statuses using COPY for speed
     if statuses_to_create:
-        RealtimeStatus.objects.bulk_create(statuses_to_create)
+        pgbulk.copy(RealtimeStatus, statuses_to_create)
 
     return len(statuses_to_create)

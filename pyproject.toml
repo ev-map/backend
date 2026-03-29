@@ -17,7 +17,8 @@ dependencies = [
     "pytz",
     "tqdm",
     "defusedxml",
-    "cryptography"
+    "cryptography",
+    "django-pgbulk==3.3.*"
 ]
 
 [project.optional-dependencies]

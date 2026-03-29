@@ -33,7 +33,7 @@ def parse_eliso_chargers(
             zipcode=item["postalCode"],
             city=item["city"],
             country=item["country_iso_3166_alpha_2"],
-            network=Network.objects.get_or_create(
+            network=Network.get_or_create(
                 evse_operator_id=item["operator"],
                 defaults=dict(name=item["operator_name"]),
             )[0],

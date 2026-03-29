@@ -1,3 +1,5 @@
+from typing import Dict, Tuple
+
 from django.contrib.gis.db import models
 from django_countries.fields import CountryField
 
@@ -20,6 +22,7 @@ class Network(models.Model):
     name = models.CharField(max_length=255, blank=True)
     evse_operator_id = EVSEOperatorIDField(blank=True, unique=True)
     website = models.URLField(blank=True)
+    _network_cache = {}
 
     def __str__(self):
         if self.evse_operator_id:
@@ -30,6 +33,22 @@ class Network(models.Model):
             )
         else:
             return self.name
+
+    @classmethod
+    def get_or_create(
+        cls, evse_operator_id: str, defaults: Dict[str, object]
+    ) -> Tuple["Network", bool]:
+        if evse_operator_id in cls._network_cache:
+            return cls._network_cache[evse_operator_id], False
+
+        network, created = Network.objects.get_or_create(
+            evse_operator_id=evse_operator_id,
+            defaults=defaults,
+        )
+
+        cls._network_cache[evse_operator_id] = network
+
+        return network, created
 
 
 class ChargingSite(models.Model):
