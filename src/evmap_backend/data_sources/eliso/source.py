@@ -20,7 +20,7 @@ connector_mapping = {
 def parse_eliso_chargers(
     root, source, license_attribution
 ) -> Iterable[Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]]:
-    for item in tqdm(root):
+    for item in tqdm(root, disable=None):
         # Eliso doesn't have IDs, so we make one from the city and address:
         item_id = item["address"] + " " + item["postalCode"] + " " + item["city"]
 

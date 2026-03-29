@@ -218,7 +218,9 @@ class Datex2XmlParser:
         root = find_payload(root)
 
         for table in root.findall("egi:energyInfrastructureTable", ns):
-            for site in tqdm(table.findall("egi:energyInfrastructureSite", ns)):
+            for site in tqdm(
+                table.findall("egi:energyInfrastructureSite", ns), disable=None
+            ):
                 yield parse_energy_infrastructure_site(site)
 
     def parse_status(

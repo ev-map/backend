@@ -428,7 +428,7 @@ def to_bool(val: Optional[int]) -> Optional[bool]:
 
 
 def parse_nobil_chargers(json_data) -> Iterable[NobilChargerStation]:
-    for data in tqdm(json_data["chargerstations"]):
+    for data in tqdm(json_data["chargerstations"], disable=None):
         csmd = data["csmd"]
 
         station_attrs = data["attr"]["st"]

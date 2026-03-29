@@ -235,7 +235,7 @@ class Datex2JsonParser:
             ],
         )
         for table in root["energyInfrastructureTable"]:
-            for site in tqdm(table["energyInfrastructureSite"]):
+            for site in tqdm(table["energyInfrastructureSite"], disable=None):
                 site = parse_energy_infrastructure_site(
                     site, self.station_as_chargepoint
                 )

@@ -9,7 +9,7 @@ class OcpiParser:
     def parse_locations(
         self, data: Iterable, status_only: bool = False
     ) -> Iterable[OcpiLocation]:
-        for site in tqdm(data):
+        for site in tqdm(data, disable=None):
             loc = OcpiLocation.model_validate(site)
             if loc is not None:
                 yield loc

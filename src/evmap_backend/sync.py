@@ -311,7 +311,7 @@ def sync_chargers(
 
         # Create a progress bar for all sites
         # We'll update it as we process each site within batches
-        with tqdm(desc="Syncing sites") as progress_bar:
+        with tqdm(desc="Syncing sites", disable=None) as progress_bar:
             for batch in batched(sites, batch_size):
                 sites_created = _sync_sites_batch(
                     data_source, batch, site_ids_to_delete, progress_bar
@@ -323,7 +323,7 @@ def sync_chargers(
             ChargingSite.objects.filter(id__in=site_ids_to_delete).delete()
             total_sites_deleted = len(site_ids_to_delete)
 
-        print(
+        logging.info(
             f"{total_sites_created} sites created, {total_sites_deleted} sites deleted"
         )
 
@@ -341,13 +341,15 @@ def sync_statuses(
     batch_size = 100
 
     with transaction.atomic():
-        for batch in tqdm(batched(statuses, batch_size), desc="Syncing statuses"):
+        for batch in tqdm(
+            batched(statuses, batch_size), desc="Syncing statuses", disable=None
+        ):
             statuses_created = _sync_statuses_batch(
                 realtime_data_source, chargepoint_data_source, batch
             )
             total_statuses_created += statuses_created
 
-        print(f"Created {total_statuses_created} statuses")
+        logging.info(f"Created {total_statuses_created} statuses")
 
 
 def _sync_statuses_batch(

@@ -176,7 +176,9 @@ class MontaDataSource(DataSource):
             tokens.save()
 
         chargers_by_location = defaultdict(list)
-        for charger in tqdm(get_all_monta_chargers(access_token=tokens.access_token)):
+        for charger in tqdm(
+            get_all_monta_chargers(access_token=tokens.access_token), disable=None
+        ):
             chargers_by_location[charger["location"]["addressLabel"]].append(charger)
 
         sites = list(
