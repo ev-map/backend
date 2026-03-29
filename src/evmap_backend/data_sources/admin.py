@@ -7,6 +7,7 @@ class UpdateStateAdmin(admin.ModelAdmin):
     readonly_fields = ["data_source", "last_update", "push"]
     list_display = ["data_source", "last_update", "push"]
     list_filter = ["push"]
+    ordering = ["last_update"]
 
 
 # Register your models here.

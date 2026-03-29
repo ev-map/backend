@@ -42,6 +42,7 @@ class RealtimeStatusAdmin(admin.ModelAdmin):
     list_filter = ["status", "timestamp", "data_source"]
     paginator = LargeTablePaginator
     show_full_result_count = False
+    ordering = ["-timestamp"]
 
 
 # Register your models here.

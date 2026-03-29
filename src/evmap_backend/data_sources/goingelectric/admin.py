@@ -123,6 +123,7 @@ class GoingElectricChargeLocationAdmin(admin.ModelAdmin):
     raw_id_fields = ["matched_site"]
     readonly_fields = ["match_confidence"]
     inlines = [GoingElectricChargepointInline]
+    ordering = ["id"]
 
 
 class GoingElectricChargepointAdmin(admin.ModelAdmin):
