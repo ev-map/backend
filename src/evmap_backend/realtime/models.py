@@ -10,6 +10,7 @@ class RealtimeStatus(models.Model):
         get_latest_by = "timestamp"
         indexes = [
             models.Index(fields=["chargepoint", "-timestamp"]),
+            models.Index(fields=["data_source", "-timestamp"]),
         ]
 
     class Status(models.TextChoices):
