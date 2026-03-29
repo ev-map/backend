@@ -16,13 +16,13 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 
 from evmap_backend.data_sources.nobil.api import api as nobil_api
 from evmap_backend.data_sources.ocpi.api import api as ocpi_api
 from evmap_backend.data_sources.openstreetmap.api import api as osm_api
 
-from . import views
+from . import settings, views
 from .api import api as main_api
 
 admin.site.site_header = "EVMap Backend"
@@ -37,3 +37,6 @@ urlpatterns = [
     path("api/", main_api.urls),
     path("playground/", views.playground),
 ]
+
+if settings.DEBUG:
+    urlpatterns += [path("silk/", include("silk.urls", namespace="silk"))]

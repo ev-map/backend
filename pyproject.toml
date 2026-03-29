@@ -25,6 +25,7 @@ dev = [
     "pre-commit",
     "pytest==9.0.*",
     "pytest-django==4.11.*",
+    "django-silk==5.5.*"
 ]
 
 [tool.isort]
