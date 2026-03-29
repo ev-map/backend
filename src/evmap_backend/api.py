@@ -113,23 +113,21 @@ def push(request, data_source: str):
 
     data_source.verify_push(request)
 
+    logging.info(f"Processing push for {data_source.id}...")
+
     body = request.body
     if request.headers.get("Content-Encoding") == "gzip":
         body = gzip.decompress(body)
 
-    def _process():
-        logging.info(f"Processing push for {data_source.id}...")
-        data_source.process_push(body)
+    data_source.process_push(body)
 
-        update_state, created = UpdateState.objects.get_or_create(
-            data_source=data_source.id
-        )
-        if timezone.now() - update_state.last_update > timedelta(minutes=1):
-            update_state.last_update = timezone.now()
-            update_state.save()
-        logging.info(f"Successfully processed push for {data_source.id}")
-
-    threading.Thread(target=_process, daemon=True).start()
+    update_state, created = UpdateState.objects.get_or_create(
+        data_source=data_source.id
+    )
+    if timezone.now() - update_state.last_update > timedelta(minutes=1):
+        update_state.last_update = timezone.now()
+        update_state.save()
+    logging.info(f"Successfully processed push for {data_source.id}")
 
     return 200, ""
 
