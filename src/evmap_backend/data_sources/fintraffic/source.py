@@ -23,6 +23,7 @@ class FintrafficRealtimeDataSource(DataSource):
 
     def _on_connect(self, client, userdata, flags, rc, props):
         print("Connected")
+        client.subscribe("status-v1/#")
 
     def _on_message(self, client, userdata, msg):
         print(f"Received message: {msg.topic} {msg.payload}")
@@ -77,5 +78,4 @@ class FintrafficRealtimeDataSource(DataSource):
         client.on_message = self._on_message
         client.tls_set()
         client.connect("afir.digitraffic.fi", 443, 60)
-        client.subscribe("status-v1/#")
         client.loop_forever()
