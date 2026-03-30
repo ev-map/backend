@@ -62,6 +62,7 @@ ALLOWED_HOSTS = (
 )
 CSRF_TRUSTED_ORIGINS = [urlparse(SITE_URL).scheme + "://" + urlparse(SITE_URL).hostname]
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024 * 1024
 
 # Application definition
 
