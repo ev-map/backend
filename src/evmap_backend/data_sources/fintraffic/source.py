@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 
 import paho.mqtt.client as mqtt
@@ -9,6 +10,8 @@ from evmap_backend.chargers.models import Chargepoint
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.models import UpdateState
 from evmap_backend.realtime.models import RealtimeStatus
+
+logger = logging.getLogger(__name__)
 
 
 class FintrafficRealtimeDataSource(DataSource):
@@ -22,11 +25,14 @@ class FintrafficRealtimeDataSource(DataSource):
         self.updatestate_last_update = None
 
     def _on_connect(self, client, userdata, flags, rc, props):
-        print("Connected")
+        logger.info("Connected")
         client.subscribe("status-v1/#")
 
+    def _on_disconnect(self, client, userdata, flags, rc, props):
+        logger.info(f"Disconnected with reason code: {rc}")
+
     def _on_message(self, client, userdata, msg):
-        print(f"Received message: {msg.topic} {msg.payload}")
+        logger.debug(f"Received message: {msg.topic} {msg.payload}")
 
         topic = msg.topic
         if not topic.startswith("status-v1/"):
@@ -50,7 +56,7 @@ class FintrafficRealtimeDataSource(DataSource):
                 current_status is not None
                 and current_status.status == RealtimeStatus.Status[evse_data["status"]]
             ):
-                print("ignoring update, no change")
+                logger.debug("ignoring update, no change")
                 return
 
             RealtimeStatus(
@@ -70,12 +76,13 @@ class FintrafficRealtimeDataSource(DataSource):
                 # save the update state, but only once per minute
                 UpdateState(data_source=self.id, push=True).save()
         except Chargepoint.DoesNotExist:
-            print(f"ignoring update, chargepoint {evseid} does not exist")
+            logger.debug(f"ignoring update, chargepoint {evseid} does not exist")
 
     def stream_data(self):
         client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, transport="websockets")
         client.on_connect = self._on_connect
         client.on_message = self._on_message
+        client.on_disconnect = self._on_disconnect
         client.tls_set()
         client.connect("afir.digitraffic.fi", 443, 60)
         client.loop_forever()

@@ -46,13 +46,21 @@ logging.basicConfig(level=logging.DEBUG if DEBUG else logging.INFO)
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "format": "{levelname} {asctime} {name}: {message}",
+            "style": "{",
+        },
+    },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
+            "formatter": "default",
         },
     },
     "loggers": {
-        "django": {"handlers": ["console"], "level": "INFO"},
+        "root": {"handlers": ["console"], "level": "INFO"},
+        "evmap_backend.data_sources.fintraffic.source": {"level": "DEBUG"},
     },
 }
 
