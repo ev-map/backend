@@ -1,7 +1,9 @@
 from typing import Dict, Set
 
-from django.contrib.gis.db.models import PointField
+from django.contrib.gis.db.models import GeometryField, PointField
+from django.contrib.gis.db.models.functions import Transform
 from django.db import models
+from django.db.models.functions import Cast
 
 from evmap_backend.chargers.models import Connector
 
@@ -26,6 +28,11 @@ class GoingElectricChargeLocation(models.Model):
     id = models.BigIntegerField(primary_key=True)
     name = models.CharField(max_length=255, blank=True)
     coordinates = PointField(srid=4326, geography=True)
+    coordinates_mercator = models.GeneratedField(
+        expression=Transform(Cast("coordinates", GeometryField(srid=4326)), 3857),
+        output_field=PointField(srid=3857),
+        db_persist=True,
+    )
     address_city = models.CharField(max_length=255, blank=True)
     address_country = models.CharField(max_length=255, blank=True)
     address_postcode = models.CharField(max_length=255, blank=True)

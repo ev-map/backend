@@ -1,6 +1,9 @@
 from typing import Dict, Tuple
 
 from django.contrib.gis.db import models
+from django.contrib.gis.db.models import GeometryField
+from django.contrib.gis.db.models.functions import GeometryType, Transform
+from django.db.models.functions import Cast
 from django_countries.fields import CountryField
 
 from evmap_backend.chargers.fields import (
@@ -67,6 +70,11 @@ class ChargingSite(models.Model):
     id_from_source = models.CharField(max_length=255)
     name = models.TextField()
     location = models.PointField(geography=True)
+    location_mercator = models.GeneratedField(
+        expression=Transform(Cast("location", GeometryField(srid=4326)), 3857),
+        output_field=models.PointField(srid=3857),
+        db_persist=True,
+    )
 
     site_evseid = EVSEIDField(evseid_type=EVSEIDType.STATION, blank=True)
 
