@@ -4,7 +4,11 @@ import threading
 from datetime import timedelta
 from typing import List, Optional, Tuple
 
+from django.contrib.gis.db.models import Collect
+from django.contrib.gis.db.models.functions import Centroid, SnapToGrid, Transform
 from django.contrib.gis.geos import Polygon
+from django.contrib.postgres.aggregates import ArrayAgg
+from django.db.models import Avg, Count, StringAgg
 from django.utils import timezone
 from ninja import ModelSchema, NinjaAPI, Schema
 from ninja.errors import HttpError
@@ -26,21 +30,32 @@ api = NinjaAPI(urls_namespace="evmap")
 register_field("PointField", Tuple[float, float])
 
 
-class ChargingSitesSchema(ModelSchema):
-    country: str
-    network: Optional[str]
-
-    @staticmethod
-    def resolve_country(obj: ChargingSite) -> str:
-        return obj.country.code
-
-    @staticmethod
-    def resolve_network(obj: ChargingSite) -> str:
-        return obj.network.name if obj.network else None
+class ChargingSiteSchema(ModelSchema):
+    # country: str
+    # network: Optional[str]
+    #
+    # @staticmethod
+    # def resolve_country(obj: ChargingSite) -> str:
+    #     return obj.country.code
+    #
+    # @staticmethod
+    # def resolve_network(obj: ChargingSite) -> str:
+    #     return obj.network.name if obj.network else None
 
     class Meta:
         model = ChargingSite
-        fields = "__all__"
+        exclude = ["location_mercator", "country", "network"]
+
+
+class ClusterSchema(Schema):
+    center: tuple[float, float]
+    count: int
+    ids: List[int]
+
+
+class ChargingSitesSchema(Schema):
+    sites: List[ChargingSiteSchema]
+    clusters: Optional[List[ClusterSchema]]
 
 
 class RealtimeStatusSchema(Schema):
@@ -55,10 +70,42 @@ class RealtimeStatusesSchema(Schema):
     statuses: List[RealtimeStatusSchema]
 
 
-@api.get("/sites", response=List[ChargingSitesSchema], auth=[django_auth, ApiKeyAuth()])
-def sites(request, sw_lat: float, sw_lng: float, ne_lat: float, ne_lng: float):
+@api.get("/sites", response=ChargingSitesSchema, auth=[django_auth, ApiKeyAuth()])
+def sites(
+    request,
+    sw_lat: float,
+    sw_lng: float,
+    ne_lat: float,
+    ne_lng: float,
+    cluster: bool = False,
+    cluster_radius: float = None,
+):
     region = Polygon.from_bbox((sw_lng, sw_lat, ne_lng, ne_lat))
-    return ChargingSite.objects.filter(location__coveredby=region)[:1000]
+    queryset = ChargingSite.objects.filter(location__coveredby=region)
+    if cluster:
+        snapped = queryset.annotate(
+            snapped=SnapToGrid("location_mercator", cluster_radius)
+        )
+        groups = list(
+            snapped.values("snapped").annotate(
+                count=Count("id"),
+                center=Transform(Centroid(Collect("location_mercator")), 4326),
+                ids=ArrayAgg("id"),
+            )
+        )
+
+        clusters = []
+        single_ids = []
+        for g in groups:
+            if g["count"] > 1:
+                clusters.append(g)
+            else:
+                single_ids.append(g["ids"][0])
+
+        queryset = ChargingSite.objects.filter(id__in=single_ids)
+    else:
+        clusters = None
+    return ChargingSitesSchema(clusters=clusters, sites=queryset[:1000])
 
 
 @api.get(

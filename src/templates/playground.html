@@ -12,6 +12,23 @@
             margin: 0;
             padding: 0;
         }
+
+        .cluster-marker {
+            background-color: #e74c3c;
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 13px;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            min-width: 32px;
+            min-height: 32px;
+            padding: 2px;
+        }
     </style>
     <link href='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css' rel='stylesheet'/>
 </head>
@@ -27,18 +44,22 @@
     });
 
     const markers = new Map();
+    const clusterMarkers = new Map();
 
     async function updateMap() {
         const bounds = map.getBounds();
+        const zoom = map.getZoom();
         const params = new URLSearchParams();
         params.append("sw_lng", bounds.getWest());
         params.append("sw_lat", bounds.getSouth());
         params.append("ne_lng", bounds.getEast());
         params.append("ne_lat", bounds.getNorth());
+        params.append("cluster", true);
+        params.append("cluster_radius", 30000000 / Math.pow(2.0, Math.round(zoom) + 1));
         const response = await fetch(`/api/sites?${params}`);
-        const chargers = await response.json();
+        const json = await response.json();
         const idsToDelete = new Set(markers.keys());
-        chargers.forEach((charger) => {
+        json.sites.forEach((charger) => {
             if (!markers.has(charger.id)) {
                 const popup = new maplibregl.Popup().setHTML("Name: " + charger.name + "<br>" + "Network: " + charger.network + "<br>" + "Data source: " + charger.data_source);
                 const marker = new maplibregl.Marker()
@@ -53,7 +74,30 @@
             const marker = markers.get(id);
             marker.remove();
             markers.delete(id);
+        });
+
+        const clustersToDelete = new Set(clusterMarkers.keys());
+        json.clusters.forEach((cluster) => {
+            if (!clusterMarkers.has(cluster.ids)) {
+                const el = document.createElement('div');
+                el.className = 'cluster-marker';
+                const size = Math.max(32, Math.min(56, 32 + Math.log10(cluster.count) * 12));
+                el.style.width = size + 'px';
+                el.style.height = size + 'px';
+                el.textContent = cluster.count;
+
+                const marker = new maplibregl.Marker({element: el})
+                    .setLngLat(cluster.center)
+                    .addTo(map);
+                clusterMarkers.set(cluster.ids, marker);
+            }
+            clustersToDelete.delete(cluster.ids);
         })
+        clustersToDelete.forEach((id) => {
+            const marker = clusterMarkers.get(id);
+            marker.remove();
+            clusterMarkers.delete(id);
+        });
     }
 
     map.on("moveend", () => {
