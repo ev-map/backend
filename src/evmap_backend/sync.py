@@ -31,7 +31,7 @@ def _get_cached_update_fields():
     global SITE_UPDATE_FIELDS, CP_UPDATE_FIELDS, CONN_UPDATE_FIELDS
     if SITE_UPDATE_FIELDS is None:
         SITE_UPDATE_FIELDS = _get_update_fields(
-            ChargingSite, {"id", "data_source", "id_from_source"}
+            ChargingSite, {"id", "data_source", "id_from_source", "location_mercator"}
         )
         CP_UPDATE_FIELDS = _get_update_fields(
             Chargepoint, {"id", "site", "id_from_source"}
