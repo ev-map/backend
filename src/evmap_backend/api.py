@@ -126,6 +126,7 @@ def push(request, data_source: str):
     )
     if timezone.now() - update_state.last_update > timedelta(minutes=1):
         update_state.last_update = timezone.now()
+        update_state.push = True
         update_state.save()
     logging.info(f"Successfully processed push for {data_source.id}")
 
