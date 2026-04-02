@@ -471,6 +471,51 @@ class MfgUkOcpiDataSource(BaseOcpiDataSource):
         return json.loads(response.text)["data"]
 
 
+class GeniepointUkOcpiDataSource(BaseOcpiDataSource):
+    locations_url = "https://opendata.geniepoint.co.uk/locations"
+    tariffs_url = "https://opendata.geniepoint.co.uk/tariffs"
+
+    supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
+    id = "geniepoint_uk"
+    license_attribution = "GeniePoint"
+    # https://www.equans.co.uk/drivers-geniepoint/open-data
+
+    def get_locations_data(self):
+        response = requests.get(self.locations_url)
+        response.raise_for_status()
+        return json.loads(response.text)["data"]
+
+
+class ClenergyUkOcpiDataSource(BaseOcpiDataSource):
+    locations_url = "https://api.clenergy.online/development/pcpr/locations"
+    tariffs_url = "https://api.clenergy.online/development/pcpr/tariffs"
+
+    supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
+    id = "clenergy_uk"
+    license_attribution = "Clenergy EV Ltd."
+    # https://www.clenergy-ev.com/open-data/
+
+    def get_locations_data(self):
+        response = requests.get(self.locations_url)
+        response.raise_for_status()
+        return json.loads(response.text)["data"]
+
+
+class GoZeroUkOcpiDataSource(BaseOcpiDataSource):
+    locations_url = "https://cpo-api.gozerocharge.com/api/v1/ocpi/2.2.1/locations"
+    tariffs_url = "https://cpo-api.gozerocharge.com/api/v1/ocpi/2.2.1/tariffs"
+
+    supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
+    id = "gozero_uk"
+    license_attribution = "Go Zero Ltd."
+    # https://domestic.gozerocharge.com/public-charge-point-open-data/
+
+    def get_locations_data(self):
+        response = requests.get(self.locations_url)
+        response.raise_for_status()
+        return json.loads(response.text)["data"]
+
+
 class LatviaOcpiDataSource(BaseOcpiDataSource):
     id = "latvia"
     supported_data_types = [DataType.STATIC, DataType.DYNAMIC]

@@ -52,10 +52,13 @@ from evmap_backend.data_sources.ocpi.source import (
     BpPulseUkOcpiDataSource,
     BpPulseUkOcpiRealtimeDataSource,
     ChargyUkOcpiDataSource,
+    ClenergyUkOcpiDataSource,
     CommunityByShellRechargeUkOcpiDataSource,
     CommunityByShellRechargeUkOcpiRealtimeDataSource,
     EsbUkOcpiDataSource,
     EsbUkOcpiRealtimeDataSource,
+    GeniepointUkOcpiDataSource,
+    GoZeroUkOcpiDataSource,
     InstavoltUkOcpiDataSource,
     IonityUkOcpiDataSource,
     IonityUkOcpiRealtimeDataSource,
@@ -135,6 +138,9 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     MfgUkOcpiDataSource,
     TeslaUkOcpiDataSource,
     InstavoltUkOcpiDataSource,
+    GeniepointUkOcpiDataSource,
+    ClenergyUkOcpiDataSource,
+    GoZeroUkOcpiDataSource,
     # Latvia
     # LatviaOcpiDataSource,  # Data is malformed (duplicate IDs)
     # Slovenia
