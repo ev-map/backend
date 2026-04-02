@@ -94,6 +94,7 @@ def parse_connector(elem) -> Datex2Connector:
 
 
 def parse_refill_point(elem: Element) -> Datex2RefillPoint:
+    name = elem.find("fac:name", ns)
     return Datex2RefillPoint(
         external_identifier=text_if_exists(elem, "fac:externalIdentifier"),
         id=elem.attrib["id"],
@@ -101,6 +102,7 @@ def parse_refill_point(elem: Element) -> Datex2RefillPoint:
             parse_connector(connector)
             for connector in elem.findall("egi:connector", ns)
         ],
+        name=parse_multilingual_string(name) if name is not None else None,
     )
 
 
@@ -193,16 +195,21 @@ def parse_energy_infrastructure_site(elem: Element) -> Datex2EnergyInfrastructur
     else:
         facility_location = loc_extension.find("locx:facilityLocation", ns)
     address = facility_location.find("locx:address", ns)
+    point_by_coordinates = location.find("loc:pointByCoordinates", ns)
+    if point_by_coordinates is not None:
+        point_coordinates = point_by_coordinates.find("loc:pointCoordinates", ns)
+    else:
+        point_coordinates = location.find("loc:coordinatesForDisplay", ns)
+    city = address.find("locx:city", ns)
+    country_code = address.find("locx:countryCode", ns)
     return Datex2EnergyInfrastructureSite(
         id=elem.attrib["id"],
         name=parse_multilingual_string(elem.find("fac:name", ns)),
-        location=parse_point_coordinates(
-            location.find("loc:pointByCoordinates", ns).find("loc:pointCoordinates", ns)
-        ),
+        location=parse_point_coordinates(point_coordinates),
         zipcode=address.find("locx:postcode", ns).text,
-        city=parse_single_or_multilingual_string(address.find("locx:city", ns)),
+        city=parse_single_or_multilingual_string(city) if city is not None else None,
         street=parse_address(address),
-        country=address.find("locx:countryCode", ns).text,
+        country=country_code.text if country_code is not None else None,
         operator_name=parse_multilingual_string(operator.find("fac:name", ns)),
         operator_phone=phone,
         refill_points=refill_points,

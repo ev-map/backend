@@ -36,6 +36,7 @@ from evmap_backend.data_sources.datex2.source import (
     Datex2MobilithekWirelaneRealtimeDataSource,
     Datex2SloveniaDataSource,
     Datex2SloveniaRealtimeDataSource,
+    Datex2SpainDataSource,
 )
 from evmap_backend.data_sources.eliso.source import ElisoDataSource
 from evmap_backend.data_sources.fintraffic.source import FintrafficRealtimeDataSource
@@ -151,6 +152,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     # Finland
     Datex2FinlandDataSource,
     FintrafficRealtimeDataSource,
+    # Spain
+    Datex2SpainDataSource,
 ]
 DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
     cls.id: cls for cls in DATA_SOURCE_CLASSES

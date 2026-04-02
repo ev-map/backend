@@ -546,3 +546,19 @@ class Datex2FinlandDataSource(BaseDatex2DataSource):
         )
         response.raise_for_status()
         return response.text
+
+
+class Datex2SpainDataSource(BaseDatex2DataSource):
+    id = "spain"
+    license_attribution = "Dirección General de Tráfico, CC-BY 4.0"
+    license_attribution_link = (
+        "https://nap.dgt.es/dataset/puntos-de-recarga-electrica-para-vehiculos"
+    )
+    # https://nap.dgt.es/dataset/puntos-de-recarga-electrica-para-vehiculos
+
+    def get_data(self) -> str:
+        response = requests.get(
+            "https://infocar.dgt.es/datex2/v3/miterd/EnergyInfrastructureTablePublication/electrolineras.xml",
+        )
+        response.raise_for_status()
+        return response.text
