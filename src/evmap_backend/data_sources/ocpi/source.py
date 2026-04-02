@@ -485,6 +485,36 @@ class LatviaOcpiDataSource(BaseOcpiDataSource):
         return json.loads(response.text)["data"]
 
 
+class RoadBelgiumOcpiDataSource(BaseOcpiDataSource):
+    id = "road_belgium"
+    supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
+    locations_url = "https://roaming.road.io/files/9ef09c78-2666-418a-aa45-4f2261e2e305/locations.json?force=true"
+    license_attribution = "Road"
+    # https://transportdata.be/en/dataset/road-public-charging-network
+
+    def get_locations_data(self):
+        response = requests.get(self.locations_url)
+        response.raise_for_status()
+        return json.loads(response.text)
+
+
+class TeslaBelgiumOcpiDataSource(BaseOcpiDataSource):
+    id = "tesla_belgium"
+    license_attribution = "Tesla Belgium BV"
+    locations_url = "https://charging-roaming-data.tesla.com/ocpi/cpo/2.2.1/locations"
+    token = os.environ.get("TESLA_BELGIUM_TOKEN")
+    supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
+    # https://transportdata.be/en/dataset/tesla-api
+
+    def get_locations_data(self):
+        response = requests.get(
+            self.locations_url,
+            headers={"Authorization": f"Token {self.token}"},
+        )
+        response.raise_for_status()
+        return json.loads(response.text)["data"]
+
+
 class TeslaUkOcpiDataSource(BaseOcpiConnectionDataSource):
     id = "tesla_uk"
     license_attribution = "Tesla, Inc."

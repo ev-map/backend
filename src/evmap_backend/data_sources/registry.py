@@ -60,8 +60,10 @@ from evmap_backend.data_sources.ocpi.source import (
     IonityUkOcpiRealtimeDataSource,
     MfgUkOcpiDataSource,
     NdwNetherlandsOcpiDataSource,
+    RoadBelgiumOcpiDataSource,
     ShellRechargeUkOcpiDataSource,
     ShellRechargeUkOcpiRealtimeDataSource,
+    TeslaBelgiumOcpiDataSource,
     TeslaUkOcpiDataSource,
 )
 from evmap_backend.data_sources.opendata_swiss.source import (
@@ -141,6 +143,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2DenmarkEcoMovementDataSource,
     # Belgium
     Datex2BelgiumEcoMovementDataSource,
+    RoadBelgiumOcpiDataSource,
+    TeslaBelgiumOcpiDataSource,
     # Switzerland
     OpendataSwissDataSource,
     OpendataSwissRealtimeDataSource,
