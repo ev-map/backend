@@ -202,6 +202,24 @@ def _sync_connectors(
     delete_qs.delete()
 
 
+def _deduplicate_sites(
+    sites: Iterable[Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]],
+) -> Iterable[Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]]:
+    """
+    Yield sites, skipping any whose id_from_source has already been seen.
+    Logs a warning for each duplicate encountered.
+    """
+    seen_ids = set()
+    for site, chargepoints in sites:
+        if site.id_from_source in seen_ids:
+            logging.warning(
+                f"Duplicate site ID '{site.id_from_source}' — ignoring duplicate"
+            )
+            continue
+        seen_ids.add(site.id_from_source)
+        yield site, chargepoints
+
+
 def sync_chargers(
     data_source: str,
     sites: Iterable[Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]],
@@ -222,7 +240,7 @@ def sync_chargers(
 
         batch_size = 100
         with tqdm(desc="Syncing sites", disable=None) as progress_bar:
-            for batch in batched(sites, batch_size):
+            for batch in batched(_deduplicate_sites(sites), batch_size):
                 created = _sync_batch(data_source, batch, seen_site_ids, progress_bar)
                 total_sites_created += created
 
