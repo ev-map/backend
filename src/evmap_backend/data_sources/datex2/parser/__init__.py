@@ -137,12 +137,13 @@ class Datex2RefillPoint:
                 validate_evseid(id, EVSEIDType.EVSE)
                 evseid = id
             except ValidationError:
-                try:
-                    id = normalize_evseid(self.name.first())
-                    validate_evseid(id, EVSEIDType.EVSE)
-                    evseid = id
-                except ValidationError:
-                    pass
+                if self.name is not None:
+                    try:
+                        id = normalize_evseid(self.name.first())
+                        validate_evseid(id, EVSEIDType.EVSE)
+                        evseid = id
+                    except ValidationError:
+                        pass
         return evseid
 
 
