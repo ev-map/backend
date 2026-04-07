@@ -23,6 +23,7 @@ from evmap_backend.data_sources.ocpi.utils import (
     ocpi_get_paginated,
     ocpi_post,
 )
+from evmap_backend.pricing.sync import sync_pricing
 from evmap_backend.sync import sync_chargers, sync_statuses
 
 
@@ -50,8 +51,12 @@ class BaseOcpiDataSource(DataSource):
 
     @abstractmethod
     def get_locations_data(self) -> Iterable[dict]:
-        """Get the data from the data source"""
+        """Get the locations data from the data source"""
         pass
+
+    def get_tariffs_data(self) -> Iterable[dict]:
+        """Get the tariffs data from the data source"""
+        raise NotImplementedError()
 
     def postprocess_locations(
         self, locations: Iterable[OcpiLocation]
@@ -60,9 +65,13 @@ class BaseOcpiDataSource(DataSource):
 
     def pull_data(self):
         root = self.get_locations_data()
-        locations = OcpiParser().parse_locations(root)
+        parser = OcpiParser()
+        locations = parser.parse_locations(root)
         locations = self.postprocess_locations(locations)
-        if DataType.DYNAMIC in self.supported_data_types:
+        if (
+            DataType.DYNAMIC in self.supported_data_types
+            or DataType.PRICING in self.supported_data_types
+        ):
             locations = list(locations)
 
         sync_chargers(
@@ -88,6 +97,10 @@ class BaseOcpiDataSource(DataSource):
                     )
                 ),
             )
+        if DataType.PRICING in self.supported_data_types:
+            tariffs_root = self.get_tariffs_data()
+            tariffs = parser.parse_tariffs(tariffs_root)
+            sync_pricing(self.id, self.id, (t.convert() for t in tariffs))
 
 
 class BaseOcpiRealtimeDataSource(DataSource):
@@ -313,6 +326,14 @@ class BaseEcoMovementUkOcpiDataSource(BaseOcpiDataSource):
             if len(result) < limit:
                 break
             offset += limit
+
+    def get_tariffs_data(self):
+        response = requests.get(
+            self.tariffs_url,
+            headers={"Authorization": f"Token {self.token}"},
+        )
+        response.raise_for_status()
+        return json.loads(response.text)["data"]
 
 
 class BaseEcoMovementUkOcpiRealtimeDataSource(BaseOcpiRealtimeDataSource):

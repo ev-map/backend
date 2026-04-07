@@ -12,6 +12,7 @@ from evmap_backend import settings
 from evmap_backend.chargers.fields import normalize_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
 from evmap_backend.helpers.database import none_to_blank
+from evmap_backend.pricing.models import Tariff
 from evmap_backend.realtime.models import RealtimeStatus
 
 # OCPI spec: https://evroaming.org/wp-content/uploads/2025/02/OCPI-2.3.0.pdf
@@ -401,3 +402,47 @@ class OcpiLocation(Schema):
             )
             for evse in self.evses
         ]
+
+
+class OcpiPriceComponent(Schema):
+    class PriceComponentType(enum.StrEnum):
+        FLAT = "FLAT"
+        ENERGY = "ENERGY"
+        PARKING_TIME = "PARKING_TIME"
+        TIME = "TIME"
+
+    type: PriceComponentType
+    price: float
+    vat: Optional[float] = None
+    step_size: Optional[float] = None
+    min_price: Optional[float] = None
+    max_price: Optional[float] = None
+
+
+class OcpiRestrictions(Schema):
+    start_date: Optional[datetime.datetime]
+
+
+class OcpiTariffElement(Schema):
+    restrictions: Optional[OcpiRestrictions] = None
+    price_components: List[OcpiPriceComponent]
+
+
+class OcpiTariff(Schema):
+    id: str
+    party_id: str
+    currency: str
+    elements: List[OcpiTariffElement]
+    tariff_alt_text: Optional[str] = None
+    tariff_alt_url: Optional[str] = None
+    last_updated: datetime.datetime
+    country_code: str
+
+    def convert(self, data_source: str) -> Tariff:
+        return Tariff(
+            data_source=data_source,
+            id_from_source=self.id,
+            currency=self.currency,
+            name=none_to_blank(self.tariff_alt_text),
+            url=none_to_blank(self.tariff_alt_url),
+        )
