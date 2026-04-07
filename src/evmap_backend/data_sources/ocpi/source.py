@@ -442,6 +442,19 @@ class CommunityByShellRechargeUkOcpiRealtimeDataSource(
     # https://www.shell.co.uk/electric-vehicle-charging/public-charge-point-regulations.html
 
 
+class EvyeUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
+    token = os.environ.get("EVYE_UK_ECOMOVEMENT_TOKEN")
+    id = "evye_uk"
+    # https://evyve.co.uk/ -> PCPR Open Data request
+
+
+class EvyeUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
+    token = os.environ.get("EVYE_UK_ECOMOVEMENT_TOKEN")
+    id = "evye_uk_realtime"
+    locations_data_source = "evye_uk"
+    # https://evyve.co.uk/ -> PCPR Open Data request
+
+
 class ChargyUkOcpiDataSource(BaseOcpiDataSource):
     locations_url = "https://char.gy/open-ocpi/locations"
     tariffs_url = "https://char.gy/open-ocpi/tariffs/GB/CGY"
