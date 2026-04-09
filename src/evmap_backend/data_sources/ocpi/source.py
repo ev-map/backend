@@ -455,6 +455,19 @@ class EvyeUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
     # https://evyve.co.uk/ -> PCPR Open Data request
 
 
+class SourceEvUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
+    token = os.environ.get("SOURCE_EV_UK_ECOMOVEMENT_TOKEN")
+    id = "source_ev_uk"
+    # https://source-ev.com/legal/request-compliance-data
+
+
+class SourceEvUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
+    token = os.environ.get("SOURCE_EV_UK_ECOMOVEMENT_TOKEN")
+    id = "source_ev_uk_realtime"
+    locations_data_source = "source_ev_uk"
+    # https://source-ev.com/legal/request-compliance-data
+
+
 class ChargyUkOcpiDataSource(BaseOcpiDataSource):
     locations_url = "https://char.gy/open-ocpi/locations"
     tariffs_url = "https://char.gy/open-ocpi/tariffs/GB/CGY"

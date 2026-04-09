@@ -69,6 +69,8 @@ from evmap_backend.data_sources.ocpi.source import (
     RoadBelgiumOcpiDataSource,
     ShellRechargeUkOcpiDataSource,
     ShellRechargeUkOcpiRealtimeDataSource,
+    SourceEvUkOcpiDataSource,
+    SourceEvUkOcpiRealtimeDataSource,
     TeslaBelgiumOcpiDataSource,
     TeslaUkOcpiDataSource,
 )
@@ -145,6 +147,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     GoZeroUkOcpiDataSource,
     EvyeUkOcpiDataSource,
     EvyeUkOcpiRealtimeDataSource,
+    SourceEvUkOcpiDataSource,
+    SourceEvUkOcpiRealtimeDataSource,
     # Latvia
     # LatviaOcpiDataSource,  # Data is malformed (duplicate IDs)
     # Slovenia
