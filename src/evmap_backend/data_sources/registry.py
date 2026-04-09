@@ -9,6 +9,8 @@ from evmap_backend.data_sources.datex2.source import (
     Datex2DenmarkEcoMovementDataSource,
     Datex2FinlandDataSource,
     Datex2LuxembourgEcoMovementDataSource,
+    Datex2MobilithekChargecloudDataSource,
+    Datex2MobilithekChargecloudRealtimeDataSource,
     Datex2MobilithekEcoMovementDatex2DataSource,
     Datex2MobilithekEcoMovementRealtimeDataSource,
     Datex2MobilithekEluMobilityDataSource,
@@ -102,6 +104,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2MobilithekTeslaRealtimeDataSource,
     Datex2MobilithekSmatricsDataSource,
     Datex2MobilithekSmatricsRealtimeDataSource,
+    Datex2MobilithekChargecloudDataSource,
+    Datex2MobilithekChargecloudRealtimeDataSource,
     # Datex2MobilithekEroundDataSource,  # no data uploaded yet
     # Datex2MobilithekEroundRealtimeDataSource,  # no data uploaded yet
     Datex2MobilithekMontaDataSource,  # no data uploaded yet

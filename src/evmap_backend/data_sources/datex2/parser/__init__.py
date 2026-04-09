@@ -297,7 +297,11 @@ class Datex2EnergyInfrastructureSiteStatus:
         ]
 
 
-def parse_datetime(text, default_timezone=None):
+def parse_datetime(
+    text: Optional[str], default_timezone=None
+) -> Optional[datetime.datetime]:
+    if text is None:
+        return None
     dt = datetime.datetime.fromisoformat(text)
     if dt.tzinfo is None:
         if default_timezone is None:
