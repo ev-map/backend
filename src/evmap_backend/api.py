@@ -8,7 +8,7 @@ from django.contrib.gis.db.models import Collect
 from django.contrib.gis.db.models.functions import Centroid, SnapToGrid, Transform
 from django.contrib.gis.geos import Polygon
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.db.models import Avg, Count, StringAgg
+from django.db.models import Avg, Count, Max, StringAgg
 from django.utils import timezone
 from ninja import ModelSchema, NinjaAPI, Schema
 from ninja.errors import HttpError
@@ -30,27 +30,36 @@ api = NinjaAPI(urls_namespace="evmap")
 register_field("PointField", Tuple[float, float])
 
 
-class ChargingSiteSchema(ModelSchema):
-    # country: str
-    # network: Optional[str]
-    #
-    # @staticmethod
-    # def resolve_country(obj: ChargingSite) -> str:
-    #     return obj.country.code
-    #
-    # @staticmethod
-    # def resolve_network(obj: ChargingSite) -> str:
-    #     return obj.network.name if obj.network else None
+class ChargingSiteSchema(Schema):
+    id: int
+    network: Optional[str]
+    location: Tuple[float, float]
+    name: Optional[str]
+    operator: Optional[str]
+    max_power: int
+    data_source: str
 
-    class Meta:
-        model = ChargingSite
-        exclude = ["location_mercator", "country", "network"]
+    @classmethod
+    def build(cls, obj: ChargingSite):
+        return cls(
+            id=obj.id,
+            network=obj.network.name if obj.network else None,
+            location=(obj.location.x, obj.location.y),
+            name=obj.name,
+            operator=obj.operator,
+            max_power=obj.chargepoints.aggregate(
+                max_power=Max("connectors__max_power")
+            )["max_power"]
+            or 0,
+            data_source=obj.data_source,
+        )
 
 
 class ClusterSchema(Schema):
     center: tuple[float, float]
     count: int
     ids: List[int]
+    max_power: int
 
 
 class ChargingSitesSchema(Schema):
@@ -88,9 +97,10 @@ def sites(
         )
         groups = list(
             snapped.values("snapped").annotate(
-                count=Count("id"),
+                count=Count("id", distinct=True),
                 center=Transform(Centroid(Collect("location_mercator")), 4326),
                 ids=ArrayAgg("id"),
+                max_power=Max("chargepoints__connectors__max_power"),
             )
         )
 
@@ -102,10 +112,15 @@ def sites(
             else:
                 single_ids.append(g["ids"][0])
 
-        queryset = ChargingSite.objects.filter(id__in=single_ids)
+        queryset = ChargingSite.objects.filter(id__in=single_ids).select_related(
+            "network"
+        )
     else:
         clusters = None
-    return ChargingSitesSchema(clusters=clusters, sites=queryset[:1000])
+    return ChargingSitesSchema(
+        clusters=clusters,
+        sites=[ChargingSiteSchema.build(obj) for obj in queryset[:1000]],
+    )
 
 
 @api.get(

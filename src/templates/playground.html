@@ -14,7 +14,6 @@
         }
 
         .cluster-marker {
-            background-color: #e74c3c;
             color: #fff;
             border-radius: 50%;
             display: flex;
@@ -46,6 +45,20 @@
     const markers = new Map();
     const clusterMarkers = new Map();
 
+    function getChargerColor(max_power) {
+        if (max_power >= 100000) {
+            return "#FDD835";
+        } else if (max_power >= 43000) {
+            return "#ff9800";
+        } else if (max_power >= 20000) {
+            return "#03a9f4";
+        } else if (max_power >= 11000) {
+            return "#9e9e9e";
+        } else {
+            return "#607d8b";
+        }
+    }
+
     async function updateMap() {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
@@ -62,7 +75,7 @@
         json.sites.forEach((charger) => {
             if (!markers.has(charger.id)) {
                 const popup = new maplibregl.Popup().setHTML("Name: " + charger.name + "<br>" + "Network: " + charger.network + "<br>" + "Data source: " + charger.data_source);
-                const marker = new maplibregl.Marker()
+                const marker = new maplibregl.Marker({color: getChargerColor(charger.max_power)})
                     .setLngLat(charger.location)
                     .setPopup(popup)
                     .addTo(map);
@@ -84,6 +97,7 @@
                 const size = Math.max(32, Math.min(56, 32 + Math.log10(cluster.count) * 12));
                 el.style.width = size + 'px';
                 el.style.height = size + 'px';
+                el.style.backgroundColor = getChargerColor(cluster.max_power);
                 el.textContent = cluster.count;
 
                 const marker = new maplibregl.Marker({element: el})
