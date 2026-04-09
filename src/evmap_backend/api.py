@@ -169,7 +169,8 @@ def push(request, data_source: str):
     data_source.process_push(body)
 
     update_state, created = UpdateState.objects.get_or_create(
-        data_source=data_source.id
+        data_source=data_source.id,
+        defaults=dict(last_update=timezone.now(), push=True),
     )
     if timezone.now() - update_state.last_update > timedelta(minutes=1):
         update_state.last_update = timezone.now()
