@@ -1,5 +1,6 @@
 import datetime
 import enum
+import re
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
@@ -107,6 +108,10 @@ connector_mapping = {
 }
 
 
+UUID_PATTERN = re.compile(r"^[a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12}$", re.IGNORECASE)
+ALTERNATIVE_EVSEID_PATTERN = re.compile(r"^[A-Z]{2}\.[A-Z0-9]{3}\.[A-Z0-9\*]{1,32}$")
+
+
 @dataclass
 class Datex2RefillPoint:
     id: str
@@ -124,27 +129,48 @@ class Datex2RefillPoint:
         )
 
     def get_evseid(self) -> str:
-        evseid = ""
-        try:
-            id = normalize_evseid(
-                self.external_identifier if self.external_identifier else ""
-            )
-            validate_evseid(id, EVSEIDType.EVSE)
-            evseid = id
-        except ValidationError:
+        # external_identifier
+        if self.external_identifier is not None and not UUID_PATTERN.match(
+            self.external_identifier
+        ):
+            # some UUIDs may be valid EVSEIDs after normalization, we don't want those
+            try:
+                id = normalize_evseid(self.external_identifier)
+                validate_evseid(id, EVSEIDType.EVSE)
+                return id
+            except ValidationError:
+                pass
+
+            # alternative format with missing "E" used, e.g., by PowerGo (mobilithek_ecomovement) and Spirii
+            if ALTERNATIVE_EVSEID_PATTERN.match(self.external_identifier):
+                try:
+                    id = normalize_evseid(self.external_identifier)
+                    id = id[:5] + "E" + id[5:]  # insert missing "E"
+                    validate_evseid(id, EVSEIDType.EVSE)
+                    return id
+                except ValidationError:
+                    pass
+
+        # id
+        if not UUID_PATTERN.match(self.id):
+            # some UUIDs may be valid EVSEIDs after normalization, we don't want those
             try:
                 id = normalize_evseid(self.id)
                 validate_evseid(id, EVSEIDType.EVSE)
-                evseid = id
+                return id
             except ValidationError:
-                if self.name is not None:
-                    try:
-                        id = normalize_evseid(self.name.first())
-                        validate_evseid(id, EVSEIDType.EVSE)
-                        evseid = id
-                    except ValidationError:
-                        pass
-        return evseid
+                pass
+
+        # name
+        if self.name is not None:
+            try:
+                id = normalize_evseid(self.name.first())
+                validate_evseid(id, EVSEIDType.EVSE)
+                return id
+            except ValidationError:
+                pass
+
+        return ""
 
 
 @dataclass
