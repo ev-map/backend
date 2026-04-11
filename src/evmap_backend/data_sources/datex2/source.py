@@ -467,6 +467,24 @@ class Datex2MobilithekChargecloudRealtimeDataSource(BaseMobilithekDatex2DataSour
     # https://mobilithek.info/offers/978598831184601088
 
 
+class Datex2MobilithekEulektroDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_eulektro"
+    subscription_id = os.environ.get("MOBILITHEK_EULEKTRO_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser(station_as_chargepoint=True)
+    license_attribution = "Eulektro GmbH"
+    # https://mobilithek.info/offers/973938793916375040
+
+
+class Datex2MobilithekEulektroRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_eulektro_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_EULEKTRO_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_eulektro"
+    license_attribution = "Eulektro GmbH"
+    # https://mobilithek.info/offers/974006122901856256
+
+
 class BaseEcoMovementNapDatex2DataSource(BaseDatex2DataSource):
     license_attribution = "Eco-Movement BV"
     # https://developers.eco-movement.com/v5/docs/eco-movement-data-api-datex

@@ -19,6 +19,8 @@ from evmap_backend.data_sources.datex2.source import (
     Datex2MobilithekEnbwRealtimeDataSource,
     Datex2MobilithekEroundDataSource,
     Datex2MobilithekEroundRealtimeDataSource,
+    Datex2MobilithekEulektroDataSource,
+    Datex2MobilithekEulektroRealtimeDataSource,
     Datex2MobilithekLadenetzDataSource,
     Datex2MobilithekLadenetzRealtimeDataSource,
     Datex2MobilithekM8MitDataSource,
@@ -106,6 +108,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2MobilithekSmatricsRealtimeDataSource,
     Datex2MobilithekChargecloudDataSource,
     Datex2MobilithekChargecloudRealtimeDataSource,
+    Datex2MobilithekEulektroDataSource,
+    Datex2MobilithekEulektroRealtimeDataSource,
     # Datex2MobilithekEroundDataSource,  # no data uploaded yet
     # Datex2MobilithekEroundRealtimeDataSource,  # no data uploaded yet
     Datex2MobilithekMontaDataSource,  # no data uploaded yet

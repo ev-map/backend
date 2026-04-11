@@ -116,7 +116,7 @@ ALTERNATIVE_EVSEID_PATTERN = re.compile(r"^[A-Z]{2}\.[A-Z0-9]{3}\.[A-Z0-9\*]{1,3
 class Datex2RefillPoint:
     id: str
     connectors: List[Datex2Connector]
-    external_identifier: str = None
+    external_identifier: Optional[str] = None
     name: Datex2MultilingualString = None
 
     def convert(self) -> Chargepoint:
@@ -176,7 +176,8 @@ class Datex2RefillPoint:
 @dataclass
 class Datex2EnergyInfrastructureSite:
     id: str
-    name: Datex2MultilingualString
+    name: Optional[Datex2MultilingualString]
+    description: Optional[Datex2MultilingualString]
     # TODO: operatingHours
     location: Tuple[float, float]
 
@@ -224,7 +225,7 @@ class Datex2EnergyInfrastructureSite:
                 else (
                     self.additional_information.first()
                     if self.additional_information
-                    else ""
+                    else self.description.first() if self.description else ""
                 )
             ),
             location=Point(*self.location),

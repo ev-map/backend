@@ -48,24 +48,28 @@ def parse_connector(elem) -> Datex2Connector:
 
 
 def parse_refill_point(elem) -> Datex2RefillPoint:
-    if "externalIdentifier" in elem:
-        if isinstance(elem["externalIdentifier"], str):
-            external_identifier = elem["externalIdentifier"]
-        else:
-            external_identifier = next(
-                extid["identifier"]
-                for extid in elem["externalIdentifier"]
-                if extid["typeOfIdentifier"]["extendedValueG"] == "evseId"
-            )
-    else:
-        external_identifier = None
-
+    external_identifier = (
+        parse_external_identifier(elem["externalIdentifier"])
+        if "externalIdentifier" in elem
+        else None
+    )
     return Datex2RefillPoint(
         external_identifier=external_identifier,
         name=parse_multilingual_string(elem["name"]) if "name" in elem else None,
         id=elem["idG"],
         connectors=[parse_connector(connector) for connector in elem["connector"]],
     )
+
+
+def parse_external_identifier(external_identifier) -> str:
+    if isinstance(external_identifier, str):
+        return external_identifier
+    else:
+        return next(
+            extid["identifier"]
+            for extid in external_identifier
+            if extid["typeOfIdentifier"]["extendedValueG"] == "evseId"
+        )
 
 
 def parse_address(address_lines: list) -> str:
@@ -93,7 +97,12 @@ def parse_energy_infrastructure_site(
             operator = operator[0]
         operator = get_alternatives(
             operator,
-            ["afacAnOrganisation", "afacOrganisation", "facOrganisationSpecification"],
+            [
+                "afacAnOrganisation",
+                "afacOrganisation",
+                "facOrganisationSpecification",
+                "afacReferenceableOrganisation",
+            ],
         )
         operator = get_alternatives(operator, ["name", "organisationName"])
 
@@ -138,8 +147,11 @@ def parse_energy_infrastructure_site(
         if station_as_chargepoint:
             # In some sources, EVSEs are incorrectly mapped as energyInfrastructureStation
             station_id = station["idG"]
-            evseid = normalize_evseid(station_id)
-            validate_evseid(evseid, EVSEIDType.EVSE)
+            evseid = (
+                parse_external_identifier(station["externalIdentifier"])
+                if "externalIdentifier" in station
+                else None
+            )
             refill_points.append(
                 Datex2RefillPoint(
                     id=station_id,
@@ -165,6 +177,11 @@ def parse_energy_infrastructure_site(
     return Datex2EnergyInfrastructureSite(
         id=elem["idG"],
         name=parse_multilingual_string(elem["name"]) if "name" in elem else None,
+        description=(
+            parse_multilingual_string(elem["description"])
+            if "description" in elem
+            else None
+        ),
         additional_information=(
             parse_multilingual_string(elem["additionalInformation"][0])
             if "additionalInformation" in elem
