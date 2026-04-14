@@ -216,6 +216,11 @@ def _deduplicate_sites(
                 f"Duplicate site ID '{site.id_from_source}' — ignoring duplicate"
             )
             continue
+        if site.location.y in [-90.0, 90.0]:
+            logging.warning(
+                f"Site '{site.id_from_source}' with invalid location {site.location} — ignoring"
+            )
+            continue
         seen_ids.add(site.id_from_source)
         yield site, chargepoints
 

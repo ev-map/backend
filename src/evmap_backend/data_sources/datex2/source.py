@@ -485,6 +485,24 @@ class Datex2MobilithekEulektroRealtimeDataSource(BaseMobilithekDatex2DataSource)
     # https://mobilithek.info/offers/974006122901856256
 
 
+class Datex2MobilithekVaylensDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_vaylens"
+    subscription_id = os.environ.get("MOBILITHEK_VAYLENS_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "vaylens GmbH"
+    # https://mobilithek.info/offers/979363267193040896
+
+
+class Datex2MobilithekVaylensRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_vaylens_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_VAYLENS_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_vaylens"
+    license_attribution = "vaylens GmbH"
+    # https://mobilithek.info/offers/979364650281549824
+
+
 class BaseEcoMovementNapDatex2DataSource(BaseDatex2DataSource):
     license_attribution = "Eco-Movement BV"
     # https://developers.eco-movement.com/v5/docs/eco-movement-data-api-datex

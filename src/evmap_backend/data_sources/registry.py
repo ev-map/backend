@@ -36,6 +36,8 @@ from evmap_backend.data_sources.datex2.source import (
     Datex2MobilithekTeslaRealtimeDataSource,
     Datex2MobilithekUlmDataSource,
     Datex2MobilithekUlmRealtimeDataSource,
+    Datex2MobilithekVaylensDataSource,
+    Datex2MobilithekVaylensRealtimeDataSource,
     Datex2MobilithekWirelaneDataSource,
     Datex2MobilithekWirelaneRealtimeDataSource,
     Datex2SloveniaDataSource,
@@ -120,6 +122,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2MobilithekPumpDataSource,
     Datex2MobilithekM8MitDataSource,
     Datex2MobilithekM8MitRealtimeDataSource,
+    Datex2MobilithekVaylensDataSource,
+    Datex2MobilithekVaylensRealtimeDataSource,
     # Datex2MobilithekEluMobilityDataSource,  # data not valid (missing coordinates)
     # Datex2MobilithekEluMobilityRealtimeDataSource,  # no data uploaded yet
     # Datex2MobilithekQwelloDataSource,  # no data uploaded yet

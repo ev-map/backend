@@ -2,10 +2,8 @@ import datetime
 import json
 from typing import Iterable, Optional, Tuple
 
-from django.core.exceptions import ValidationError
 from tqdm import tqdm
 
-from evmap_backend.chargers.fields import EVSEIDType, normalize_evseid, validate_evseid
 from evmap_backend.data_sources.datex2.parser import (
     Datex2Connector,
     Datex2EnergyInfrastructureSite,
@@ -66,9 +64,12 @@ def parse_external_identifier(external_identifier) -> str:
         return external_identifier
     else:
         return next(
-            extid["identifier"]
-            for extid in external_identifier
-            if extid["typeOfIdentifier"]["extendedValueG"] == "evseId"
+            (
+                extid["identifier"]
+                for extid in external_identifier
+                if extid["typeOfIdentifier"]["extendedValueG"] == "evseId"
+            ),
+            None,
         )
 
 
