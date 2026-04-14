@@ -112,8 +112,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2MobilithekChargecloudRealtimeDataSource,
     Datex2MobilithekEulektroDataSource,
     Datex2MobilithekEulektroRealtimeDataSource,
-    # Datex2MobilithekEroundDataSource,  # no data uploaded yet
-    # Datex2MobilithekEroundRealtimeDataSource,  # no data uploaded yet
+    Datex2MobilithekEroundDataSource,
+    Datex2MobilithekEroundRealtimeDataSource,
     Datex2MobilithekMontaDataSource,
     Datex2MobilithekMontaRealtimeDataSource,
     # Datex2MobilithekGridAndCoDataSource,  # no data uploaded yet
@@ -126,8 +126,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2MobilithekVaylensRealtimeDataSource,
     # Datex2MobilithekEluMobilityDataSource,  # data not valid (missing coordinates)
     # Datex2MobilithekEluMobilityRealtimeDataSource,  # no data uploaded yet
-    # Datex2MobilithekQwelloDataSource,  # no data uploaded yet
-    # Datex2MobilithekQwelloRealtimeDataSource,  # no data uploaded yet
+    Datex2MobilithekQwelloDataSource,  # no data uploaded yet
+    Datex2MobilithekQwelloRealtimeDataSource,  # no data uploaded yet
     # Datex2MobilithekEonDriveDataSource,  # no data uploaded yet
     # Datex2MobilithekEonDriveRealtimeDataSource,  # no data uploaded yet
     # Luxembourg
