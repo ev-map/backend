@@ -112,8 +112,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2MobilithekEulektroRealtimeDataSource,
     # Datex2MobilithekEroundDataSource,  # no data uploaded yet
     # Datex2MobilithekEroundRealtimeDataSource,  # no data uploaded yet
-    Datex2MobilithekMontaDataSource,  # no data uploaded yet
-    Datex2MobilithekMontaRealtimeDataSource,  # no data uploaded yet
+    Datex2MobilithekMontaDataSource,
+    Datex2MobilithekMontaRealtimeDataSource,
     # Datex2MobilithekGridAndCoDataSource,  # no data uploaded yet
     # Datex2MobilithekGridAndCoRealtimeDataSource,  # no data uploaded yet
     # Datex2MobilithekEnioDataSource,  # no data uploaded yet

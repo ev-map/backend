@@ -2,7 +2,7 @@ import datetime
 import enum
 import re
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 from django.contrib.gis.geos import Point
 from django.core.exceptions import ValidationError
@@ -11,6 +11,7 @@ from django.utils import timezone
 from evmap_backend.chargers.fields import EVSEIDType, normalize_evseid, validate_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
 from evmap_backend.countries.models import Country
+from evmap_backend.data_sources.datex2.parser.utils import find_common_part
 from evmap_backend.helpers.database import none_to_blank
 from evmap_backend.realtime.models import RealtimeStatus
 
@@ -212,6 +213,19 @@ class Datex2EnergyInfrastructureSite:
         else:
             network = None
 
+        if self.name:
+            name = self.name.first()
+        elif self.additional_information:
+            name = self.additional_information.first()
+        elif self.description:
+            name = self.description.first()
+        elif cp := find_common_part(
+            [rp.name.first() for rp in self.refill_points if rp.name is not None]
+        ):
+            name = cp
+        else:
+            name = ""
+
         site = ChargingSite(
             data_source=data_source,
             license_attribution=license_attribution,
@@ -219,15 +233,7 @@ class Datex2EnergyInfrastructureSite:
                 license_attribution_link if license_attribution_link is not None else ""
             ),
             id_from_source=self.id,
-            name=(
-                self.name.first()
-                if self.name
-                else (
-                    self.additional_information.first()
-                    if self.additional_information
-                    else self.description.first() if self.description else ""
-                )
-            ),
+            name=name,
             location=Point(*self.location),
             network=network,
             street=self.street if self.street is not None else "",
