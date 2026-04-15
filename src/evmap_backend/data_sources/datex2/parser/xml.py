@@ -205,6 +205,7 @@ def parse_energy_infrastructure_site(elem: Element) -> Datex2EnergyInfrastructur
     return Datex2EnergyInfrastructureSite(
         id=elem.attrib["id"],
         name=parse_multilingual_string(elem.find("fac:name", ns)),
+        description=None,
         location=parse_point_coordinates(point_coordinates),
         zipcode=address.find("locx:postcode", ns).text,
         city=parse_single_or_multilingual_string(city) if city is not None else None,
