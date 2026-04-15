@@ -79,7 +79,9 @@ def parse_address(address_lines: list) -> str:
     texts = []
     for line in address_lines:
         text = line["text"]
-        texts.append(parse_multilingual_string(text).first())
+        text = parse_multilingual_string(text).first()
+        if text is not None:
+            texts.append(text)
 
     return " ".join(texts)
 
@@ -87,6 +89,11 @@ def parse_address(address_lines: list) -> str:
 def parse_energy_infrastructure_site(
     elem: dict, station_as_chargepoint=False
 ) -> Optional[Datex2EnergyInfrastructureSite]:
+    if (
+        not "energyInfrastructureStation" in elem
+        or len(elem["energyInfrastructureStation"]) == 0
+    ):
+        return None
     if "operator" in elem:
         operator = elem["operator"]
     elif "operator" in elem["energyInfrastructureStation"][0]:
@@ -131,8 +138,6 @@ def parse_energy_infrastructure_site(
             city = city["value"][0]
 
     refill_points = []
-    if not "energyInfrastructureStation" in elem:
-        return None
 
     for station in elem["energyInfrastructureStation"]:
         station_refill_points = [
