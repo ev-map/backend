@@ -49,7 +49,7 @@ class ConnectorAdmin(admin.ModelAdmin):
 
 class NetworkAdmin(admin.ModelAdmin):
     list_display = ["name", "formatted_evse_operator_id", "chargingsites_count"]
-    search_fields = ["name"]
+    search_fields = ["name", "evse_operator_id"]
 
     @admin.display(description="EVSE Operator ID")
     def formatted_evse_operator_id(self, obj):
