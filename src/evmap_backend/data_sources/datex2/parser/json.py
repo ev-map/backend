@@ -245,6 +245,8 @@ class Datex2JsonParser:
 
     def parse(self, data) -> Iterable[Datex2EnergyInfrastructureSite]:
         root = json.loads(data)
+        if "messageContainer" in root:
+            root = root["messageContainer"]
         root = root["payload"]
 
         if isinstance(root, list):
@@ -269,7 +271,9 @@ class Datex2JsonParser:
         self, data, default_timezone=None
     ) -> Iterable[Datex2EnergyInfrastructureSiteStatus]:
         root = json.loads(data)
-        root = root["messageContainer"]["payload"]
+        if "messageContainer" in root:
+            root = root["messageContainer"]
+        root = root["payload"]
 
         for payload in root:
             for site in payload["aegiEnergyInfrastructureStatusPublication"][
