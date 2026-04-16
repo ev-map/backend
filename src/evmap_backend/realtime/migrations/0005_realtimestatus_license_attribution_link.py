@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("realtime", "0004_realtimestatus_license_attribution"),
     ]

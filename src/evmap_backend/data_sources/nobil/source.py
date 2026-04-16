@@ -2,7 +2,7 @@ import asyncio
 import datetime
 import os
 import time
-from typing import List, Optional
+from typing import Optional
 
 import aiohttp
 import requests
@@ -116,7 +116,7 @@ class NobilRealtimeDataSource(DataSource):
                                     UpdateState(data_source=self.id, push=True).save
                                 )()
                         except Chargepoint.DoesNotExist:
-                            print(f"ignoring update")
+                            print("ignoring update")
 
     def stream_data(self):
         url = self._get_realtime_websocket_url()

@@ -1,7 +1,6 @@
 from django.core.management import BaseCommand
 
 from evmap_backend.data_sources import UpdateMethod
-from evmap_backend.data_sources.models import UpdateState
 from evmap_backend.data_sources.registry import get_data_source, list_available_sources
 
 

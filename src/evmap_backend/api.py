@@ -1,6 +1,5 @@
 import gzip
 import logging
-import threading
 from datetime import timedelta
 from typing import List, Optional, Tuple
 
@@ -8,9 +7,9 @@ from django.contrib.gis.db.models import Collect
 from django.contrib.gis.db.models.functions import Centroid, SnapToGrid, Transform
 from django.contrib.gis.geos import Polygon
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.db.models import Avg, Count, Max, StringAgg
+from django.db.models import Count, Max
 from django.utils import timezone
-from ninja import ModelSchema, NinjaAPI, Schema
+from ninja import NinjaAPI, Schema
 from ninja.errors import HttpError
 from ninja.orm import register_field
 from ninja.security import django_auth
@@ -170,7 +169,7 @@ def push(request, data_source: str):
     HTTP push endpoint for data updates
     """
     data_source = get_data_source(data_source)
-    if not UpdateMethod.HTTP_PUSH in data_source.supported_update_methods:
+    if UpdateMethod.HTTP_PUSH not in data_source.supported_update_methods:
         raise ValueError("Data source does not support push")
 
     data_source.verify_push(request)
@@ -202,7 +201,7 @@ def push_head(request, data_source: str):
     required by Mobilithek to verify push endpoint
     """
     data_source = get_data_source(data_source)
-    if not UpdateMethod.HTTP_PUSH in data_source.supported_update_methods:
+    if UpdateMethod.HTTP_PUSH not in data_source.supported_update_methods:
         raise ValueError("Data source does not support push")
 
     data_source.verify_push(request)

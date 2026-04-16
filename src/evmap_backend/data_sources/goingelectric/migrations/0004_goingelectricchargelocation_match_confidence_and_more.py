@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("chargers", "0014_alter_connector_connector_type"),
         ("goingelectric", "0003_alter_goingelectricchargepoint_type"),

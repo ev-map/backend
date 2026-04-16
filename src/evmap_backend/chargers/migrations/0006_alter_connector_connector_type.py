@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("chargers", "0005_alter_chargepoint_id_from_source_and_more"),
     ]

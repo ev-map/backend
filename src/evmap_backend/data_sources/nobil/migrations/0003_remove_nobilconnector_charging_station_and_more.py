@@ -14,7 +14,6 @@ def get_nobil_data(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("nobil", "0002_nobilchargerstation_nobilconnector_nobilupdatestate"),
         ("realtime", "0001_initial"),

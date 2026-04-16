@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("goingelectric", "0002_goingelectricnetwork_and_more"),
     ]

@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("chargers", "0016_chargepoint_chargers_ch_site_id_380e9a_idx_and_more"),
         ("realtime", "0007_realtimestatus_realtime_re_data_so_2b283c_idx"),

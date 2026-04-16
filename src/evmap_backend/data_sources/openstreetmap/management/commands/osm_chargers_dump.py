@@ -1,5 +1,3 @@
-import datetime
-
 import requests
 from django.contrib.gis.geos import Point
 from django.core.management import BaseCommand

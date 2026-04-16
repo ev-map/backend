@@ -1,4 +1,3 @@
-import sys
 from typing import Dict, List, Type
 
 from evmap_backend.data_sources import DataSource
@@ -13,8 +12,6 @@ from evmap_backend.data_sources.datex2.source import (
     Datex2MobilithekChargecloudRealtimeDataSource,
     Datex2MobilithekEcoMovementDatex2DataSource,
     Datex2MobilithekEcoMovementRealtimeDataSource,
-    Datex2MobilithekEluMobilityDataSource,
-    Datex2MobilithekEluMobilityRealtimeDataSource,
     Datex2MobilithekEnbwDataSource,
     Datex2MobilithekEnbwRealtimeDataSource,
     Datex2MobilithekEonDriveDataSource,
@@ -46,10 +43,8 @@ from evmap_backend.data_sources.datex2.source import (
     Datex2SloveniaRealtimeDataSource,
     Datex2SpainDataSource,
 )
-from evmap_backend.data_sources.eliso.source import ElisoDataSource
 from evmap_backend.data_sources.fintraffic.source import FintrafficRealtimeDataSource
 from evmap_backend.data_sources.goingelectric.source import GoingElectricDataSource
-from evmap_backend.data_sources.monta.source import MontaDataSource
 from evmap_backend.data_sources.nobil.source import (
     NobilDataSource,
     NobilRealtimeDataSource,

@@ -6,7 +6,6 @@ import evmap_backend.chargers.fields
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("chargers", "0006_alter_connector_connector_type"),
     ]

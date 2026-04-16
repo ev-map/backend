@@ -2,7 +2,6 @@ import datetime
 from typing import Iterable, Optional, Tuple
 from xml.etree.ElementTree import Element
 
-import pytz
 from defusedxml import ElementTree
 from tqdm import tqdm
 

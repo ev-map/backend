@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("chargers", "0015_alter_chargingsite_location"),
         ("realtime", "0005_realtimestatus_license_attribution_link"),

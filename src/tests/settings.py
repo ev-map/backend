@@ -1,8 +1,8 @@
 import os
 
-from evmap_backend.settings import *
+from evmap_backend.settings import *  # noqa: F403
 
-DATABASES["default"] = {
+DATABASES["default"] = {  # noqa: F405
     "ENGINE": "django.contrib.gis.db.backends.postgis",
     "NAME": os.environ.get("TEST_DB_NAME", "evmap_test"),
     "USER": os.environ.get("TEST_DB_USER", "postgres"),

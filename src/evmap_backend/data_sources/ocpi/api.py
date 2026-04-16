@@ -1,20 +1,34 @@
 import datetime as dt
 import logging
-from typing import Union
+from typing import List, Union
 
 import pytz
 from django.core.exceptions import BadRequest
 from ninja import NinjaAPI
 from ninja.errors import ValidationError
 
+from evmap_backend.chargers.models import Chargepoint
 from evmap_backend.data_sources.models import UpdateState
 from evmap_backend.data_sources.ocpi import SUPPORTED_OCPI_VERSIONS
-from evmap_backend.data_sources.ocpi.model import *
+from evmap_backend.data_sources.ocpi.model import (
+    OcpiCredentials21,
+    OcpiCredentials22,
+    OcpiEndpoint,
+    OcpiEvse,
+    OcpiResponse,
+    OcpiVersion,
+    OcpiVersionDetail,
+    PatchOcpiEvse,
+    build_ocpi_credentials,
+    status_mapping,
+)
 from evmap_backend.data_sources.ocpi.models import OcpiConnection, generate_token
 from evmap_backend.data_sources.ocpi.ninja import OcpiTokenAuth
 from evmap_backend.data_sources.ocpi.source import BaseOcpiConnectionDataSource
 from evmap_backend.data_sources.ocpi.utils import ocpi_get
 from evmap_backend.data_sources.registry import get_data_source
+from evmap_backend.helpers.database import none_to_blank
+from evmap_backend.realtime.models import RealtimeStatus
 
 api = NinjaAPI(urls_namespace="ocpi", auth=OcpiTokenAuth())
 
@@ -134,13 +148,13 @@ def put_location(
     if ocpi_version not in SUPPORTED_OCPI_VERSIONS:
         raise BadRequest(f"Unsupported OCPI version: {ocpi_version}")
 
-    creds: OcpiConnection = request.auth
+    creds: OcpiConnection = request.auth  # noqa: F841
 
     raise NotImplementedError()
 
 
 @api.put("/{ocpi_version}/locations/{country_code}/{party_id}/{location_id}/{evse_uid}")
-def patch_evse(
+def put_evse(
     request,
     ocpi_version: str,
     country_code: str,
@@ -152,7 +166,7 @@ def patch_evse(
     if ocpi_version not in SUPPORTED_OCPI_VERSIONS:
         raise BadRequest(f"Unsupported OCPI version: {ocpi_version}")
 
-    creds: OcpiConnection = request.auth
+    creds: OcpiConnection = request.auth  # noqa: F841
 
     raise NotImplementedError()
 
@@ -215,7 +229,7 @@ def put_connector(
     if ocpi_version not in SUPPORTED_OCPI_VERSIONS:
         raise BadRequest(f"Unsupported OCPI version: {ocpi_version}")
 
-    creds: OcpiConnection = request.auth
+    creds: OcpiConnection = request.auth  # noqa: F841
 
     raise NotImplementedError()
 
@@ -227,7 +241,7 @@ def put_tariff(
     if ocpi_version not in SUPPORTED_OCPI_VERSIONS:
         raise BadRequest(f"Unsupported OCPI version: {ocpi_version}")
 
-    creds: OcpiConnection = request.auth
+    creds: OcpiConnection = request.auth  # noqa: F841
 
     raise NotImplementedError()
 
@@ -239,6 +253,6 @@ def delete_tariff(
     if ocpi_version not in SUPPORTED_OCPI_VERSIONS:
         raise BadRequest(f"Unsupported OCPI version: {ocpi_version}")
 
-    creds: OcpiConnection = request.auth
+    creds: OcpiConnection = request.auth  # noqa: F841
 
     raise NotImplementedError()

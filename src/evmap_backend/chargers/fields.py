@@ -1,5 +1,5 @@
 import re
-from enum import Enum, StrEnum
+from enum import StrEnum
 from functools import partial
 from typing import Optional
 
@@ -94,7 +94,7 @@ def validate_alpha2_country_code(country_code: str):
     :param country_code: The country code to validate.
     :raises ValidationError: If the country code is not valid.
     """
-    if not country_code in COUNTRIES:
+    if country_code not in COUNTRIES:
         raise ValidationError(f"{country_code} is not a valid country code.")
 
 

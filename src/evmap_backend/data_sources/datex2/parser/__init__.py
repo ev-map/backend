@@ -2,7 +2,7 @@ import datetime
 import enum
 import re
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from django.contrib.gis.geos import Point
 from django.core.exceptions import ValidationError

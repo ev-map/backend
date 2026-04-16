@@ -22,7 +22,6 @@ def populate_networks(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("goingelectric", "0001_initial"),
     ]

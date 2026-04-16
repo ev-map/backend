@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("goingelectric", "0005_alter_goingelectricchargelocation_coordinates"),
     ]

@@ -7,13 +7,9 @@ from typing import Iterable, Optional
 import requests
 from django.utils.functional import classproperty
 
-from evmap_backend import settings
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.ocpi import SUPPORTED_OCPI_VERSIONS
 from evmap_backend.data_sources.ocpi.model import (
-    OcpiBusinessDetails,
-    OcpiCredentials22,
-    OcpiCredentialsRole,
     build_ocpi_credentials,
 )
 from evmap_backend.data_sources.ocpi.models import OcpiConnection, generate_token
@@ -167,7 +163,7 @@ class BaseOcpiConnectionDataSource(DataSource):
             if self.is_credentials_sender:
                 self._send_credentials(conn)
             else:
-                raise ValueError(f"OCPI connection has not completed handshake yet")
+                raise ValueError("OCPI connection has not completed handshake yet")
         if not conn.locations_url and not conn.tariffs_url:
             self._fetch_endpoints(conn)
 
@@ -218,9 +214,9 @@ class BaseOcpiConnectionDataSource(DataSource):
 
     def _send_credentials(self, conn: OcpiConnection):
         if not conn.token_a:
-            raise ValueError(f"OCPI connection has no Token A set")
+            raise ValueError("OCPI connection has no Token A set")
         if not conn.url:
-            raise ValueError(f"OCPI connection has no URL set")
+            raise ValueError("OCPI connection has no URL set")
 
         versions = ocpi_get(conn.url, conn.token_a)
 

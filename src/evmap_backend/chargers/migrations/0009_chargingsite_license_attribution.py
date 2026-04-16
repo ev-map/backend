@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("chargers", "0008_network_chargers_ne_evse_op_9e9c6a_idx"),
     ]

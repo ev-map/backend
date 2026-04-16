@@ -6,7 +6,6 @@ import evmap_backend.apikeys.models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = []

@@ -5,7 +5,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("goingelectric", "0004_goingelectricchargelocation_match_confidence_and_more"),
     ]

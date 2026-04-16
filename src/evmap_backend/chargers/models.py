@@ -2,7 +2,7 @@ from typing import Dict, Tuple
 
 from django.contrib.gis.db import models
 from django.contrib.gis.db.models import GeometryField
-from django.contrib.gis.db.models.functions import GeometryType, Transform
+from django.contrib.gis.db.models.functions import Transform
 from django.db.models.functions import Cast
 from django_countries.fields import CountryField
 

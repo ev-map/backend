@@ -228,7 +228,7 @@ def _parse_connectors(record: dict) -> List[Connector]:
         connector_type = PLUG_TYPE_MAP.get(plug)
         if connector_type is None:
             logger.warning(
-                f"Unknown plug type: {plug} (EvseID: {record.get("EvseID")})"
+                f"Unknown plug type: {plug} (EvseID: {record.get('EvseID')})"
             )
             connector_type = Connector.ConnectorTypes.OTHER
 

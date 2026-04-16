@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     replaces = [
         ("nobil", "0002_nobilchargerstation_nobilconnector"),
         ("nobil", "0003_nobilupdatestate"),

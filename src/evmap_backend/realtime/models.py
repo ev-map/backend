@@ -1,7 +1,5 @@
 from django.contrib.gis.db import models
-from django_countries.fields import CountryField
 
-from evmap_backend.chargers.fields import EVSEIDField, EVSEIDType, OpeningHoursField
 from evmap_backend.chargers.models import Chargepoint
 
 

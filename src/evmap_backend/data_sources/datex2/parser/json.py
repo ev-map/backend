@@ -90,7 +90,7 @@ def parse_energy_infrastructure_site(
     elem: dict, station_as_chargepoint=False
 ) -> Optional[Datex2EnergyInfrastructureSite]:
     if (
-        not "energyInfrastructureStation" in elem
+        "energyInfrastructureStation" not in elem
         or len(elem["energyInfrastructureStation"]) == 0
     ):
         return None

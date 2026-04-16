@@ -1,5 +1,3 @@
-import pytest
-
 from evmap_backend.data_sources.datex2.parser.utils import find_common_part
 
 

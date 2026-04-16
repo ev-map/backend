@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("chargers", "0003_chargepoint_chargers_ch_site_id_1bdbfa_idx_and_more"),
     ]
@@ -16,9 +15,11 @@ class Migration(migrations.Migration):
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.RunPython(
-            lambda apps, _: apps.get_model("chargers", "Connector")
-            .objects.filter(id_from_source="")
-            .update(id_from_source=None)
+            lambda apps, _: (
+                apps.get_model("chargers", "Connector")
+                .objects.filter(id_from_source="")
+                .update(id_from_source=None)
+            )
         ),
         migrations.AddConstraint(
             model_name="chargepoint",
