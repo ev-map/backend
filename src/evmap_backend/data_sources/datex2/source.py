@@ -344,7 +344,7 @@ class Datex2MobilithekMontaRealtimeDataSource(BaseMobilithekDatex2DataSource):
     parser = Datex2JsonParser()
     supported_data_types = [DataType.DYNAMIC]
     static_data_source = "mobilithek_monta"
-    license_attribution = "Monta Aps"
+    license_attribution = "Monta ApS"
     # https://mobilithek.info/offers/963870983660167168
 
 
@@ -675,3 +675,66 @@ class Datex2SpainDataSource(BaseDatex2DataSource):
         )
         response.raise_for_status()
         return response.text
+
+
+class BaseMontaPublicDatex2DataSource(DataSource):
+    supported_data_types = [DataType.STATIC]
+    supported_update_methods = [UpdateMethod.PULL]
+    parser = Datex2JsonParser()
+    license_attribution = "Monta ApS"
+    # https://docs.public-api.monta.com/reference/get-afir-charge-points
+
+    @abstractmethod
+    @classproperty
+    def country(self) -> str:
+        pass
+
+    def get_page(self, page: int, per_page: int = 1000) -> dict:
+        response = requests.get(
+            "https://public-api.monta.com/api/v1/afir/charge-points",
+            params={
+                "country": self.country,
+                "page": page,
+                "perPage": per_page,
+            },
+            headers={
+                "Accept": "application/json",
+            },
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def parse_all_pages(self):
+        page = 1
+        while True:
+            root = self.get_page(page)
+            yield from self.parser.parse(root)
+
+            if root["meta"]["total"] <= root["meta"]["page"] * root["meta"]["perPage"]:
+                break
+            page += 1
+
+    def pull_data(self):
+        sites_datex = self.parse_all_pages()
+        sync_chargers(
+            self.id,
+            (
+                site.convert(
+                    self.id,
+                    self.license_attribution,
+                    None,
+                    self.country,
+                )
+                for site in sites_datex
+            ),
+        )
+
+
+class Datex2DenmarkMontaDataSource(BaseMontaPublicDatex2DataSource):
+    id = "denmark_monta"
+    country = "DK"
+
+
+class Datex2BelgiumMontaDataSource(BaseMontaPublicDatex2DataSource):
+    id = "belgium_monta"
+    country = "BE"

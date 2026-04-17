@@ -7,7 +7,9 @@ from evmap_backend.data_sources.datex2.source import (
     Datex2AustriaDataSource,
     Datex2AustriaRealtimeDataSource,
     Datex2BelgiumEcoMovementDataSource,
+    Datex2BelgiumMontaDataSource,
     Datex2DenmarkEcoMovementDataSource,
+    Datex2DenmarkMontaDataSource,
     Datex2FinlandDataSource,
     Datex2LuxembourgEcoMovementDataSource,
     Datex2MobilithekChargecloudDataSource,
@@ -95,7 +97,6 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2AustriaDataSource,
     Datex2AustriaRealtimeDataSource,
     # Germany
-    # MontaDataSource, # replaced by Mobilithek-Monta
     # ElisoDataSource,  # Eliso is already included in the Eco-Movement data
     Datex2MobilithekEcoMovementDatex2DataSource,
     Datex2MobilithekEcoMovementRealtimeDataSource,
@@ -175,8 +176,10 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2SloveniaRealtimeDataSource,
     # Denmark
     Datex2DenmarkEcoMovementDataSource,
+    Datex2DenmarkMontaDataSource,
     # Belgium
     Datex2BelgiumEcoMovementDataSource,
+    Datex2BelgiumMontaDataSource,
     RoadBelgiumOcpiDataSource,
     TeslaBelgiumOcpiDataSource,
     # Switzerland

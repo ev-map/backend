@@ -15,13 +15,13 @@ from evmap_backend.data_sources.datex2.parser import (
 )
 
 
-def get_alternatives(obj: dict, keys: Iterable[str]):
+def get_alternatives(obj: dict, keys: Iterable[str], default=None):
     if obj is None:
-        return None
+        return default
     for key in keys:
         if key in obj:
             return obj[key]
-    return None
+    return default
 
 
 def parse_multilingual_string(elem) -> Datex2MultilingualString:
@@ -41,8 +41,15 @@ def parse_point_coordinates(elem: dict) -> Tuple[float, float]:
 
 
 def parse_connector(elem) -> Datex2Connector:
+    val = elem["connectorType"]["value"]
+    if val == "iec62196T2Combo":
+        val = "iec62196T2COMBO"
+    elif val == "iec62196T1Combo":
+        val = "iec62196T2COMBO"
+    elif val == "extendedG" or val == "domestic_g":
+        val = "domesticG"
     return Datex2Connector(
-        connector_type=Datex2Connector.ConnectorType(elem["connectorType"]["value"]),
+        connector_type=Datex2Connector.ConnectorType(val),
         max_power=elem["maxPowerAtSocket"] if "maxPowerAtSocket" in elem else None,
     )
 
@@ -61,8 +68,10 @@ def parse_refill_point(elem) -> Datex2RefillPoint:
     )
 
 
-def parse_external_identifier(external_identifier) -> str:
-    if isinstance(external_identifier, str):
+def parse_external_identifier(external_identifier) -> Optional[str]:
+    if external_identifier is None:
+        return None
+    elif isinstance(external_identifier, str):
         return external_identifier
     else:
         return next(
@@ -135,7 +144,7 @@ def parse_energy_infrastructure_site(
         )
         address = facility_location["address"]
         city = address["city"]
-        if "value" in city:
+        if city is not None and "value" in city:
             city = city["value"][0]
 
     refill_points = []
@@ -146,6 +155,7 @@ def parse_energy_infrastructure_site(
                 get_alternatives(
                     refill_point,
                     ["aegiElectricChargingPoint", "egiElectricChargingPoint"],
+                    default=refill_point,
                 )
             )
             for refill_point in station["refillPoint"]
@@ -245,10 +255,14 @@ class Datex2JsonParser:
         self.station_as_chargepoint = station_as_chargepoint
 
     def parse(self, data) -> Iterable[Datex2EnergyInfrastructureSite]:
-        root = json.loads(data)
+        if isinstance(data, dict):
+            root = data
+        else:
+            root = json.loads(data)
         if "messageContainer" in root:
             root = root["messageContainer"]
-        root = root["payload"]
+        if "payload" in root:
+            root = root["payload"]
 
         if isinstance(root, list):
             root = root[0]
@@ -259,6 +273,7 @@ class Datex2JsonParser:
                 "aegiEnergyInfrastructureTablePublication",
                 "egiEnergyInfrastructureTablePublication",
             ],
+            root,
         )
         for table in root["energyInfrastructureTable"]:
             for site in tqdm(table["energyInfrastructureSite"], disable=None):
