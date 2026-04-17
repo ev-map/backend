@@ -1,3 +1,8 @@
+from dalf.admin import (
+    DALFChoicesField,
+    DALFModelAdmin,
+    DALFRelatedField,
+)
 from django.contrib import admin
 from django.contrib.gis.admin import GISModelAdmin
 from django.db.models import Count
@@ -17,9 +22,13 @@ class ConnectorInline(admin.StackedInline):
     show_change_link = True
 
 
-class ChargingSiteAdmin(GISModelAdmin):
+class ChargingSiteAdmin(DALFModelAdmin, GISModelAdmin):
     list_display = ["name", "data_source", "network", "city", "country"]
-    list_filter = ["data_source", "network", "country"]
+    list_filter = [
+        "data_source",
+        ("network", DALFRelatedField),
+        ("country", DALFChoicesField),
+    ]
     inlines = [ChargepointInline]
 
 
@@ -48,7 +57,12 @@ class ConnectorAdmin(admin.ModelAdmin):
 
 
 class NetworkAdmin(admin.ModelAdmin):
-    list_display = ["name", "formatted_evse_operator_id", "chargingsites_count"]
+    list_display = [
+        "name",
+        "formatted_evse_operator_id",
+        "chargingsites_count",
+        "goingelectric_networks_display",
+    ]
     search_fields = ["name", "evse_operator_id"]
 
     @admin.display(description="EVSE Operator ID")
@@ -62,6 +76,10 @@ class NetworkAdmin(admin.ModelAdmin):
     @admin.display(ordering="-chargingsites__count")
     def chargingsites_count(self, obj):
         return obj.chargingsites__count
+
+    @admin.display(description="GoingElectric networks")
+    def goingelectric_networks_display(self, obj):
+        return ", ".join(str(n) for n in obj.goingelectric_networks.all()) or "—"
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)

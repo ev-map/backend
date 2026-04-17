@@ -94,6 +94,7 @@ INSTALLED_APPS = [
     "evmap_backend.countries",
     "solo",
     "django_countries",
+    "dalf",
 ]
 
 MIDDLEWARE = [

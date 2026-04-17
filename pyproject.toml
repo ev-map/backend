@@ -18,7 +18,8 @@ dependencies = [
     "tqdm",
     "defusedxml",
     "cryptography",
-    "django-pgbulk==3.3.*"
+    "django-pgbulk==3.3.*",
+    "dalf==0.7.1"
 ]
 
 [project.optional-dependencies]
