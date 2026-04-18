@@ -110,6 +110,9 @@ connector_mapping = {
 
 
 UUID_PATTERN = re.compile(r"^[a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12}$", re.IGNORECASE)
+ECONTROL_PATTERN = re.compile(
+    r"^[A-Z]{2}-[A-Z0-9]{3}-E[A-Z0-9]+-([A-Z]{2}\*[A-Z0-9]{3}\*E[A-Z0-9*]{1,31})-rp$"
+)  # custom station ID + EVSEID concatenated
 ALTERNATIVE_EVSEID_PATTERN = re.compile(r"^[A-Z]{2}\.[A-Z0-9]{3}\.[A-Z0-9\*]{1,32}$")
 
 
@@ -153,6 +156,14 @@ class Datex2RefillPoint:
                     pass
 
         # id
+        if match := ECONTROL_PATTERN.match(self.id):
+            try:
+                id = normalize_evseid(match.group(1))
+                validate_evseid(id, EVSEIDType.EVSE)
+                return id
+            except ValidationError:
+                pass
+
         if not UUID_PATTERN.match(self.id):
             # some UUIDs may be valid EVSEIDs after normalization, we don't want those
             try:
@@ -199,8 +210,8 @@ class Datex2EnergyInfrastructureSite:
         license_attribution: str,
         license_attribution_link: Optional[str],
     ) -> Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]:
-        evseid = self.refill_points[0].get_evseid()
-        if evseid != "":
+        evseid = self.refill_points[0].get_evseid() if self.refill_points else None
+        if evseid:
             operator_id = normalize_evseid(evseid)[:5]
             network, created = Network.get_or_create(
                 evse_operator_id=operator_id,
