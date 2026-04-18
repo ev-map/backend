@@ -167,6 +167,7 @@ class Datex2AustriaRealtimeDataSource(BaseDatex2DataSource):
     supported_data_types = [DataType.DYNAMIC]
     license_attribution = "E-Control"
     license_attribution_link = "http://www.e-control.at/"
+    static_data_source = "e-control_austria"
     # https://admin.ladestellen.at/#/api/registrieren
 
     def get_data(self) -> str:

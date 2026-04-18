@@ -298,12 +298,12 @@ class OcpiLocation(Schema):
     id: str
     country: Optional[str] = None
     country_code: Optional[str] = None
-    name: Optional[str]
-    address: Optional[str]
-    city: Optional[str]
+    name: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
     postal_code: Optional[str] = None
     state: Optional[str] = None
-    coordinates: Optional[GeoLocation]
+    coordinates: Optional[GeoLocation] = None
     evses: Optional[List[OcpiEvse]] = None
     operator: Optional[OcpiOperator] = None
     suboperator: Optional[OcpiOperator] = None
