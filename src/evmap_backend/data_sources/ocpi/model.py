@@ -204,7 +204,7 @@ class OcpiConnector(Schema):
     def convert(self) -> Connector:
         return Connector(
             id_from_source=self.id,
-            connector_type=connector_mapping.get(self.standard),
+            connector_type=connector_mapping[self.standard],
             connector_format=format_mapping[self.format],
             max_power=self.max_power(),
         )
@@ -212,6 +212,7 @@ class OcpiConnector(Schema):
 
 connector_mapping = {
     OcpiConnector.ConnectorType.CHADEMO: Connector.ConnectorTypes.CHADEMO,
+    OcpiConnector.ConnectorType.DOMESTIC_E: Connector.ConnectorTypes.DOMESTIC_E,
     OcpiConnector.ConnectorType.DOMESTIC_F: Connector.ConnectorTypes.SCHUKO,
     OcpiConnector.ConnectorType.IEC_60309_2_SINGLE_16: Connector.ConnectorTypes.CEE_SINGLE_16,
     OcpiConnector.ConnectorType.IEC_60309_2_THREE_16: Connector.ConnectorTypes.CEE_THREE_16,
@@ -251,7 +252,7 @@ class OcpiEvse(Schema):
             return cls.UNKNOWN
 
     uid: str
-    evse_id: str
+    evse_id: Optional[str] = None
     physical_reference: Optional[str] = None
     status: OcpiEvseStatus
     # TODO: status_schedule
@@ -319,15 +320,18 @@ class OcpiLocation(Schema):
         license_attribution: str,
         license_attribution_link: Optional[str] = None,
     ) -> Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]:
-        operator_id = normalize_evseid(self.evses[0].evse_id)[:5]
-        network, _ = Network.get_or_create(
-            evse_operator_id=none_to_blank(operator_id),
-            defaults=dict(
-                name=none_to_blank(
-                    self.operator.name if self.operator is not None else None
-                )
-            ),
-        )
+        if self.evses[0].evse_id:
+            operator_id = normalize_evseid(self.evses[0].evse_id)[:5]
+            network, _ = Network.get_or_create(
+                evse_operator_id=none_to_blank(operator_id),
+                defaults=dict(
+                    name=none_to_blank(
+                        self.operator.name if self.operator is not None else None
+                    )
+                ),
+            )
+        else:
+            network = None
 
         site = ChargingSite(
             data_source=data_source,

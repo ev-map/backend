@@ -149,6 +149,7 @@ class Connector(models.Model):
 
         SCHUKO = "Schuko", "Schuko (Type F)"
         DOMESTIC_J = "Domestic J", "Domestic (Type J - Switzerland Type 13)"
+        DOMESTIC_E = "Domestic E", "Domestic (Type E - France, Belgium)"
         # TODO: add other household plugs
 
         NACS = "NACS", "NACS (Tesla US)"
