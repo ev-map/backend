@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 
 import requests
 from django.contrib.gis.geos import Point
@@ -42,6 +43,7 @@ class GoingElectricDataSource(DataSource):
     id = "goingelectric"
     supported_update_methods = [UpdateMethod.PULL]
     supported_data_types = [DataType.SUPPLEMENTARY]
+    sync_interval = timedelta(days=7)
 
     def pull_data(self):
         startkey = None

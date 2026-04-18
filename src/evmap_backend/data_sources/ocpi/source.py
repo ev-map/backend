@@ -594,6 +594,8 @@ class InstavoltUkOcpiDataSource(BaseOcpiConnectionDataSource):
     is_credentials_sender = True
     party_id = os.environ.get("INSTAVOLT_UK_OCPI_PARTY_ID")
     extra_auth_header = "x-api-key"
+    supported_update_methods = [UpdateMethod.PULL]
+    supported_data_types = [DataType.STATIC]
     # https://instavolt.co.uk/public-charge-point-regulation-data/
+    # limited to 96 API calls per 24 hours, therefore realtime data is not useful
     # TODO: nonstandard: sends tariff information as part of locations data
-    # TODO: limited to 96 API calls per 24 hours
