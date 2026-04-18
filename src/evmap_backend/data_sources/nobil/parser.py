@@ -160,26 +160,28 @@ class NobilConnector:
         ]:
             # skip non-EV connectors
             return []
+
+        power = charging_capacity_mapping.get(self.charging_capacity, 0)
         if self.connector == NobilConnector.Connector.TYPE_2_SCHUKO:
             return [
                 Connector(
                     connector_type=Connector.ConnectorTypes.SCHUKO,
-                    max_power=2.3,
+                    max_power=2300,
                 ),
                 Connector(
                     connector_type=Connector.ConnectorTypes.TYPE_2,
-                    max_power=self.power_consumption,
+                    max_power=power,
                 ),
             ]
         if self.connector == NobilConnector.Connector.TYPE_1_TYPE_2:
             return [
                 Connector(
                     connector_type=Connector.ConnectorTypes.TYPE_1,
-                    max_power=self.power_consumption,
+                    max_power=power,
                 ),
                 Connector(
                     connector_type=Connector.ConnectorTypes.TYPE_2,
-                    max_power=self.power_consumption,
+                    max_power=power,
                 ),
             ]
 
@@ -188,7 +190,7 @@ class NobilConnector:
                 connector_type=connector_mapping.get(
                     self.connector, Connector.ConnectorTypes.OTHER
                 ),
-                max_power=charging_capacity_mapping.get(self.charging_capacity, 0),
+                max_power=power,
             )
         ]
 
