@@ -35,20 +35,17 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
         if interval is None:
             continue
 
-        sched = schedule(run_every=interval)
         last_update = update_states.get(cls.id)
-        sched.last_run_at = (
-            last_update if last_update is not None else datetime.datetime(1970, 1, 1)
-        )
+        entry = {
+            "task": "evmap_backend.data_sources.tasks.pull_data_source",
+            "schedule": schedule(run_every=interval),
+            "args": (cls.id,),
+            "last_run_at": last_update
+            if last_update is not None
+            else datetime.datetime.min,
+        }
 
-        sender.add_periodic_task(
-            sched,
-            sender.signature(
-                "evmap_backend.data_sources.tasks.pull_data_source",
-                args=(cls.id,),
-            ),
-            name=f"pull-{cls.id}",
-        )
+        sender.conf.beat_schedule[f"pull-{cls.id}"] = entry
         count += 1
 
     logger.info(f"Registered {count} periodic pull tasks")
