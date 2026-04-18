@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import timedelta
 from enum import Enum
 from typing import List
 
@@ -59,6 +60,28 @@ class DataSource(ABC):
     @abstractmethod
     def supported_update_methods(self) -> List[UpdateMethod]:
         pass
+
+    @classproperty
+    def sync_interval(cls) -> timedelta | None:
+        """Returns the interval at which pull_data should be called automatically.
+
+        Returns None if no periodic sync is needed (push/streaming sources).
+        Subclasses can override this property.
+        """
+        if any(
+            m in cls.supported_update_methods
+            for m in (
+                UpdateMethod.HTTP_PUSH,
+                UpdateMethod.STREAMING,
+                UpdateMethod.OCPI_PUSH,
+            )
+        ):
+            return None
+
+        if DataType.DYNAMIC in cls.supported_data_types:
+            return timedelta(minutes=5)
+
+        return timedelta(days=1)
 
     def pull_data(self):
         raise NotImplementedError()

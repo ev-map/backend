@@ -187,6 +187,10 @@ STATICFILES_DIRS = [BASE_DIR / "evmap_backend" / "static"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Celery
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://127.0.0.1:6379/0")
+CELERY_BEAT_SCHEDULER = "celery.beat:Scheduler"
+
 if DEBUG:
     INSTALLED_APPS.append("silk")
     MIDDLEWARE.append("silk.middleware.SilkyMiddleware")
