@@ -10,7 +10,7 @@ dependencies = [
     "django-countries==8.2.*",
     "django-ninja==1.5.*",
     "python-dotenv==1.2.*",
-    "psycopg[binary, pool]==3.3.*",
+    "psycopg[c,pool] @ git+https://github.com/akx/psycopg.git@speed-up-split-query#subdirectory=psycopg",
     "django-solo==2.5.*",
     "paho-mqtt==2.1.*",
     "python-dateutil",

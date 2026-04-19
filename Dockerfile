@@ -3,7 +3,11 @@ FROM python:3.12-slim
 RUN apt-get update && apt-get install -y \
     gdal-bin \
     libgdal-dev \
+    libpq-dev \
+    build-essential \
     supervisor \
+    git \
+    less \
     --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
