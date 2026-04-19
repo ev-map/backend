@@ -7,6 +7,7 @@ class RealtimeStatus(models.Model):
     class Meta:
         get_latest_by = "timestamp"
         indexes = [
+            models.Index(fields=["-timestamp"]),
             models.Index(fields=["chargepoint", "-timestamp"]),
             models.Index(fields=["data_source", "-timestamp"]),
             models.Index(fields=["data_source", "chargepoint", "-timestamp"]),
