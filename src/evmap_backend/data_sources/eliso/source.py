@@ -1,5 +1,5 @@
 import os
-from typing import Iterable, List, Tuple
+from typing import Iterable
 
 import requests
 from django.contrib.gis.geos import Point
@@ -7,7 +7,11 @@ from tqdm import tqdm
 
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
-from evmap_backend.sync import sync_chargers
+from evmap_backend.data_sources.sync import (
+    ChargepointItem,
+    ChargingSiteItem,
+    sync_chargers,
+)
 
 API_URL = "https://mobilithek.info:8443/mobilithek/api/v1.0/subscription"
 
@@ -19,7 +23,7 @@ connector_mapping = {
 
 def parse_eliso_chargers(
     root, source, license_attribution
-) -> Iterable[Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]]:
+) -> Iterable[ChargingSiteItem]:
     for item in tqdm(root, disable=None):
         # Eliso doesn't have IDs, so we make one from the city and address:
         item_id = item["address"] + " " + item["postalCode"] + " " + item["city"]
@@ -55,8 +59,8 @@ def parse_eliso_chargers(
                 )
                 for connector in evse["connectors"]
             ]
-            chargepoints.append((chargepoint, connectors))
-        yield site, chargepoints
+            chargepoints.append(ChargepointItem(chargepoint, connectors))
+        yield ChargingSiteItem(site, chargepoints)
 
 
 def get_mobilithek_data():

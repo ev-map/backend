@@ -19,7 +19,7 @@ from evmap_backend.data_sources.ocpi.utils import (
     ocpi_get_paginated,
     ocpi_post,
 )
-from evmap_backend.sync import sync_chargers, sync_statuses
+from evmap_backend.data_sources.sync import sync_chargers, sync_statuses
 
 
 def deduplicate_chargers(chargers: Iterable[OcpiLocation]) -> Iterable[OcpiLocation]:
@@ -58,32 +58,21 @@ class BaseOcpiDataSource(DataSource):
         root = self.get_locations_data()
         locations = OcpiParser().parse_locations(root)
         locations = self.postprocess_locations(locations)
-        if DataType.DYNAMIC in self.supported_data_types:
-            locations = list(locations)
 
+        with_status = DataType.DYNAMIC in self.supported_data_types
         sync_chargers(
             self.id,
             (
                 location.convert(
-                    self.id, self.license_attribution, self.license_attribution_link
+                    self.id,
+                    self.license_attribution,
+                    self.license_attribution_link,
+                    with_status=with_status,
                 )
                 for location in locations
                 if location.is_valid()
             ),
         )
-        if DataType.DYNAMIC in self.supported_data_types:
-            sync_statuses(
-                self.id,
-                self.id,
-                (
-                    s
-                    for location in locations
-                    if location.is_valid()
-                    for s in location.convert_status(
-                        self.id, self.license_attribution, self.license_attribution_link
-                    )
-                ),
-            )
 
 
 class BaseOcpiRealtimeDataSource(DataSource):
@@ -170,28 +159,20 @@ class BaseOcpiConnectionDataSource(DataSource):
         root = ocpi_get_paginated(
             conn.locations_url, token, extra_auth_header=self.extra_auth_header
         )
-        locations = list(OcpiParser().parse_locations(root))
+        locations = OcpiParser().parse_locations(root)
         locations = self.postprocess_locations(locations)
+        with_status = DataType.DYNAMIC in self.supported_data_types
         sync_chargers(
             self.id,
             (
                 location.convert(
-                    self.id, self.license_attribution, self.license_attribution_link
+                    self.id,
+                    self.license_attribution,
+                    self.license_attribution_link,
+                    with_status=with_status,
                 )
                 for location in locations
                 if location.is_valid()
-            ),
-        )
-        sync_statuses(
-            self.id,
-            self.id,
-            (
-                s
-                for location in locations
-                if location.is_valid()
-                for s in location.convert_status(
-                    self.id, self.license_attribution, self.license_attribution_link
-                )
             ),
         )
 

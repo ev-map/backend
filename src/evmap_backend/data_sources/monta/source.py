@@ -1,6 +1,7 @@
 import datetime as dt
 import os
 from collections import defaultdict
+from typing import Iterable
 
 import requests
 from django.contrib.gis.geos import Point
@@ -11,8 +12,12 @@ from evmap_backend.chargers.fields import normalize_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.monta.models import MontaTokens
+from evmap_backend.data_sources.sync import (
+    ChargepointItem,
+    ChargingSiteItem,
+    sync_chargers,
+)
 from evmap_backend.realtime.models import RealtimeStatus
-from evmap_backend.sync import sync_chargers, sync_statuses
 
 API_URL = "https://partner-api.monta.com/api/v1/afir/charge-points"
 TOKEN_URL = "https://partner-api.monta.com/api/v1/auth/token"
@@ -93,7 +98,9 @@ status_map = {
 }
 
 
-def convert_monta_data(chargers_by_location, source, license_attribution):
+def convert_monta_data(
+    chargers_by_location, source, license_attribution
+) -> Iterable[ChargingSiteItem]:
     network = Network.objects.get_or_create(
         evse_operator_id="DKMON", defaults=dict(name="Monta")
     )[0]
@@ -117,7 +124,6 @@ def convert_monta_data(chargers_by_location, source, license_attribution):
         )
 
         chargepoints = []
-        statuses = []
         for evse in evses:
             chargepoint = Chargepoint(
                 id_from_source=str(evse["id"]), evseid=normalize_evseid(evse["evseId"])
@@ -129,17 +135,15 @@ def convert_monta_data(chargers_by_location, source, license_attribution):
                 )
                 for connector in evse["connectors"]
             ]
-            chargepoints.append((chargepoint, connectors))
             status = RealtimeStatus(
-                chargepoint=chargepoint,
                 status=status_map[evse["state"]],
                 timestamp=timezone.now(),
                 data_source=source,
                 license_attribution=license_attribution,
             )
-            statuses.append((location, status))
+            chargepoints.append(ChargepointItem(chargepoint, connectors, status))
 
-        yield site, chargepoints, statuses
+        yield ChargingSiteItem(site, chargepoints)
 
 
 class MontaDataSource(DataSource):
@@ -182,14 +186,7 @@ class MontaDataSource(DataSource):
         ):
             chargers_by_location[charger["location"]["addressLabel"]].append(charger)
 
-        sites = list(
-            convert_monta_data(chargers_by_location, self.id, self.license_attribution)
+        sites = convert_monta_data(
+            chargers_by_location, self.id, self.license_attribution
         )
-        sync_chargers(
-            self.id, ((site, chargepoints) for site, chargepoints, statuses in sites)
-        )
-        sync_statuses(
-            self.id,
-            self.id,
-            (status for site, chargepoints, statuses in sites for status in statuses),
-        )
+        sync_chargers(self.id, sites)

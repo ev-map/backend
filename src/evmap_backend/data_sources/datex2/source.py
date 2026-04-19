@@ -17,8 +17,8 @@ from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.datex2.parser.json import Datex2JsonParser
 from evmap_backend.data_sources.datex2.parser.xml import Datex2XmlParser
 from evmap_backend.data_sources.models import UpdateState
+from evmap_backend.data_sources.sync import sync_chargers, sync_statuses
 from evmap_backend.settings import BASE_DIR
-from evmap_backend.sync import sync_chargers, sync_statuses
 
 
 class BaseDatex2DataSource(DataSource):

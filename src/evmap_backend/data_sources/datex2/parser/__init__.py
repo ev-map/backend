@@ -2,7 +2,7 @@ import datetime
 import enum
 import re
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 from django.contrib.gis.geos import Point
 from django.core.exceptions import ValidationError
@@ -12,6 +12,11 @@ from evmap_backend.chargers.fields import EVSEIDType, normalize_evseid, validate
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
 from evmap_backend.countries.models import Country
 from evmap_backend.data_sources.datex2.parser.utils import find_common_part
+from evmap_backend.data_sources.sync import (
+    ChargepointItem,
+    ChargingSiteItem,
+    RealtimeStatusItem,
+)
 from evmap_backend.helpers.database import none_to_blank
 from evmap_backend.realtime.models import RealtimeStatus
 
@@ -123,14 +128,15 @@ class Datex2RefillPoint:
     external_identifier: Optional[str] = None
     name: Datex2MultilingualString = None
 
-    def convert(self) -> Chargepoint:
-        return Chargepoint(
+    def convert(self) -> ChargepointItem:
+        cp = Chargepoint(
             id_from_source=self.id,
             evseid=(self.get_evseid()),
             physical_reference=none_to_blank(
                 self.name.first() if self.name is not None else None
             ),
         )
+        return ChargepointItem(cp, [con.convert() for con in self.connectors])
 
     def get_evseid(self) -> str:
         # external_identifier
@@ -209,7 +215,7 @@ class Datex2EnergyInfrastructureSite:
         data_source: str,
         license_attribution: str,
         license_attribution_link: Optional[str],
-    ) -> Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]:
+    ) -> ChargingSiteItem:
         evseid = self.refill_points[0].get_evseid() if self.refill_points else None
         if evseid:
             operator_id = normalize_evseid(evseid)[:5]
@@ -256,11 +262,8 @@ class Datex2EnergyInfrastructureSite:
                 else Country.get_country_for_point(Point(*self.location)) or ""
             ),
         )
-        chargepoints = [
-            (rp.convert(), [con.convert() for con in rp.connectors])
-            for rp in self.refill_points
-        ]
-        return site, chargepoints
+        chargepoints = [rp.convert() for rp in self.refill_points]
+        return ChargingSiteItem(site, chargepoints)
 
 
 @dataclass
@@ -289,9 +292,8 @@ class Datex2RefillPointStatus:
         data_source: str,
         license_attribution: str,
         license_attribution_link: Optional[str],
-    ) -> RealtimeStatus:
-        return RealtimeStatus(
-            chargepoint=Chargepoint(id_from_source=self.refill_point_id),
+    ) -> Tuple[str, RealtimeStatus]:
+        return self.refill_point_id, RealtimeStatus(
             status=status_map[self.status],
             timestamp=(
                 self.last_updated if self.last_updated is not None else timezone.now()
@@ -331,14 +333,16 @@ class Datex2EnergyInfrastructureSiteStatus:
         data_source: str,
         license_attribution: str,
         license_attribution_link: Optional[str],
-    ) -> List[Tuple[str, RealtimeStatus]]:
-        return [
-            (
-                self.site_id,
-                rps.convert(data_source, license_attribution, license_attribution_link),
+    ) -> Iterable[RealtimeStatusItem]:
+        for rps in self.refill_point_statuses:
+            cp_id, status = rps.convert(
+                data_source, license_attribution, license_attribution_link
             )
-            for rps in self.refill_point_statuses
-        ]
+            yield RealtimeStatusItem(
+                site_id_from_source=self.site_id,
+                chargepoint_id_from_source=cp_id,
+                status=status,
+            )
 
 
 def parse_datetime(

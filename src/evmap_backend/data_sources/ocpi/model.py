@@ -2,7 +2,7 @@ import datetime
 import enum
 import logging
 from math import sqrt
-from typing import Generic, List, Optional, Tuple, TypeVar
+from typing import Generic, Iterable, List, Optional, TypeVar
 
 from django.contrib.gis.geos import Point
 from ninja import Schema
@@ -11,6 +11,11 @@ from pytz import timezone
 from evmap_backend import settings
 from evmap_backend.chargers.fields import normalize_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
+from evmap_backend.data_sources.sync import (
+    ChargepointItem,
+    ChargingSiteItem,
+    RealtimeStatusItem,
+)
 from evmap_backend.helpers.database import none_to_blank
 from evmap_backend.realtime.models import RealtimeStatus
 
@@ -267,6 +272,27 @@ class OcpiEvse(Schema):
             physical_reference=none_to_blank(self.physical_reference),
         )
 
+    def convert_status(
+        self,
+        data_source: str,
+        license_attribution: str,
+        license_attribution_link: Optional[str] = None,
+        time_zone: Optional[str] = None,
+    ) -> RealtimeStatus:
+        return RealtimeStatus(
+            status=status_mapping[self.status],
+            timestamp=(
+                timezone(time_zone).localize(self.last_updated)
+                if time_zone is not None and self.last_updated.tzinfo is None
+                else self.last_updated
+            ),
+            data_source=data_source,
+            license_attribution=license_attribution,
+            license_attribution_link=(
+                license_attribution_link if license_attribution_link is not None else ""
+            ),
+        )
+
 
 class PatchOcpiEvse(Schema):
     status: OcpiEvse.OcpiEvseStatus
@@ -319,7 +345,8 @@ class OcpiLocation(Schema):
         data_source: str,
         license_attribution: str,
         license_attribution_link: Optional[str] = None,
-    ) -> Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]:
+        with_status: bool = False,
+    ) -> ChargingSiteItem:
         if self.evses[0].evse_id:
             operator_id = normalize_evseid(self.evses[0].evse_id)[:5]
             network, _ = Network.get_or_create(
@@ -368,8 +395,18 @@ class OcpiLocation(Schema):
                         continue
                     con_ids.add(con.id)
                     connectors.append(con.convert())
-                chargepoints.append((evse.convert(), connectors))
-        return site, chargepoints
+                status = (
+                    evse.convert_status(
+                        data_source,
+                        license_attribution,
+                        license_attribution_link,
+                        self.time_zone,
+                    )
+                    if with_status
+                    else None
+                )
+                chargepoints.append(ChargepointItem(evse.convert(), connectors, status))
+        return ChargingSiteItem(site, chargepoints)
 
     def is_valid(self):
         return self.evses is not None and any(
@@ -381,27 +418,15 @@ class OcpiLocation(Schema):
         data_source: str,
         license_attribution: str,
         license_attribution_link: Optional[str] = None,
-    ) -> List[Tuple[str, RealtimeStatus]]:
-        return [
-            (
-                self.id,
-                RealtimeStatus(
-                    chargepoint=evse.convert(),
-                    status=status_mapping[evse.status],
-                    timestamp=(
-                        timezone(self.time_zone).localize(evse.last_updated)
-                        if self.time_zone is not None
-                        and evse.last_updated.tzinfo is None
-                        else evse.last_updated
-                    ),
-                    data_source=data_source,
-                    license_attribution=license_attribution,
-                    license_attribution_link=(
-                        license_attribution_link
-                        if license_attribution_link is not None
-                        else ""
-                    ),
+    ) -> Iterable[RealtimeStatusItem]:
+        for evse in self.evses:
+            yield RealtimeStatusItem(
+                site_id_from_source=self.id,
+                chargepoint_id_from_source=evse.uid,
+                status=evse.convert_status(
+                    data_source,
+                    license_attribution,
+                    license_attribution_link,
+                    self.time_zone,
                 ),
             )
-            for evse in self.evses
-        ]

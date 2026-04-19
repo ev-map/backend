@@ -2,7 +2,7 @@
 
 import pytest
 
-from evmap_backend.chargers.models import Connector, Network
+from evmap_backend.chargers.models import Connector
 from evmap_backend.data_sources.opendata_swiss.parser import (
     _convert_opening_hours,
     _get_station_name,
@@ -296,7 +296,7 @@ class TestParseOicpData:
         )
         assert len(sites) == 1
 
-        site, chargepoints = sites[0]
+        site, chargepoints = sites[0].site, sites[0].chargepoints
         assert site.name == "Test Station"
         assert site.id_from_source == "46.234320 6.055602"
         assert site.country == "CH"
@@ -309,7 +309,7 @@ class TestParseOicpData:
         assert site.license_attribution == "test_license"
 
         assert len(chargepoints) == 1
-        cp, connectors = chargepoints[0]
+        cp, connectors = chargepoints[0].chargepoint, chargepoints[0].connectors
         assert cp.id_from_source == "CH*CCI*E22078"
         assert cp.evseid == "CHCCIE22078"
         assert len(connectors) == 1
@@ -367,11 +367,11 @@ class TestParseOicpData:
         )
         assert len(sites) == 1  # One station
 
-        site, chargepoints = sites[0]
+        site, chargepoints = sites[0].site, sites[0].chargepoints
         assert site.id_from_source == "47.000000 8.000000"
         assert len(chargepoints) == 2
 
-        evse_ids = {cp.id_from_source for cp, _ in chargepoints}
+        evse_ids = {cp.chargepoint.id_from_source for cp in chargepoints}
         assert evse_ids == {"CH*TST*E001", "CH*TST*E002"}
 
     def test_skip_invalid_coordinates(self):
@@ -439,7 +439,7 @@ class TestParseOicpData:
         )
         assert len(sites) == 1  # All 4 EVSEs at same coords -> 1 site
 
-        site, chargepoints = sites[0]
+        site, chargepoints = sites[0].site, sites[0].chargepoints
         assert site.id_from_source == "46.950000 7.450000"
         assert site.name == "Tesla Supercharger Bern"
         assert len(chargepoints) == 4
@@ -490,48 +490,6 @@ class TestParseOicpData:
 @pytest.mark.django_db(transaction=True)
 class TestParseOicpStatus:
     def test_status_parsing(self):
-        from evmap_backend.sync import sync_chargers
-
-        Network._network_cache = {}
-
-        # First create the static data
-        data = {
-            "EVSEData": [
-                {
-                    "OperatorID": "CH*CCI",
-                    "OperatorName": "Move",
-                    "EVSEDataRecord": [
-                        {
-                            "EvseID": "CH*CCI*E22078",
-                            "ChargingStationId": "station_1",
-                            "ChargingStationNames": [
-                                {"lang": "en", "value": "Test Station"}
-                            ],
-                            "GeoCoordinates": {"Google": "46.23432 6.055602"},
-                            "Address": {
-                                "City": "Meyrin",
-                                "Country": "CHE",
-                                "PostalCode": "1217",
-                                "Street": "Test Street",
-                            },
-                            "Plugs": ["Type 2 Outlet"],
-                            "ChargingFacilities": [
-                                {"power": "22.0", "powertype": "AC_3_PHASE"}
-                            ],
-                            "IsOpen24Hours": True,
-                        }
-                    ],
-                }
-            ]
-        }
-        sites = list(
-            parse_oicp_data(
-                data, "opendata_swiss", "test_license", "https://test.example"
-            )
-        )
-        sync_chargers("opendata_swiss", sites)
-
-        # Now parse status data
         status_data = {
             "EVSEStatuses": [
                 {
@@ -556,45 +514,11 @@ class TestParseOicpStatus:
             )
         )
         assert len(statuses) == 1
-        site_id, status = statuses[0]
-        assert site_id == "46.234320 6.055602"
-        assert status.status == RealtimeStatus.Status.AVAILABLE
+        assert statuses[0].site_id_from_source is None
+        assert statuses[0].chargepoint_id_from_source == "CH*CCI*E22078"
+        assert statuses[0].status.status == RealtimeStatus.Status.AVAILABLE
 
     def test_status_mapping(self):
-        from evmap_backend.sync import sync_chargers
-
-        Network._network_cache = {}
-
-        data = {
-            "EVSEData": [
-                {
-                    "OperatorID": "CH*TST",
-                    "OperatorName": "Test",
-                    "EVSEDataRecord": [
-                        {
-                            "EvseID": f"CH*TST*E{i}",
-                            "ChargingStationId": f"station_{i}",
-                            "ChargingStationNames": [
-                                {"lang": "en", "value": f"Station {i}"}
-                            ],
-                            "GeoCoordinates": {"Google": f"47.{i} 8.{i}"},
-                            "Address": {"City": "Bern", "Country": "CHE"},
-                            "Plugs": ["Type 2 Outlet"],
-                            "ChargingFacilities": [{"power": "22.0"}],
-                            "IsOpen24Hours": True,
-                        }
-                        for i in range(5)
-                    ],
-                }
-            ]
-        }
-        sites = list(
-            parse_oicp_data(
-                data, "opendata_swiss", "test_license", "https://test.example"
-            )
-        )
-        sync_chargers("opendata_swiss", sites)
-
         status_data = {
             "EVSEStatuses": [
                 {
@@ -621,35 +545,9 @@ class TestParseOicpStatus:
         )
         assert len(statuses) == 5
 
-        status_map = {s.chargepoint.id_from_source: s.status for _, s in statuses}
+        status_map = {s.chargepoint_id_from_source: s.status.status for s in statuses}
         assert status_map["CH*TST*E0"] == RealtimeStatus.Status.AVAILABLE
         assert status_map["CH*TST*E1"] == RealtimeStatus.Status.CHARGING
         assert status_map["CH*TST*E2"] == RealtimeStatus.Status.OUTOFORDER
         assert status_map["CH*TST*E3"] == RealtimeStatus.Status.RESERVED
         assert status_map["CH*TST*E4"] == RealtimeStatus.Status.UNKNOWN
-
-    def test_unknown_evse_id_skipped(self):
-        status_data = {
-            "EVSEStatuses": [
-                {
-                    "OperatorID": "CH*TST",
-                    "OperatorName": "Test",
-                    "EVSEStatusRecord": [
-                        {
-                            "EvseID": "CH*TST*E99999",
-                            "EVSEStatus": "Available",
-                        }
-                    ],
-                }
-            ]
-        }
-
-        statuses = list(
-            parse_oicp_status(
-                status_data,
-                "opendata_swiss_realtime",
-                "test_license",
-                "https://test.example",
-            )
-        )
-        assert len(statuses) == 0

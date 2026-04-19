@@ -5,7 +5,7 @@ from evmap_backend.data_sources.opendata_swiss.parser import (
     parse_oicp_data,
     parse_oicp_status,
 )
-from evmap_backend.sync import sync_chargers, sync_statuses
+from evmap_backend.data_sources.sync import sync_chargers, sync_statuses
 
 DATA_URL = "https://data.geo.admin.ch/ch.bfe.ladestellen-elektromobilitaet/data/oicp/ch.bfe.ladestellen-elektromobilitaet.json"
 STATUS_URL = "https://data.geo.admin.ch/ch.bfe.ladestellen-elektromobilitaet/status/oicp/ch.bfe.ladestellen-elektromobilitaet.json"

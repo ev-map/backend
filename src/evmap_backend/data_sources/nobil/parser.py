@@ -2,7 +2,7 @@ import datetime
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum, IntEnum
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, List, Optional
 
 import dateutil
 import pytz
@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 from evmap_backend.chargers.fields import EVSEIDType, normalize_evseid, validate_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
+from evmap_backend.data_sources.sync import ChargepointItem, ChargingSiteItem
 from evmap_backend.helpers.database import none_to_blank
 
 TIMEZONE = pytz.timezone("Europe/Berlin")
@@ -307,7 +308,7 @@ class NobilChargerStation:
         data_source: str,
         license_attribution: str,
         license_attribution_link: Optional[str] = None,
-    ) -> Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]:
+    ) -> ChargingSiteItem:
         operator_id = None
         if self.connectors[0].evse_id:
             evseid = normalize_evseid(self.connectors[0].evse_id)
@@ -345,7 +346,7 @@ class NobilChargerStation:
         if all(con.evse_id is None and con.evse_uid is None for con in self.connectors):
             # no EVSE IDs available, create one chargepoint per connector
             chargepoints = [
-                (
+                ChargepointItem(
                     Chargepoint(
                         site=site,
                         id_from_source=str(
@@ -373,13 +374,13 @@ class NobilChargerStation:
                 evse_dict[(evse_uid, evseid)].append(con)
 
             chargepoints = [
-                (
+                ChargepointItem(
                     Chargepoint(site=site, id_from_source=evse_uid, evseid=evseid),
                     [c for con in connectors for c in con.convert()],
                 )
                 for (evse_uid, evseid), connectors in evse_dict.items()
             ]
-        return site, chargepoints
+        return ChargingSiteItem(site, chargepoints)
 
 
 @dataclass

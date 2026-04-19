@@ -13,8 +13,8 @@ from evmap_backend.chargers.models import Chargepoint
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.models import UpdateState
 from evmap_backend.data_sources.nobil.parser import parse_nobil_chargers
+from evmap_backend.data_sources.sync import sync_chargers
 from evmap_backend.realtime.models import RealtimeStatus
-from evmap_backend.sync import sync_chargers
 
 
 class NobilDataSource(DataSource):

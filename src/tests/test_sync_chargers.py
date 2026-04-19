@@ -5,7 +5,22 @@ Tests for the sync_chargers bulk operations.
 import pytest
 
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
-from evmap_backend.sync import sync_chargers
+from evmap_backend.data_sources.sync import (
+    ChargepointItem,
+    ChargingSiteItem,
+    sync_chargers,
+)
+
+
+def site_item(site, chargepoints):
+    """Helper to build a ChargingSiteItem from a site and list of (cp, connectors) tuples."""
+    return ChargingSiteItem(
+        site=site,
+        chargepoints=[
+            ChargepointItem(chargepoint=cp, connectors=conns)
+            for cp, conns in chargepoints
+        ],
+    )
 
 
 @pytest.mark.django_db(transaction=True)
@@ -28,7 +43,7 @@ class TestSyncChargers:
             "conn_1", connector_type=Connector.ConnectorTypes.TYPE_2
         )
 
-        sync_chargers(data_source, [(site, [(cp, [conn])])])
+        sync_chargers(data_source, [site_item(site, [(cp, [conn])])])
 
         # Verify site created
         assert ChargingSite.objects.count() == 1
@@ -57,7 +72,7 @@ class TestSyncChargers:
             site = create_site(f"site_{i}", name=f"Site {i}")
             cp = create_chargepoint(f"cp_{i}")
             conn = create_connector(f"conn_{i}")
-            sites_data.append((site, [(cp, [conn])]))
+            sites_data.append(site_item(site, [(cp, [conn])]))
 
         sync_chargers(data_source, sites_data)
 
@@ -73,13 +88,15 @@ class TestSyncChargers:
         site = create_site("site_1", name="Original Name")
         cp = create_chargepoint("cp_1")
         conn = create_connector("conn_1")
-        sync_chargers(data_source, [(site, [(cp, [conn])])])
+        sync_chargers(data_source, [site_item(site, [(cp, [conn])])])
 
         # Update site
         updated_site = create_site("site_1", name="Updated Name", city="Berlin")
         updated_cp = create_chargepoint("cp_1")
         updated_conn = create_connector("conn_1", max_power=50000.0)
-        sync_chargers(data_source, [(updated_site, [(updated_cp, [updated_conn])])])
+        sync_chargers(
+            data_source, [site_item(updated_site, [(updated_cp, [updated_conn])])]
+        )
 
         # Verify update (should still be 1 site)
         assert ChargingSite.objects.count() == 1
@@ -109,8 +126,8 @@ class TestSyncChargers:
         sync_chargers(
             data_source,
             [
-                (site1, [(cp1, [conn1])]),
-                (site2, [(cp2, [conn2])]),
+                site_item(site1, [(cp1, [conn1])]),
+                site_item(site2, [(cp2, [conn2])]),
             ],
         )
         assert ChargingSite.objects.count() == 2
@@ -119,7 +136,9 @@ class TestSyncChargers:
         updated_site1 = create_site("site_1")
         updated_cp1 = create_chargepoint("cp_1")
         updated_conn1 = create_connector("conn_1")
-        sync_chargers(data_source, [(updated_site1, [(updated_cp1, [updated_conn1])])])
+        sync_chargers(
+            data_source, [site_item(updated_site1, [(updated_cp1, [updated_conn1])])]
+        )
 
         assert ChargingSite.objects.count() == 1
         assert ChargingSite.objects.filter(id_from_source="site_1").exists()
@@ -136,14 +155,16 @@ class TestSyncChargers:
         conn1 = create_connector("conn_1")
         conn2 = create_connector("conn_2")
 
-        sync_chargers(data_source, [(site, [(cp1, [conn1]), (cp2, [conn2])])])
+        sync_chargers(data_source, [site_item(site, [(cp1, [conn1]), (cp2, [conn2])])])
         assert Chargepoint.objects.count() == 2
 
         # Sync with only cp_1, cp_2 should be deleted
         updated_site = create_site("site_1")
         updated_cp1 = create_chargepoint("cp_1")
         updated_conn1 = create_connector("conn_1")
-        sync_chargers(data_source, [(updated_site, [(updated_cp1, [updated_conn1])])])
+        sync_chargers(
+            data_source, [site_item(updated_site, [(updated_cp1, [updated_conn1])])]
+        )
 
         assert Chargepoint.objects.count() == 1
         saved_site = ChargingSite.objects.get(id_from_source="site_1")
@@ -164,14 +185,16 @@ class TestSyncChargers:
         conn1 = create_connector("conn_1")
         conn2 = create_connector("conn_2")
 
-        sync_chargers(data_source, [(site, [(cp, [conn1, conn2])])])
+        sync_chargers(data_source, [site_item(site, [(cp, [conn1, conn2])])])
         assert Connector.objects.count() == 2
 
         # Sync with only conn_1, conn_2 should be deleted
         updated_site = create_site("site_1")
         updated_cp = create_chargepoint("cp_1")
         updated_conn1 = create_connector("conn_1")
-        sync_chargers(data_source, [(updated_site, [(updated_cp, [updated_conn1])])])
+        sync_chargers(
+            data_source, [site_item(updated_site, [(updated_cp, [updated_conn1])])]
+        )
 
         assert Connector.objects.count() == 1
         saved_cp = Chargepoint.objects.get(id_from_source="cp_1")
@@ -195,7 +218,8 @@ class TestSyncChargers:
         conn3 = create_connector("conn_3")
 
         sync_chargers(
-            data_source, [(site, [(cp1, [conn1]), (cp2, [conn2]), (cp3, [conn3])])]
+            data_source,
+            [site_item(site, [(cp1, [conn1]), (cp2, [conn2]), (cp3, [conn3])])],
         )
 
         assert ChargingSite.objects.count() == 1
@@ -218,7 +242,7 @@ class TestSyncChargers:
             "conn_3", connector_type=Connector.ConnectorTypes.CHADEMO
         )
 
-        sync_chargers(data_source, [(site, [(cp, [conn1, conn2, conn3])])])
+        sync_chargers(data_source, [site_item(site, [(cp, [conn1, conn2, conn3])])])
 
         assert Connector.objects.count() == 3
         saved_cp = Chargepoint.objects.get(id_from_source="cp_1")
@@ -235,7 +259,7 @@ class TestSyncChargers:
             None, connector_type=Connector.ConnectorTypes.CCS_TYPE_2
         )
 
-        sync_chargers(data_source, [(site, [(cp, [conn1, conn2])])])
+        sync_chargers(data_source, [site_item(site, [(cp, [conn1, conn2])])])
 
         assert Connector.objects.count() == 2
         saved_cp = Chargepoint.objects.get(id_from_source="cp_1")
@@ -255,7 +279,7 @@ class TestSyncChargers:
         )
 
         # First sync
-        sync_chargers(data_source, [(site, [(cp, [conn1, conn2])])])
+        sync_chargers(data_source, [site_item(site, [(cp, [conn1, conn2])])])
         first_connector_ids = set(Connector.objects.values_list("id", flat=True))
 
         # Second sync with same data
@@ -269,7 +293,7 @@ class TestSyncChargers:
         )
         sync_chargers(
             data_source,
-            [(updated_site, [(updated_cp, [updated_conn1, updated_conn2])])],
+            [site_item(updated_site, [(updated_cp, [updated_conn1, updated_conn2])])],
         )
 
         # Connector IDs should be the same (not recreated)
@@ -286,7 +310,7 @@ class TestSyncChargers:
         conn1 = create_connector(None, connector_type=Connector.ConnectorTypes.TYPE_2)
 
         # First sync
-        sync_chargers(data_source, [(site, [(cp, [conn1])])])
+        sync_chargers(data_source, [site_item(site, [(cp, [conn1])])])
         assert Connector.objects.count() == 1
 
         # Second sync with different connector
@@ -295,7 +319,9 @@ class TestSyncChargers:
         updated_conn1 = create_connector(
             None, connector_type=Connector.ConnectorTypes.CCS_TYPE_2
         )
-        sync_chargers(data_source, [(updated_site, [(updated_cp, [updated_conn1])])])
+        sync_chargers(
+            data_source, [site_item(updated_site, [(updated_cp, [updated_conn1])])]
+        )
 
         # Should still be 1 connector but recreated
         assert Connector.objects.count() == 1
@@ -312,7 +338,7 @@ class TestSyncChargers:
             site = create_site(f"site_{i}", name=f"Site {i}")
             cp = create_chargepoint(f"cp_{i}")
             conn = create_connector(f"conn_{i}")
-            sites_data.append((site, [(cp, [conn])]))
+            sites_data.append(site_item(site, [(cp, [conn])]))
 
         sync_chargers(data_source, sites_data)
 
@@ -327,12 +353,12 @@ class TestSyncChargers:
         site1 = create_site("site_1")
         cp1 = create_chargepoint("cp_1")
         conn1 = create_connector("conn_1")
-        sync_chargers("source_1", [(site1, [(cp1, [conn1])])])
+        sync_chargers("source_1", [site_item(site1, [(cp1, [conn1])])])
 
         site2 = create_site("site_1")  # Same ID but different source
         cp2 = create_chargepoint("cp_1")
         conn2 = create_connector("conn_1")
-        sync_chargers("source_2", [(site2, [(cp2, [conn2])])])
+        sync_chargers("source_2", [site_item(site2, [(cp2, [conn2])])])
 
         assert ChargingSite.objects.count() == 2
         assert ChargingSite.objects.filter(data_source="source_1").count() == 1

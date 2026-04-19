@@ -9,23 +9,26 @@ from django.contrib.gis.geos import Point
 from django.utils import timezone
 
 from evmap_backend.chargers.models import Chargepoint, ChargingSite
+from evmap_backend.data_sources.sync import RealtimeStatusItem, sync_statuses
 from evmap_backend.realtime.models import RealtimeStatus
-from evmap_backend.sync import sync_statuses
 
 STATIC_SOURCE = "test_static_source"
 REALTIME_SOURCE = "test_realtime_source"
 
 
-def make_status(chargepoint_id_from_source, status=None, timestamp=None):
-    """Helper function to create RealtimeStatus instances."""
+def make_status_item(site_id, chargepoint_id_from_source, status=None, timestamp=None):
+    """Helper function to create RealtimeStatusItem instances."""
     if status is None:
         status = RealtimeStatus.Status.AVAILABLE
     if timestamp is None:
         timestamp = timezone.now()
-    return RealtimeStatus(
-        chargepoint=Chargepoint(id_from_source=chargepoint_id_from_source),
-        status=status,
-        timestamp=timestamp,
+    return RealtimeStatusItem(
+        site_id_from_source=site_id,
+        chargepoint_id_from_source=chargepoint_id_from_source,
+        status=RealtimeStatus(
+            status=status,
+            timestamp=timestamp,
+        ),
     )
 
 
@@ -57,9 +60,14 @@ class TestSyncStatuses:
     def test_sync_create_single_status(self):
         """Test creating a single status for a chargepoint."""
         create_site_with_chargepoints(STATIC_SOURCE, "site_1", ["cp_1"])
-        status = make_status("cp_1", RealtimeStatus.Status.AVAILABLE)
 
-        sync_statuses(REALTIME_SOURCE, STATIC_SOURCE, [("site_1", status)])
+        sync_statuses(
+            REALTIME_SOURCE,
+            STATIC_SOURCE,
+            [
+                make_status_item("site_1", "cp_1", RealtimeStatus.Status.AVAILABLE),
+            ],
+        )
 
         assert RealtimeStatus.objects.count() == 1
         saved_status = RealtimeStatus.objects.first()
@@ -71,9 +79,9 @@ class TestSyncStatuses:
         create_site_with_chargepoints(STATIC_SOURCE, "site_1", ["cp_1", "cp_2", "cp_3"])
 
         statuses_data = [
-            ("site_1", make_status("cp_1", RealtimeStatus.Status.AVAILABLE)),
-            ("site_1", make_status("cp_2", RealtimeStatus.Status.CHARGING)),
-            ("site_1", make_status("cp_3", RealtimeStatus.Status.OUTOFORDER)),
+            make_status_item("site_1", "cp_1", RealtimeStatus.Status.AVAILABLE),
+            make_status_item("site_1", "cp_2", RealtimeStatus.Status.CHARGING),
+            make_status_item("site_1", "cp_3", RealtimeStatus.Status.OUTOFORDER),
         ]
 
         sync_statuses(REALTIME_SOURCE, STATIC_SOURCE, statuses_data)
@@ -88,13 +96,27 @@ class TestSyncStatuses:
         new_time = timezone.now()
 
         # Create initial status
-        status1 = make_status("cp_1", RealtimeStatus.Status.AVAILABLE, old_time)
-        sync_statuses(REALTIME_SOURCE, STATIC_SOURCE, [("site_1", status1)])
+        sync_statuses(
+            REALTIME_SOURCE,
+            STATIC_SOURCE,
+            [
+                make_status_item(
+                    "site_1", "cp_1", RealtimeStatus.Status.AVAILABLE, old_time
+                ),
+            ],
+        )
         assert RealtimeStatus.objects.count() == 1
 
         # Create newer status
-        status2 = make_status("cp_1", RealtimeStatus.Status.CHARGING, new_time)
-        sync_statuses(REALTIME_SOURCE, STATIC_SOURCE, [("site_1", status2)])
+        sync_statuses(
+            REALTIME_SOURCE,
+            STATIC_SOURCE,
+            [
+                make_status_item(
+                    "site_1", "cp_1", RealtimeStatus.Status.CHARGING, new_time
+                ),
+            ],
+        )
 
         assert RealtimeStatus.objects.count() == 2
         latest_status = RealtimeStatus.objects.latest()
@@ -108,13 +130,27 @@ class TestSyncStatuses:
         new_time = timezone.now()
 
         # Create initial status with newer timestamp
-        status1 = make_status("cp_1", RealtimeStatus.Status.AVAILABLE, new_time)
-        sync_statuses(REALTIME_SOURCE, STATIC_SOURCE, [("site_1", status1)])
+        sync_statuses(
+            REALTIME_SOURCE,
+            STATIC_SOURCE,
+            [
+                make_status_item(
+                    "site_1", "cp_1", RealtimeStatus.Status.AVAILABLE, new_time
+                ),
+            ],
+        )
         assert RealtimeStatus.objects.count() == 1
 
         # Try to create older status - should be ignored
-        status2 = make_status("cp_1", RealtimeStatus.Status.CHARGING, old_time)
-        sync_statuses(REALTIME_SOURCE, STATIC_SOURCE, [("site_1", status2)])
+        sync_statuses(
+            REALTIME_SOURCE,
+            STATIC_SOURCE,
+            [
+                make_status_item(
+                    "site_1", "cp_1", RealtimeStatus.Status.CHARGING, old_time
+                ),
+            ],
+        )
 
         # Should still be 1 status
         assert RealtimeStatus.objects.count() == 1
@@ -125,9 +161,15 @@ class TestSyncStatuses:
         """Test that status for non-existent chargepoint is ignored."""
         create_site_with_chargepoints(STATIC_SOURCE, "site_1", ["cp_1"])
 
-        # Try to create status for non-existent chargepoint
-        status = make_status("cp_nonexistent", RealtimeStatus.Status.AVAILABLE)
-        sync_statuses(REALTIME_SOURCE, STATIC_SOURCE, [("site_1", status)])
+        sync_statuses(
+            REALTIME_SOURCE,
+            STATIC_SOURCE,
+            [
+                make_status_item(
+                    "site_1", "cp_nonexistent", RealtimeStatus.Status.AVAILABLE
+                ),
+            ],
+        )
 
         assert RealtimeStatus.objects.count() == 0
 
@@ -135,9 +177,15 @@ class TestSyncStatuses:
         """Test that status for non-existent site is ignored."""
         create_site_with_chargepoints(STATIC_SOURCE, "site_1", ["cp_1"])
 
-        # Try to create status for non-existent site
-        status = make_status("cp_1", RealtimeStatus.Status.AVAILABLE)
-        sync_statuses(REALTIME_SOURCE, STATIC_SOURCE, [("site_nonexistent", status)])
+        sync_statuses(
+            REALTIME_SOURCE,
+            STATIC_SOURCE,
+            [
+                make_status_item(
+                    "site_nonexistent", "cp_1", RealtimeStatus.Status.AVAILABLE
+                ),
+            ],
+        )
 
         assert RealtimeStatus.objects.count() == 0
 
@@ -147,8 +195,8 @@ class TestSyncStatuses:
         create_site_with_chargepoints(STATIC_SOURCE, "site_2", ["cp_2"])
 
         statuses_data = [
-            ("site_1", make_status("cp_1", RealtimeStatus.Status.AVAILABLE)),
-            ("site_2", make_status("cp_2", RealtimeStatus.Status.CHARGING)),
+            make_status_item("site_1", "cp_1", RealtimeStatus.Status.AVAILABLE),
+            make_status_item("site_2", "cp_2", RealtimeStatus.Status.CHARGING),
         ]
 
         sync_statuses(REALTIME_SOURCE, STATIC_SOURCE, statuses_data)
@@ -160,12 +208,22 @@ class TestSyncStatuses:
         create_site_with_chargepoints(STATIC_SOURCE, "site_1", ["cp_1"])
 
         # Sync status from source 1
-        status1 = make_status("cp_1", RealtimeStatus.Status.AVAILABLE)
-        sync_statuses("realtime_source_1", STATIC_SOURCE, [("site_1", status1)])
+        sync_statuses(
+            "realtime_source_1",
+            STATIC_SOURCE,
+            [
+                make_status_item("site_1", "cp_1", RealtimeStatus.Status.AVAILABLE),
+            ],
+        )
 
         # Sync status from source 2
-        status2 = make_status("cp_1", RealtimeStatus.Status.CHARGING)
-        sync_statuses("realtime_source_2", STATIC_SOURCE, [("site_1", status2)])
+        sync_statuses(
+            "realtime_source_2",
+            STATIC_SOURCE,
+            [
+                make_status_item("site_1", "cp_1", RealtimeStatus.Status.CHARGING),
+            ],
+        )
 
         assert RealtimeStatus.objects.count() == 2
         assert (
@@ -183,10 +241,102 @@ class TestSyncStatuses:
 
         # Create statuses for all chargepoints
         statuses_data = [
-            (f"site_{i}", make_status(f"cp_{i}", RealtimeStatus.Status.AVAILABLE))
+            make_status_item(f"site_{i}", f"cp_{i}", RealtimeStatus.Status.AVAILABLE)
             for i in range(150)
         ]
 
         sync_statuses(REALTIME_SOURCE, STATIC_SOURCE, statuses_data)
 
         assert RealtimeStatus.objects.count() == 150
+
+    def test_sync_status_without_site_id(self):
+        """Test creating a status without site_id_from_source when chargepoint ID is unique."""
+        create_site_with_chargepoints(STATIC_SOURCE, "site_1", ["cp_1"])
+
+        sync_statuses(
+            REALTIME_SOURCE,
+            STATIC_SOURCE,
+            [
+                RealtimeStatusItem(
+                    chargepoint_id_from_source="cp_1",
+                    status=RealtimeStatus(
+                        status=RealtimeStatus.Status.AVAILABLE,
+                        timestamp=timezone.now(),
+                    ),
+                ),
+            ],
+        )
+
+        assert RealtimeStatus.objects.count() == 1
+        saved_status = RealtimeStatus.objects.first()
+        assert saved_status.status == RealtimeStatus.Status.AVAILABLE
+        assert saved_status.data_source == REALTIME_SOURCE
+
+    def test_sync_status_without_site_id_multiple(self):
+        """Test creating multiple statuses without site_id_from_source."""
+        create_site_with_chargepoints(STATIC_SOURCE, "site_1", ["cp_1", "cp_2"])
+        create_site_with_chargepoints(STATIC_SOURCE, "site_2", ["cp_3"])
+
+        statuses_data = [
+            RealtimeStatusItem(
+                chargepoint_id_from_source="cp_1",
+                status=RealtimeStatus(
+                    status=RealtimeStatus.Status.AVAILABLE, timestamp=timezone.now()
+                ),
+            ),
+            RealtimeStatusItem(
+                chargepoint_id_from_source="cp_2",
+                status=RealtimeStatus(
+                    status=RealtimeStatus.Status.CHARGING, timestamp=timezone.now()
+                ),
+            ),
+            RealtimeStatusItem(
+                chargepoint_id_from_source="cp_3",
+                status=RealtimeStatus(
+                    status=RealtimeStatus.Status.OUTOFORDER, timestamp=timezone.now()
+                ),
+            ),
+        ]
+
+        sync_statuses(REALTIME_SOURCE, STATIC_SOURCE, statuses_data)
+
+        assert RealtimeStatus.objects.count() == 3
+
+    def test_sync_status_without_site_id_nonexistent_chargepoint(self):
+        """Test that status without site_id for non-existent chargepoint is ignored."""
+        create_site_with_chargepoints(STATIC_SOURCE, "site_1", ["cp_1"])
+
+        sync_statuses(
+            REALTIME_SOURCE,
+            STATIC_SOURCE,
+            [
+                RealtimeStatusItem(
+                    chargepoint_id_from_source="cp_nonexistent",
+                    status=RealtimeStatus(
+                        status=RealtimeStatus.Status.AVAILABLE, timestamp=timezone.now()
+                    ),
+                ),
+            ],
+        )
+
+        assert RealtimeStatus.objects.count() == 0
+
+    def test_sync_status_without_site_id_duplicate_cp_raises(self):
+        """Test that status without site_id raises when chargepoint ID is not unique across sites."""
+        create_site_with_chargepoints(STATIC_SOURCE, "site_1", ["cp_shared"])
+        create_site_with_chargepoints(STATIC_SOURCE, "site_2", ["cp_shared"])
+
+        with pytest.raises(ValueError, match="not unique"):
+            sync_statuses(
+                REALTIME_SOURCE,
+                STATIC_SOURCE,
+                [
+                    RealtimeStatusItem(
+                        chargepoint_id_from_source="cp_shared",
+                        status=RealtimeStatus(
+                            status=RealtimeStatus.Status.AVAILABLE,
+                            timestamp=timezone.now(),
+                        ),
+                    ),
+                ],
+            )

@@ -24,6 +24,11 @@ from opening_hours import OpeningHours
 
 from evmap_backend.chargers.fields import normalize_evseid, validate_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
+from evmap_backend.data_sources.sync import (
+    ChargepointItem,
+    ChargingSiteItem,
+    RealtimeStatusItem,
+)
 from evmap_backend.helpers.database import none_to_blank
 from evmap_backend.realtime.models import RealtimeStatus
 
@@ -265,7 +270,7 @@ def parse_oicp_data(
     data_source: str,
     license_attribution: str,
     license_attribution_link: str,
-) -> Iterable[Tuple[ChargingSite, List[Tuple[Chargepoint, List[Connector]]]]]:
+) -> Iterable[ChargingSiteItem]:
     """
     Parse OICP static data and yield (ChargingSite, [(Chargepoint, [Connector])]) tuples.
 
@@ -347,9 +352,9 @@ def parse_oicp_data(
             )
 
             connectors = _parse_connectors(record)
-            chargepoints.append((chargepoint, connectors))
+            chargepoints.append(ChargepointItem(chargepoint, connectors))
 
-        yield site, chargepoints
+        yield ChargingSiteItem(site, chargepoints)
 
 
 def parse_oicp_status(
@@ -357,7 +362,7 @@ def parse_oicp_status(
     data_source: str,
     license_attribution: str,
     license_attribution_link: str,
-) -> Iterable[Tuple[str, RealtimeStatus]]:
+) -> Iterable[RealtimeStatusItem]:
     """
     Parse OICP status data and yield (site_id, RealtimeStatus) tuples.
 
@@ -368,36 +373,23 @@ def parse_oicp_status(
     """
     now = timezone.now()
 
-    # First, collect all EvseIDs and their statuses
-    evse_statuses: Dict[str, str] = {}
     for status_entry in status_data.get("EVSEStatuses", []):
         for record in status_entry.get("EVSEStatusRecord", []):
             evse_id = record.get("EvseID", "")
+            if not evse_id:
+                continue
+
             evse_status = record.get("EVSEStatus", "Unknown")
-            if evse_id:
-                evse_statuses[evse_id] = evse_status
+            status = STATUS_MAP.get(evse_status, RealtimeStatus.Status.UNKNOWN)
 
-    chargepoints = Chargepoint.objects.select_related("site").filter(
-        site__data_source="opendata_swiss",
-        id_from_source__in=list(evse_statuses.keys()),
-    )
+            realtime_status = RealtimeStatus(
+                status=status,
+                timestamp=now,
+                data_source=data_source,
+                license_attribution=license_attribution,
+                license_attribution_link=license_attribution_link,
+            )
 
-    cp_map = {cp.id_from_source: cp for cp in chargepoints}
-
-    for evse_id, evse_status in evse_statuses.items():
-        status = STATUS_MAP.get(evse_status, RealtimeStatus.Status.UNKNOWN)
-        cp = cp_map.get(evse_id)
-        if cp is None:
-            logger.debug(f"Chargepoint not found for EvseID: {evse_id}")
-            continue
-
-        realtime_status = RealtimeStatus(
-            chargepoint=Chargepoint(id_from_source=evse_id),
-            status=status,
-            timestamp=now,
-            data_source=data_source,
-            license_attribution=license_attribution,
-            license_attribution_link=license_attribution_link,
-        )
-
-        yield cp.site.id_from_source, realtime_status
+            yield RealtimeStatusItem(
+                chargepoint_id_from_source=evse_id, status=realtime_status
+            )
