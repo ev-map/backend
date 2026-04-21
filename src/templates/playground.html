@@ -90,7 +90,7 @@
 
         const clustersToDelete = new Set(clusterMarkers.keys());
         json.clusters.forEach((cluster) => {
-            if (!clusterMarkers.has(cluster.ids)) {
+            if (!clusterMarkers.has(cluster.center)) {
                 const el = document.createElement('div');
                 el.className = 'cluster-marker';
                 const size = Math.max(32, Math.min(56, 32 + Math.log10(cluster.count) * 12));
@@ -102,9 +102,9 @@
                 const marker = new maplibregl.Marker({element: el})
                     .setLngLat(cluster.center)
                     .addTo(map);
-                clusterMarkers.set(cluster.ids, marker);
+                clusterMarkers.set(cluster.center, marker);
             }
-            clustersToDelete.delete(cluster.ids);
+            clustersToDelete.delete(cluster.center);
         })
         clustersToDelete.forEach((id) => {
             const marker = clusterMarkers.get(id);

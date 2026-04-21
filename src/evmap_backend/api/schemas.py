@@ -33,7 +33,7 @@ class ChargingSiteSchema(Schema):
 class ClusterSchema(Schema):
     center: tuple[float, float]
     count: int
-    ids: list[int]
+    ids: Optional[list[int]]
     max_power: int
 
 

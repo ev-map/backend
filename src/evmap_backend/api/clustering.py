@@ -5,7 +5,7 @@ from django.contrib.gis.db.models.functions import Centroid, SnapToGrid, Transfo
 from django.contrib.gis.gdal import CoordTransform, SpatialReference
 from django.contrib.gis.geos import Polygon
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.db.models import Count, Max, QuerySet
+from django.db.models import Case, Count, Max, QuerySet, When
 
 from evmap_backend.chargers.models import ChargingSite
 from evmap_backend.helpers.geo import MERCATOR, WGS84
@@ -57,7 +57,7 @@ def cluster_sites(
         snapped.values("snapped").annotate(
             count=Count("id", distinct=True),
             center=Transform(Centroid(Collect("location_mercator")), WGS84),
-            ids=ArrayAgg("id"),
+            ids=Case(When(count__gt=10, then=None), default=ArrayAgg("id")),
             max_power=Max("chargepoints__connectors__max_power"),
         )
     )
