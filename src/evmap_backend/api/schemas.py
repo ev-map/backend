@@ -1,9 +1,7 @@
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
-from django.db.models import Max
+from django.db.models import Max, QuerySet
 from ninja import Schema
-
-from evmap_backend.chargers.models import ChargingSite
 
 
 class ChargingSiteSchema(Schema):
@@ -16,19 +14,20 @@ class ChargingSiteSchema(Schema):
     data_source: str
 
     @classmethod
-    def build(cls, obj: ChargingSite):
-        return cls(
-            id=obj.id,
-            network=obj.network.name if obj.network else None,
-            location=(obj.location.x, obj.location.y),
-            name=obj.name,
-            operator=obj.operator,
-            max_power=obj.chargepoints.aggregate(
-                max_power=Max("connectors__max_power")
-            )["max_power"]
-            or 0,
-            data_source=obj.data_source,
-        )
+    def build_from_queryset(cls, qs: QuerySet) -> List["ChargingSiteSchema"]:
+        qs = qs.annotate(max_power=Max("chargepoints__connectors__max_power"))
+        return [
+            cls(
+                id=obj.id,
+                network=obj.network.name if obj.network else None,
+                location=(obj.location.x, obj.location.y),
+                name=obj.name,
+                operator=obj.operator,
+                max_power=obj.max_power or 0,
+                data_source=obj.data_source,
+            )
+            for obj in qs
+        ]
 
 
 class ClusterSchema(Schema):

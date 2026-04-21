@@ -29,7 +29,8 @@ def sites(
         region = Polygon.from_bbox((sw_lng, sw_lat, ne_lng, ne_lat))
         queryset = ChargingSite.objects.filter(location__coveredby=region)
         clusters = None
+
     return ChargingSitesSchema(
         clusters=clusters,
-        sites=[ChargingSiteSchema.build(obj) for obj in queryset[:1000]],
+        sites=ChargingSiteSchema.build_from_queryset(queryset[:1000]),
     )
