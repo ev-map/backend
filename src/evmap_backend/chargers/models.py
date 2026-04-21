@@ -10,6 +10,7 @@ from evmap_backend.chargers.fields import (
     EVSEIDField,
     EVSEIDType,
     EVSEOperatorIDField,
+    GeneratedSpatialField,
     OpeningHoursField,
     format_evse_operator_id,
     format_evseid,
@@ -71,7 +72,7 @@ class ChargingSite(models.Model):
     id_from_source = models.CharField(max_length=255)
     name = models.TextField()
     location = models.PointField(geography=True)
-    location_mercator = models.GeneratedField(
+    location_mercator = GeneratedSpatialField(
         expression=Transform(Cast("location", GeometryField(srid=WGS84)), MERCATOR),
         output_field=models.PointField(srid=MERCATOR),
         db_persist=True,

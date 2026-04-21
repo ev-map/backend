@@ -4,8 +4,10 @@ from functools import partial
 from typing import Optional
 
 import opening_hours
+from django.contrib.gis.db.models import GeometryField
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import GeneratedField
 from django_countries.data import COUNTRIES
 
 
@@ -124,3 +126,9 @@ class EVSEOperatorIDField(models.CharField):
         if value is None:
             return value
         return normalize_evseid(value)
+
+
+class GeneratedSpatialField(GeneratedField, GeometryField):
+    def __init__(self, *args, spatial_index=True, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.spatial_index = spatial_index
