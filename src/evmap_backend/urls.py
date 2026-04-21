@@ -18,6 +18,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
+from evmap_backend.data_sources.api import api as data_sources_api
 from evmap_backend.data_sources.nobil.api import api as nobil_api
 from evmap_backend.data_sources.ocpi.api import api as ocpi_api
 from evmap_backend.data_sources.openstreetmap.api import api as osm_api
@@ -35,6 +36,7 @@ urlpatterns = [
     path("osm/api/", osm_api.urls),
     path("ocpi/", ocpi_api.urls),
     path("api/", main_api.urls),
+    path("api/", data_sources_api.urls),
     path("playground/", views.playground),
 ]
 
