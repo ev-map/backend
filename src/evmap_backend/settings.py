@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
+from django.conf.locale.en import formats as en_formats
 from django.utils.crypto import get_random_string
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -173,6 +174,10 @@ TIME_ZONE = "Europe/Berlin"
 USE_I18N = True
 
 USE_TZ = True
+
+en_formats.DATETIME_FORMAT = "N j, Y, H:i"
+en_formats.TIME_FORMAT = "H:i"
+en_formats.SHORT_DATETIME_FORMAT = "m/d/Y H:i"
 
 
 # Static files (CSS, JavaScript, Images)
