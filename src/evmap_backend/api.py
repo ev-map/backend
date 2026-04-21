@@ -1,10 +1,12 @@
 import gzip
 import logging
+import math
 from datetime import timedelta
 from typing import List, Optional, Tuple
 
 from django.contrib.gis.db.models import Collect
 from django.contrib.gis.db.models.functions import Centroid, SnapToGrid, Transform
+from django.contrib.gis.gdal import CoordTransform, SpatialReference
 from django.contrib.gis.geos import Polygon
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import Count, Max
@@ -88,9 +90,34 @@ def sites(
     cluster: bool = False,
     cluster_radius: float = None,
 ):
-    region = Polygon.from_bbox((sw_lng, sw_lat, ne_lng, ne_lat))
-    queryset = ChargingSite.objects.filter(location__coveredby=region)
     if cluster:
+        # Transform bbox to Web Mercator and expand to align with clustering grid
+        region = Polygon.from_bbox((sw_lng, sw_lat, ne_lng, ne_lat))
+        region.srid = 4326
+        region.transform(CoordTransform(SpatialReference(4326), SpatialReference(3857)))
+
+        # Expand bbox to grid cell edges (half-radius offset from grid centers)
+        half = cluster_radius / 2
+
+        def snap_lo(v):
+            return (math.floor((v + half) / cluster_radius) - 0.5) * cluster_radius
+
+        def snap_hi(v):
+            return (math.ceil((v - half) / cluster_radius) + 0.5) * cluster_radius
+
+        min_x, min_y, max_x, max_y = region.extent
+        region = Polygon.from_bbox(
+            (
+                snap_lo(min_x),
+                snap_lo(min_y),
+                snap_hi(max_x),
+                snap_hi(max_y),
+            )
+        )
+        region.srid = 3857
+
+        queryset = ChargingSite.objects.filter(location_mercator__coveredby=region)
+
         snapped = queryset.annotate(
             snapped=SnapToGrid("location_mercator", cluster_radius)
         )
@@ -115,6 +142,8 @@ def sites(
             "network"
         )
     else:
+        region = Polygon.from_bbox((sw_lng, sw_lat, ne_lng, ne_lat))
+        queryset = ChargingSite.objects.filter(location__coveredby=region)
         clusters = None
     return ChargingSitesSchema(
         clusters=clusters,
