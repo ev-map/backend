@@ -9,6 +9,7 @@ from django.contrib.gis.geos import GEOSGeometry, MultiPolygon
 from django.core.management import BaseCommand
 
 from evmap_backend.countries.models import Country
+from evmap_backend.helpers.geo import WGS84
 
 
 class Command(BaseCommand):
@@ -35,9 +36,9 @@ class Command(BaseCommand):
 
                 count = 0
                 for features in features_by_country.values():
-                    geom = GEOSGeometry(features[0].geom.wkt, srid=4326)
+                    geom = GEOSGeometry(features[0].geom.wkt, srid=WGS84)
                     for feature in features[1:]:
-                        geom = geom.union(GEOSGeometry(feature.geom.wkt, srid=4326))
+                        geom = geom.union(GEOSGeometry(feature.geom.wkt, srid=WGS84))
 
                     if geom.geom_type == "Polygon":
                         geom = MultiPolygon(geom)

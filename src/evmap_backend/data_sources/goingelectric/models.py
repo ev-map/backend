@@ -6,6 +6,7 @@ from django.db import models
 from django.db.models.functions import Cast
 
 from evmap_backend.chargers.models import Connector
+from evmap_backend.helpers.geo import MERCATOR, WGS84
 
 
 class GoingElectricNetwork(models.Model):
@@ -27,10 +28,10 @@ class GoingElectricChargeLocation(models.Model):
 
     id = models.BigIntegerField(primary_key=True)
     name = models.CharField(max_length=255, blank=True)
-    coordinates = PointField(srid=4326, geography=True)
+    coordinates = PointField(srid=WGS84, geography=True)
     coordinates_mercator = models.GeneratedField(
-        expression=Transform(Cast("coordinates", GeometryField(srid=4326)), 3857),
-        output_field=PointField(srid=3857),
+        expression=Transform(Cast("coordinates", GeometryField(srid=WGS84)), MERCATOR),
+        output_field=PointField(srid=MERCATOR),
         db_persist=True,
     )
     address_city = models.CharField(max_length=255, blank=True)

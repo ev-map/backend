@@ -18,6 +18,7 @@ from evmap_backend.data_sources.goingelectric.models import (
     GoingElectricChargepoint,
     GoingElectricNetwork,
 )
+from evmap_backend.helpers.geo import WGS84
 
 
 @pytest.fixture
@@ -42,14 +43,14 @@ def mapped_ge_network(ge_network, charger_network):
 @pytest.fixture
 def base_location():
     """Base location point for tests (Berlin)."""
-    return Point(13.4050, 52.5200, srid=4326)
+    return Point(13.4050, 52.5200, srid=WGS84)
 
 
 def _offset_point(base: Point, offset_m: float) -> Point:
     """Create a point offset from base by approximately offset_m meters east."""
     # At ~52° latitude, 1 degree longitude ≈ 67km
     offset_deg = offset_m / 67000.0
-    return Point(base.x + offset_deg, base.y, srid=4326)
+    return Point(base.x + offset_deg, base.y, srid=WGS84)
 
 
 def _create_ge_location(ge_id, coordinates, network=None, name="Test GE Location"):

@@ -14,6 +14,7 @@ from evmap_backend.chargers.fields import (
     format_evse_operator_id,
     format_evseid,
 )
+from evmap_backend.helpers.geo import MERCATOR, WGS84
 
 
 class Network(models.Model):
@@ -71,8 +72,8 @@ class ChargingSite(models.Model):
     name = models.TextField()
     location = models.PointField(geography=True)
     location_mercator = models.GeneratedField(
-        expression=Transform(Cast("location", GeometryField(srid=4326)), 3857),
-        output_field=models.PointField(srid=3857),
+        expression=Transform(Cast("location", GeometryField(srid=WGS84)), MERCATOR),
+        output_field=models.PointField(srid=MERCATOR),
         db_persist=True,
     )
 

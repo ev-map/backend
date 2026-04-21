@@ -67,8 +67,7 @@
         params.append("sw_lat", bounds.getSouth());
         params.append("ne_lng", bounds.getEast());
         params.append("ne_lat", bounds.getNorth());
-        params.append("cluster", true);
-        params.append("cluster_radius", 30000000 / Math.pow(2.0, Math.round(zoom) + 1));
+        params.append("cluster_grid", 30000000 / Math.pow(2.0, Math.round(zoom) + 1));
         const response = await fetch(`/api/sites?${params}`);
         const json = await response.json();
         const idsToDelete = new Set(markers.keys());
