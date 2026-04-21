@@ -504,6 +504,24 @@ class Datex2MobilithekVaylensRealtimeDataSource(BaseMobilithekDatex2DataSource):
     # https://mobilithek.info/offers/979364650281549824
 
 
+class Datex2MobilithekGlsMobilityDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_glsmobility"
+    subscription_id = os.environ.get("MOBILITHEK_GLSMOBILITY_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "GLS Mobility"
+    # https://mobilithek.info/offers/980559859451379712
+
+
+class Datex2MobilithekGlsMobilityRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_glsmobility_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_GLSMOBILITY_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_glsmobility"
+    license_attribution = "GLS Mobility"
+    # https://mobilithek.info/offers/980563757096464384
+
+
 class BaseSpiriiDatex2DataSource(BaseDatex2DataSource):
     parser = Datex2JsonParser()
 

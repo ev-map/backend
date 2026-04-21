@@ -246,16 +246,17 @@ class Datex2EnergyInfrastructureSite:
         site = ChargingSite(
             data_source=data_source,
             license_attribution=license_attribution,
-            license_attribution_link=(
-                license_attribution_link if license_attribution_link is not None else ""
-            ),
+            license_attribution_link=none_to_blank(license_attribution_link),
             id_from_source=self.id,
             name=name,
             location=Point(*self.location),
             network=network,
-            street=self.street if self.street is not None else "",
-            zipcode=self.zipcode if self.zipcode is not None else "",
-            city=self.city if self.city is not None else "",
+            operator=self.operator_name.first()
+            if self.operator_name is not None
+            else "",
+            street=none_to_blank(self.street),
+            zipcode=none_to_blank(self.zipcode),
+            city=none_to_blank(self.city),
             country=(
                 self.country
                 if self.country is not None

@@ -127,10 +127,9 @@ def parse_energy_infrastructure_site(
     )
     if location is not None and "locLocationExtensionG" in location:
         location_extension = location["locLocationExtensionG"]
-        facility_location = (
-            location_extension["facilityLocation"]
-            if "facilityLocation" in location_extension
-            else location_extension["FacilityLocation"]
+        facility_location = get_alternatives(
+            location_extension,
+            ["facilityLocation", "FacilityLocation", "AfirFacilityLocation"],
         )
         address = facility_location["address"]
         city = address["city"]
