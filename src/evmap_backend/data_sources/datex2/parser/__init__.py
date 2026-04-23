@@ -114,11 +114,12 @@ connector_mapping = {
 }
 
 
+EVSEID_SEPARATED_PATTERN = re.compile("^[A-Z]{2}\\*[A-Z0-9]{3}\\*E[A-Z0-9*]{1,31}$")
 UUID_PATTERN = re.compile(r"^[a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12}$", re.IGNORECASE)
 ECONTROL_PATTERN = re.compile(
     r"^[A-Z]{2}-[A-Z0-9]{3}-E[A-Z0-9]+-([A-Z]{2}\*[A-Z0-9]{3}\*E[A-Z0-9*]{1,31})-rp$"
 )  # custom station ID + EVSEID concatenated
-ALTERNATIVE_EVSEID_PATTERN = re.compile(r"^[A-Z]{2}\.[A-Z0-9]{3}\.[A-Z0-9\*]{1,32}$")
+ALTERNATIVE_EVSEID_PATTERN = re.compile(r"^[A-Z]{2}\.[A-Z0-9]{3}\.[A-Z0-9*]{1,32}$")
 
 
 @dataclass
@@ -170,6 +171,19 @@ class Datex2RefillPoint:
             except ValidationError:
                 pass
 
+        # name
+        if (
+            self.name is not None
+            and (name := self.name.first())
+            and EVSEID_SEPARATED_PATTERN.match(name)
+        ):
+            try:
+                id = normalize_evseid(name)
+                validate_evseid(id, EVSEIDType.EVSE)
+                return id
+            except ValidationError:
+                pass
+
         if not UUID_PATTERN.match(self.id):
             # some UUIDs may be valid EVSEIDs after normalization, we don't want those
             try:
@@ -180,9 +194,9 @@ class Datex2RefillPoint:
                 pass
 
         # name
-        if self.name is not None:
+        if self.name is not None and (name := self.name.first()):
             try:
-                id = normalize_evseid(self.name.first())
+                id = normalize_evseid(name)
                 validate_evseid(id, EVSEIDType.EVSE)
                 return id
             except ValidationError:
@@ -215,6 +229,7 @@ class Datex2EnergyInfrastructureSite:
         data_source: str,
         license_attribution: str,
         license_attribution_link: Optional[str],
+        default_country: Optional[str],
     ) -> ChargingSiteItem:
         evseid = self.refill_points[0].get_evseid() if self.refill_points else None
         if evseid:
@@ -259,8 +274,9 @@ class Datex2EnergyInfrastructureSite:
             city=none_to_blank(self.city),
             country=(
                 self.country
-                if self.country is not None
-                else Country.get_country_for_point(Point(*self.location)) or ""
+                or default_country
+                or Country.get_country_for_point(Point(*self.location))
+                or ""
             ),
         )
         chargepoints = [rp.convert() for rp in self.refill_points]

@@ -27,6 +27,7 @@ class BaseDatex2DataSource(DataSource):
     license_attribution_link: Optional[str] = None
     parser = Datex2XmlParser()
     default_timezone = None
+    default_country = None
 
     @abstractmethod
     def get_data(self) -> str:
@@ -60,7 +61,10 @@ class BaseDatex2DataSource(DataSource):
                 self.id,
                 (
                     site.convert(
-                        self.id, self.license_attribution, self.license_attribution_link
+                        self.id,
+                        self.license_attribution,
+                        self.license_attribution_link,
+                        self.default_country,
                     )
                     for site in sites_datex
                 ),
@@ -662,6 +666,7 @@ class Datex2SpainDataSource(BaseDatex2DataSource):
     license_attribution_link = (
         "https://nap.dgt.es/dataset/puntos-de-recarga-electrica-para-vehiculos"
     )
+    default_country = "ES"
     # https://nap.dgt.es/dataset/puntos-de-recarga-electrica-para-vehiculos
 
     def get_data(self) -> str:
