@@ -9,6 +9,7 @@ from django.db.models import Count
 
 from evmap_backend.chargers.fields import format_evse_operator_id, format_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
+from evmap_backend.forms.widgets import MapLibreWidget
 
 
 # Register your models here.
@@ -30,6 +31,7 @@ class ChargingSiteAdmin(DALFModelAdmin, GISModelAdmin):
         ("country", DALFChoicesField),
     ]
     inlines = [ChargepointInline]
+    gis_widget = MapLibreWidget
 
 
 class ChargepointAdmin(admin.ModelAdmin):

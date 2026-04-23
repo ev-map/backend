@@ -1,0 +1,8 @@
+<div id="{{ widget.attrs.id }}_div_map" class="dj_map_wrapper">
+    <div id="{{ widget.attrs.id }}_map" class="dj_map"></div>
+    <textarea id="{{ widget.attrs.id }}" class="vSerializedField required" cols="150" rows="10" name="{{ widget.name }}"
+              {% if not widget.attrs.display_raw %} hidden{% endif %}>{{ serialized }}</textarea>
+    {% with script_id=widget.attrs.id|add:"_mapwidget_options" %}
+    {{ widget.attrs|json_script:script_id }}
+    {% endwith %}
+</div>

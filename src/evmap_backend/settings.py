@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.gis",
+    "django.forms",
     "evmap_backend.chargers",
     "evmap_backend.realtime",
     "evmap_backend.data_sources",
@@ -124,6 +125,8 @@ TEMPLATES = [
         },
     },
 ]
+
+FORM_RENDERER = "django.forms.renderers.TemplatesSetting"
 
 WSGI_APPLICATION = "evmap_backend.wsgi.application"
 
