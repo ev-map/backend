@@ -16,6 +16,8 @@ from evmap_backend.data_sources.datex2.parser import (
 
 
 def get_alternatives(obj: dict, keys: Iterable[str]):
+    if obj is None:
+        return None
     for key in keys:
         if key in obj:
             return obj[key]

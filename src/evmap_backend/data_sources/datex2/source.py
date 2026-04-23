@@ -349,7 +349,7 @@ class Datex2MobilithekGridAndCoDataSource(BaseMobilithekDatex2DataSource):
     subscription_id = os.environ.get("MOBILITHEK_GRIDANDCO_STATIC_SUBSCRIPTION_ID")
     parser = Datex2JsonParser()
     license_attribution = "Grid & Co. GmbH"
-    # https://mobilithek.info/offers/963884581258190848
+    # https://mobilithek.info/offers/984104561811357696
 
 
 class Datex2MobilithekGridAndCoRealtimeDataSource(BaseMobilithekDatex2DataSource):
@@ -359,7 +359,7 @@ class Datex2MobilithekGridAndCoRealtimeDataSource(BaseMobilithekDatex2DataSource
     supported_data_types = [DataType.DYNAMIC]
     static_data_source = "mobilithek_gridandco"
     license_attribution = "Grid & Co. GmbH"
-    # https://mobilithek.info/offers/963780195509002240
+    # https://mobilithek.info/offers/984103903968534528
 
 
 class Datex2MobilithekEnioDataSource(BaseMobilithekDatex2DataSource):
