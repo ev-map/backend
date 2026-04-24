@@ -59,7 +59,13 @@
         }
     }
 
+    let controller = new AbortController();
+
     async function updateMap() {
+        // abort any pending requests
+        controller.abort();
+        controller = new AbortController();
+
         const bounds = map.getBounds();
         const zoom = map.getZoom();
         const params = new URLSearchParams();
@@ -68,7 +74,13 @@
         params.append("ne_lng", bounds.getEast());
         params.append("ne_lat", bounds.getNorth());
         params.append("cluster_grid", 30000000 / Math.pow(2.0, Math.round(zoom) + 1));
-        const response = await fetch(`/api/sites?${params}`);
+        let response;
+        try {
+            response = await fetch(`/api/sites?${params}`, {signal: controller.signal});
+        } catch (err) {
+            if (err.name === 'AbortError') return;
+            throw err;
+        }
         const json = await response.json();
         const idsToDelete = new Set(markers.keys());
         json.sites.forEach((charger) => {
