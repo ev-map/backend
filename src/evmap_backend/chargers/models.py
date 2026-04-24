@@ -130,6 +130,7 @@ class Connector(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["chargepoint", "id_from_source"]),
+            models.Index(fields=["chargepoint", "-max_power"]),
         ]
         constraints = [
             models.UniqueConstraint(

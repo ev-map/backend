@@ -15,7 +15,9 @@ class ChargingSiteSchema(Schema):
 
     @classmethod
     def build_from_queryset(cls, qs: QuerySet) -> List["ChargingSiteSchema"]:
-        qs = qs.annotate(max_power=Max("chargepoints__connectors__max_power"))
+        qs = qs.annotate(
+            max_power=Max("chargepoints__connectors__max_power")
+        ).select_related("network")
         return [
             cls(
                 id=obj.id,
@@ -34,7 +36,7 @@ class ClusterSchema(Schema):
     center: tuple[float, float]
     count: int
     ids: Optional[list[int]]
-    max_power: int
+    max_power: float
 
 
 class ChargingSitesSchema(Schema):

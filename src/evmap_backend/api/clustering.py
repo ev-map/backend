@@ -5,9 +5,9 @@ from django.contrib.gis.db.models.functions import Centroid, SnapToGrid, Transfo
 from django.contrib.gis.gdal import CoordTransform, SpatialReference
 from django.contrib.gis.geos import Polygon
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.db.models import Case, Count, Max, QuerySet, When
+from django.db.models import Case, Count, Max, OuterRef, QuerySet, Subquery, When
 
-from evmap_backend.chargers.models import ChargingSite
+from evmap_backend.chargers.models import ChargingSite, Connector
 from evmap_backend.helpers.geo import MERCATOR, WGS84
 
 from .schemas import ClusterSchema
@@ -52,13 +52,20 @@ def cluster_sites(
     ClusterSchema instances and singles is a queryset of sites that are alone in
     their grid cell.
     """
-    snapped = queryset.annotate(snapped=SnapToGrid("location_mercator", cluster_radius))
+    snapped = queryset.annotate(
+        snapped=SnapToGrid("location_mercator", cluster_radius),
+        site_max_power=Subquery(
+            Connector.objects.filter(chargepoint__site=OuterRef("pk"))
+            .order_by("-max_power")
+            .values("max_power")[:1]
+        ),
+    )
     groups = list(
         snapped.values("snapped").annotate(
             count=Count("id", distinct=True),
             center=Transform(Centroid(Collect("location_mercator")), WGS84),
             ids=Case(When(count__gt=10, then=None), default=ArrayAgg("id")),
-            max_power=Max("chargepoints__connectors__max_power"),
+            max_power=Max("site_max_power"),
         )
     )
 
@@ -70,5 +77,5 @@ def cluster_sites(
         else:
             single_ids.append(g["ids"][0])
 
-    singles = ChargingSite.objects.filter(id__in=single_ids).select_related("network")
+    singles = ChargingSite.objects.filter(id__in=single_ids)
     return clusters, singles
