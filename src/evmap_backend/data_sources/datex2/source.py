@@ -241,6 +241,24 @@ class Datex2MobilithekLadenetzRealtimeDataSource(BaseMobilithekDatex2DataSource)
     # https://mobilithek.info/offers/903240716507836416
 
 
+class Datex2MobilithekLadebusinessDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_ladebusiness"
+    subscription_id = os.environ.get("MOBILITHEK_LADEBUSINESS_STATIC_SUBSCRIPTION_ID")
+    license_attribution = "Smartlab Innovationsgesellschaft mbH, CC-0"
+    ignore_encoding = True
+    # https://mobilithek.info/offers/903241622921695232
+
+
+class Datex2MobilithekLadebusinessRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_ladebusiness_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_LADEBUSINESS_DYNAMIC_SUBSCRIPTION_ID")
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_ladebusiness"
+    parser = Datex2XmlParser(realtime_station_as_site=True)
+    license_attribution = "Smartlab Innovationsgesellschaft mbH, CC-0"
+    # https://mobilithek.info/offers/903321397006716928
+
+
 class Datex2MobilithekUlmDataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_ulm"
     subscription_id = os.environ.get("MOBILITHEK_ULM_STATIC_SUBSCRIPTION_ID")
