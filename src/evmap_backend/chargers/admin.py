@@ -10,6 +10,7 @@ from django.db.models import Count
 from evmap_backend.chargers.fields import format_evse_operator_id, format_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
 from evmap_backend.forms.widgets import MapLibreWidget
+from evmap_backend.helpers.admin import SimpleDALFFilter
 
 
 # Register your models here.
@@ -58,13 +59,50 @@ class ConnectorAdmin(admin.ModelAdmin):
     autocomplete_fields = ["chargepoint"]
 
 
-class NetworkAdmin(admin.ModelAdmin):
+class CountryCodeFilter(SimpleDALFFilter):
+    title = "country code"
+    parameter_name = "country_code"
+
+    def lookups(self, request, model_admin):
+        evse_op_ids = (
+            Network.objects.exclude(evse_operator_id__isnull=True)
+            .exclude(evse_operator_id="")
+            .values_list("evse_operator_id", flat=True)
+        )
+        country_codes = sorted(
+            set(code[:2].upper() for code in evse_op_ids if len(code) >= 2)
+        )
+        return [(c, c) for c in country_codes]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(evse_operator_id__istartswith=self.value())
+        return queryset
+
+
+class HasChargingSitesFilter(admin.SimpleListFilter):
+    title = "has charging sites"
+    parameter_name = "has_chargingsites"
+
+    def lookups(self, request, model_admin):
+        return [("yes", "Yes"), ("no", "No")]
+
+    def queryset(self, request, queryset):
+        if self.value() == "yes":
+            return queryset.filter(chargingsites__count__gt=0)
+        if self.value() == "no":
+            return queryset.filter(chargingsites__count=0)
+        return queryset
+
+
+class NetworkAdmin(DALFModelAdmin):
     list_display = [
         "name",
         "formatted_evse_operator_id",
         "chargingsites_count",
         "goingelectric_networks_display",
     ]
+    list_filter = [CountryCodeFilter, HasChargingSitesFilter]
     search_fields = ["name", "evse_operator_id"]
 
     @admin.display(description="EVSE Operator ID")
