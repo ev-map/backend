@@ -347,8 +347,9 @@ class OcpiLocation(Schema):
         license_attribution_link: Optional[str] = None,
         with_status: bool = False,
     ) -> ChargingSiteItem:
-        if self.evses[0].evse_id:
-            operator_id = normalize_evseid(self.evses[0].evse_id)[:5]
+        evse_id = next((evse.evse_id for evse in self.evses if evse.evse_id), None)
+        if evse_id:
+            operator_id = normalize_evseid(evse_id)[:5]
             network, _ = Network.get_or_create(
                 evse_operator_id=none_to_blank(operator_id),
                 defaults=dict(

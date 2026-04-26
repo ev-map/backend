@@ -519,6 +519,26 @@ class GoZeroUkOcpiDataSource(BaseOcpiDataSource):
         return json.loads(response.text)["data"]
 
 
+class FastnedUkOcpiDataSource(BaseOcpiDataSource):
+    locations_url = (
+        "https://uk-public.api.fastned.nl/uk-public/ocpi/cpo/2.2.1/locations"
+    )
+    tariffs_url = "https://uk-public.api.fastned.nl/uk-public/ocpi/cpo/2.2.1/tariffs"
+    api_key = os.environ.get("FASTNED_UK_API_KEY")
+    supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
+    id = "fastned_uk"
+    license_attribution = "Fastned UK Ltd."
+    # https://www.fastnedcharging.com/en-gb/uk-open-data
+
+    def get_locations_data(self):
+        response = requests.get(
+            self.locations_url,
+            headers={"x-api-key": self.api_key},
+        )
+        response.raise_for_status()
+        return json.loads(response.text)["data"]
+
+
 class LatviaOcpiDataSource(BaseOcpiDataSource):
     id = "latvia"
     supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
