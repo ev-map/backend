@@ -539,8 +539,8 @@ class FastnedUkOcpiDataSource(BaseOcpiDataSource):
         return json.loads(response.text)["data"]
 
 
-class LatviaOcpiDataSource(BaseOcpiDataSource):
-    id = "latvia"
+class LithuaniaOcpiDataSource(BaseOcpiDataSource):
+    id = "lithuania"
     supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
     locations_url = "https://ev.vialietuva.lt/ocpi/2.2.1/locations"
     tariffs_url = "https://ev.vialietuva.lt/ocpi/2.2.1/tariffs"

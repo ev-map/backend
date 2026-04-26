@@ -176,8 +176,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     SourceEvUkOcpiDataSource,
     SourceEvUkOcpiRealtimeDataSource,
     FastnedUkOcpiDataSource,
-    # Latvia
-    # LatviaOcpiDataSource,  # Data is malformed (duplicate IDs)
+    # Lithuania
+    # LithuaniaOcpiDataSource,  # Data is malformed (duplicate IDs)
     # Slovenia
     Datex2SloveniaDataSource,
     Datex2SloveniaRealtimeDataSource,

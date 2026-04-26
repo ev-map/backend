@@ -162,6 +162,11 @@ class OcpiConnector(Schema):
         SAE_J3400 = "SAE_J3400"  # SAE J3400, also known as North American Charging Standard (NACS), developed by Tesla, Inc in 2021.
         TESLA_R = "TESLA_R"  # Tesla Connector "Roadster"-type (round, 4 pin)
         TESLA_S = "TESLA_S"  # Tesla Connector "Model-S"-type (oval, 5 pin). Mechanically compatible with SAE J3400 but uses CAN bus for communication instead of power line communication.
+        UNKNOWN = "UNKNOWN"
+
+        @classmethod
+        def _missing_(cls, key):
+            return cls.UNKNOWN
 
     class ConnectorFormat(enum.StrEnum):
         SOCKET = "SOCKET"
@@ -173,8 +178,13 @@ class OcpiConnector(Schema):
         AC_2_PHASE_SPLIT = "AC_2_PHASE_SPLIT"
         AC_3_PHASE = "AC_3_PHASE"
         DC = "DC"
+        UNKNOWN = "UNKNOWN"
 
-    id: str
+        @classmethod
+        def _missing_(cls, key):
+            return cls.UNKNOWN
+
+    id: str | int
     standard: ConnectorType
     format: ConnectorFormat
     max_voltage: Optional[int] = None
@@ -208,7 +218,7 @@ class OcpiConnector(Schema):
 
     def convert(self) -> Connector:
         return Connector(
-            id_from_source=self.id,
+            id_from_source=str(self.id),
             connector_type=connector_mapping[self.standard],
             connector_format=format_mapping[self.format],
             max_power=self.max_power(),
@@ -232,6 +242,7 @@ connector_mapping = {
     OcpiConnector.ConnectorType.SAE_J3400: Connector.ConnectorTypes.NACS,
     OcpiConnector.ConnectorType.TESLA_S: Connector.ConnectorTypes.NACS,
     OcpiConnector.ConnectorType.TESLA_R: Connector.ConnectorTypes.TESLA_ROADSTER_HPC,
+    OcpiConnector.ConnectorType.UNKNOWN: Connector.ConnectorTypes.OTHER,
 }
 
 format_mapping = {
@@ -256,7 +267,7 @@ class OcpiEvse(Schema):
         def _missing_(cls, value):
             return cls.UNKNOWN
 
-    uid: str
+    uid: str | int
     evse_id: Optional[str] = None
     physical_reference: Optional[str] = None
     status: OcpiEvseStatus
@@ -267,7 +278,7 @@ class OcpiEvse(Schema):
 
     def convert(self) -> Chargepoint:
         return Chargepoint(
-            id_from_source=self.uid,
+            id_from_source=str(self.uid),
             evseid=normalize_evseid(self.evse_id) if self.evse_id is not None else "",
             physical_reference=none_to_blank(self.physical_reference),
         )
@@ -322,7 +333,7 @@ class OcpiOperator(Schema):
 
 
 class OcpiLocation(Schema):
-    id: str
+    id: str | int
     country: Optional[str] = None
     country_code: Optional[str] = None
     name: Optional[str] = None
@@ -367,7 +378,7 @@ class OcpiLocation(Schema):
             license_attribution_link=(
                 license_attribution_link if license_attribution_link is not None else ""
             ),
-            id_from_source=self.id,
+            id_from_source=str(self.id),
             name=none_to_blank(self.name if self.name is not None else self.address),
             location=Point(self.coordinates.longitude, self.coordinates.latitude),
             network=network,
