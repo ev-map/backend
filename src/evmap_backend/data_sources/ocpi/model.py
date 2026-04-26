@@ -305,6 +305,9 @@ class OcpiEvse(Schema):
         )
 
 
+INVALID_STATUSES = [OcpiEvse.OcpiEvseStatus.REMOVED, OcpiEvse.OcpiEvseStatus.PLANNED]
+
+
 class PatchOcpiEvse(Schema):
     status: OcpiEvse.OcpiEvseStatus
     last_updated: datetime.datetime
@@ -394,7 +397,7 @@ class OcpiLocation(Schema):
         )
         chargepoints = []
         for evse in self.evses:
-            if evse.connectors is not None:
+            if evse.connectors is not None and evse.status not in INVALID_STATUSES:
                 con_ids = set()
                 connectors = []
                 for con in evse.connectors:
