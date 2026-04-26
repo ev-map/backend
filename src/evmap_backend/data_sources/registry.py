@@ -55,6 +55,7 @@ from evmap_backend.data_sources.datex2.source import (
 )
 from evmap_backend.data_sources.fintraffic.source import FintrafficRealtimeDataSource
 from evmap_backend.data_sources.goingelectric.source import GoingElectricDataSource
+from evmap_backend.data_sources.irve.source import IrveFranceDataSource
 from evmap_backend.data_sources.nobil.source import (
     NobilDataSource,
     NobilRealtimeDataSource,
@@ -194,6 +195,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     FintrafficRealtimeDataSource,
     # Spain
     Datex2SpainDataSource,
+    # France
+    IrveFranceDataSource,
 ]
 DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
     cls.id: cls for cls in DATA_SOURCE_CLASSES
