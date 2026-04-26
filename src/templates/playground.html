@@ -28,6 +28,15 @@
             min-height: 32px;
             padding: 2px;
         }
+
+        .site-detail { font: 13px/1.4 monospace; max-height: 400px; overflow-y: auto; overflow-x: hidden; }
+        .site-detail table { border-collapse: collapse; width: 100%; }
+        .site-detail td, .site-detail th { text-align: left; padding: 2px 6px; border-bottom: 1px solid #eee; vertical-align: top; }
+        .site-detail th { white-space: nowrap; color: #666; }
+        .site-detail td table { width: auto; }
+        .site-detail h4 { margin: 8px 0 4px; }
+        .site-detail .loading { color: #999; }
+        .site-detail td.utilization-cell { text-align:center; font-size:11px; padding: 2px 0px; width: 26px; }
     </style>
     <link href='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css' rel='stylesheet'/>
 </head>
@@ -41,6 +50,74 @@
         center: [9.5, 51.0], // starting position [lng, lat]
         zoom: 10 // starting zoom
     });
+
+    function renderValue(val) {
+        if (val === null || val === undefined) return '<i>null</i>';
+        if (typeof val === 'string' && val.match(/^(https?:)?\/\//)) {
+            return `<a href="${val}" target="_blank">${val}</a>`;
+        }
+        if (Array.isArray(val)) {
+            if (val.length === 0) return '[]';
+            // Check if it's a 2D array (utilization)
+            if (Array.isArray(val[0])) return '<pre>' + JSON.stringify(val, null, 1) + '</pre>';
+            return JSON.stringify(val);
+        }
+        if (typeof val === 'object') {
+            return renderObject(val);
+        }
+        return String(val);
+    }
+
+    function renderObject(obj) {
+        let html = '<table>';
+        for (const [k, v] of Object.entries(obj)) {
+            html += `<tr><th>${k}</th><td>${renderValue(v)}</td></tr>`;
+        }
+        html += '</table>';
+        return html;
+    }
+
+    function renderDetail(data) {
+        let html = '<div class="site-detail">';
+        // Site-level fields (skip chargepoints/utilization for separate sections)
+        html += '<table>';
+        for (const [k, v] of Object.entries(data)) {
+            if (k === 'chargepoints' || k === 'utilization') continue;
+            html += `<tr><th>${k}</th><td>${renderValue(v)}</td></tr>`;
+        }
+        html += '</table>';
+
+        // Chargepoints
+        if (data.chargepoints && data.chargepoints.length > 0) {
+            html += `<h4>Chargepoints (${data.chargepoints.length})</h4>`;
+            data.chargepoints.forEach((cp, i) => {
+                html += `<b>#${i + 1}</b>`;
+                html += renderObject(cp);
+            });
+        }
+
+        // Utilization
+        if (data.utilization) {
+            html += '<h4>Utilization</h4>';
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            html += '<table><tr><th></th>';
+            for (let h = 0; h < 24; h++) html += `<th>${h}</th>`;
+            html += '</tr>';
+            data.utilization.forEach((row, i) => {
+                html += `<tr><th>${days[i]}</th>`;
+                row.forEach(v => {
+                    const pct = Math.round(v * 100);
+                    const bg = `hsl(${120 - pct * 1.2}, 70%, ${85 - pct * 0.3}%)`;
+                    html += `<td class="utilization-cell" style="background:${bg}">${pct}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</table>';
+        }
+
+        html += '</div>';
+        return html;
+    }
 
     const markers = new Map();
     const clusterMarkers = new Map();
@@ -85,7 +162,18 @@
         const idsToDelete = new Set(markers.keys());
         json.sites.forEach((charger) => {
             if (!markers.has(charger.id)) {
-                const popup = new maplibregl.Popup().setHTML("Name: " + charger.name + "<br>" + "Network: " + charger.network + "<br>" + "Data source: " + charger.data_source);
+                const popup = new maplibregl.Popup({maxWidth: '700px'})
+                    .setHTML('<div class="site-detail"><span class="loading">Loading...</span></div>');
+                popup.on('open', async () => {
+                    try {
+                        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                        const res = await fetch(`/api/sites/${charger.id}?tz=${encodeURIComponent(tz)}`);
+                        const detail = await res.json();
+                        popup.setHTML(renderDetail(detail));
+                    } catch (e) {
+                        popup.setHTML('<div class="site-detail">Failed to load details</div>');
+                    }
+                });
                 const marker = new maplibregl.Marker({color: getChargerColor(charger.max_power)})
                     .setLngLat(charger.location)
                     .setPopup(popup)
