@@ -70,6 +70,11 @@ class ChargepointStatusSchema(Schema):
     status_timestamp: Optional[str] = None
 
 
+class GoingElectricMatch(Schema):
+    id: int
+    url: str
+
+
 class SiteDetailSchema(Schema):
     id: int
     name: str
@@ -82,5 +87,6 @@ class SiteDetailSchema(Schema):
     operator: Optional[str] = None
     opening_hours: Optional[str] = None
     data_source: str
+    goingelectric: Optional[GoingElectricMatch] = None
     chargepoints: list[ChargepointStatusSchema]
     utilization: Optional[list[list[float]]] = None  # 7x24: [day_of_week][hour], Mon=0

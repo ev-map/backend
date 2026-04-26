@@ -7,12 +7,14 @@ from evmap_backend.api import api
 from evmap_backend.apikeys.ninja import ApiKeyAuth
 from evmap_backend.chargers.fields import format_evseid
 from evmap_backend.chargers.models import ChargingSite
+from evmap_backend.data_sources.goingelectric.models import GoingElectricChargeLocation
 from evmap_backend.helpers.database import blank_to_none, distinct_on
 from evmap_backend.realtime.models import RealtimeStatus
 
 from .schemas import (
     ChargepointStatusSchema,
     ConnectorSchema,
+    GoingElectricMatch,
     SiteDetailSchema,
 )
 
@@ -119,7 +121,7 @@ def site_detail(request, site_id: int, tz: str = None):
                     ConnectorSchema(
                         connector_type=con.connector_type,
                         connector_format=blank_to_none(con.connector_format),
-                        max_power=con.max_power / 1000,
+                        max_power=con.max_power,
                     )
                     for con in cp.connectors.all()
                 ],
@@ -130,6 +132,13 @@ def site_detail(request, site_id: int, tz: str = None):
 
     # Compute utilization
     utilization = _get_hourly_utilization(site.id, tz)
+
+    # GoingElectric link
+    try:
+        ge_match = site.goingelectric_match
+        goingelectric = GoingElectricMatch(id=ge_match.id, url=ge_match.url)
+    except GoingElectricChargeLocation.DoesNotExist:
+        goingelectric = None
 
     return SiteDetailSchema(
         id=site.id,
@@ -143,6 +152,7 @@ def site_detail(request, site_id: int, tz: str = None):
         operator=blank_to_none(site.operator),
         opening_hours=blank_to_none(site.opening_hours),
         data_source=site.data_source,
+        goingelectric=goingelectric,
         chargepoints=chargepoints,
         utilization=utilization,
     )
