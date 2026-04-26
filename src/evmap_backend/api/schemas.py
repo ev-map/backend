@@ -54,3 +54,33 @@ class RealtimeStatusSchema(Schema):
 
 class RealtimeStatusesSchema(Schema):
     statuses: list[RealtimeStatusSchema]
+
+
+class ConnectorSchema(Schema):
+    connector_type: str
+    connector_format: Optional[str] = None
+    max_power: float  # in kW
+
+
+class ChargepointStatusSchema(Schema):
+    evseid: Optional[str] = None
+    physical_reference: Optional[str] = None
+    connectors: list[ConnectorSchema]
+    status: Optional[str] = None
+    status_timestamp: Optional[str] = None
+
+
+class SiteDetailSchema(Schema):
+    id: int
+    name: str
+    location: Tuple[float, float]
+    street: Optional[str] = None
+    zipcode: Optional[str] = None
+    city: Optional[str] = None
+    country: str
+    network: Optional[str] = None
+    operator: Optional[str] = None
+    opening_hours: Optional[str] = None
+    data_source: str
+    chargepoints: list[ChargepointStatusSchema]
+    utilization: Optional[list[list[float]]] = None  # 7x24: [day_of_week][hour], Mon=0

@@ -33,3 +33,8 @@ def none_to_blank(val: Optional[str]) -> str:
         return ""
     else:
         return val
+
+
+def blank_to_none(val: str) -> Optional[str]:
+    """Convert empty strings to None for API output."""
+    return val if val else None
