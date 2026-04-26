@@ -11,6 +11,8 @@ from evmap_backend.data_sources.datex2.source import (
     Datex2DenmarkEcoMovementDataSource,
     Datex2DenmarkMontaDataSource,
     Datex2FinlandDataSource,
+    Datex2LatviaEcoMovementDataSource,
+    Datex2LatviaEcoMovementRealtimeDataSource,
     Datex2LuxembourgEcoMovementDataSource,
     Datex2MobilithekChargecloudDataSource,
     Datex2MobilithekChargecloudRealtimeDataSource,
@@ -176,6 +178,9 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     SourceEvUkOcpiDataSource,
     SourceEvUkOcpiRealtimeDataSource,
     FastnedUkOcpiDataSource,
+    # Latvia
+    Datex2LatviaEcoMovementDataSource,
+    Datex2LatviaEcoMovementRealtimeDataSource,
     # Lithuania
     # LithuaniaOcpiDataSource,  # Data is malformed (duplicate IDs)
     # Slovenia
