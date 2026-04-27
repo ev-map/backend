@@ -6,6 +6,7 @@ from typing import Iterable, Optional
 
 import requests
 from django.utils.functional import classproperty
+from requests.auth import HTTPBasicAuth
 
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.ocpi import SUPPORTED_OCPI_VERSIONS
@@ -537,6 +538,25 @@ class FastnedUkOcpiDataSource(BaseOcpiDataSource):
         )
         response.raise_for_status()
         return json.loads(response.text)["data"]
+
+
+class OspreyUkOcpiDataSource(BaseOcpiDataSource):
+    locations_url = "https://apigw.ospreycharging.co.uk/portal/backend/opendata/ocpi221"
+
+    username = os.environ.get("OSPREY_UK_USERNAME")
+    password = os.environ.get("OSPREY_UK_PASSWORD")
+    supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
+    id = "osprey_uk"
+    license_attribution = "Osprey Charging Network Ltd"
+    # support@ospreycharging.co.uk
+
+    def get_locations_data(self):
+        response = requests.get(
+            self.locations_url,
+            auth=HTTPBasicAuth(self.username, self.password),
+        )
+        response.raise_for_status()
+        return json.loads(response.text)["locations"]
 
 
 class LithuaniaOcpiDataSource(BaseOcpiDataSource):
