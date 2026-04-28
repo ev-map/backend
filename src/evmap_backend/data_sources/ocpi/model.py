@@ -276,10 +276,12 @@ class OcpiEvse(Schema):
 
     last_updated: datetime.datetime
 
-    def convert(self) -> Chargepoint:
+    def convert(self, ignore_evseid: bool = False) -> Chargepoint:
         return Chargepoint(
             id_from_source=str(self.uid),
-            evseid=normalize_evseid(self.evse_id) if self.evse_id is not None else "",
+            evseid=normalize_evseid(self.evse_id)
+            if self.evse_id is not None and not ignore_evseid
+            else "",
             physical_reference=none_to_blank(self.physical_reference),
         )
 
@@ -360,9 +362,10 @@ class OcpiLocation(Schema):
         license_attribution: str,
         license_attribution_link: Optional[str] = None,
         with_status: bool = False,
+        ignore_evseids: bool = False,
     ) -> ChargingSiteItem:
         evse_id = next((evse.evse_id for evse in self.evses if evse.evse_id), None)
-        if evse_id:
+        if evse_id and not ignore_evseids:
             operator_id = normalize_evseid(evse_id)[:5]
             network, _ = Network.get_or_create(
                 evse_operator_id=none_to_blank(operator_id),
@@ -420,7 +423,11 @@ class OcpiLocation(Schema):
                     if with_status
                     else None
                 )
-                chargepoints.append(ChargepointItem(evse.convert(), connectors, status))
+                chargepoints.append(
+                    ChargepointItem(
+                        evse.convert(ignore_evseid=ignore_evseids), connectors, status
+                    )
+                )
         return ChargingSiteItem(site, chargepoints)
 
     def is_valid(self):

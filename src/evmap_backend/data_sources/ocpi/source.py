@@ -39,6 +39,7 @@ class BaseOcpiDataSource(DataSource):
     supported_data_types = [DataType.STATIC]
     supported_update_methods = [UpdateMethod.PULL]
     license_attribution_link: Optional[str] = None
+    ignore_evseids: bool = False
 
     @abstractmethod
     @classproperty
@@ -69,6 +70,7 @@ class BaseOcpiDataSource(DataSource):
                     self.license_attribution,
                     self.license_attribution_link,
                     with_status=with_status,
+                    ignore_evseids=self.ignore_evseids,
                 )
                 for location in locations
                 if location.is_valid()
@@ -571,6 +573,26 @@ class MerUkOcpiDataSource(BaseOcpiDataSource):
         response = requests.get(self.url)
         response.raise_for_status()
         return json.loads(response.text)["data"]["locations"]["data"]
+
+
+class ScottishPowerUkOcpiDataSource(BaseOcpiDataSource):
+    locations_url = (
+        "https://api.fuuse.io/opendata/e11a667d-c56a-468f-b8d3-a50b41628292/location"
+    )
+    tariffs_url = (
+        "https://api.fuuse.io/opendata/e11a667d-c56a-468f-b8d3-a50b41628292/tariff"
+    )
+
+    supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
+    id = "scottish_power_uk"
+    license_attribution = "ScottishPower Energy Retail Limited"
+    ignore_evseids = True
+    # https://www.scottishpower.co.uk/blog/public-ev-charging
+
+    def get_locations_data(self):
+        response = requests.get(self.locations_url)
+        response.raise_for_status()
+        return json.loads(response.text)["data"]
 
 
 class LithuaniaOcpiDataSource(BaseOcpiDataSource):
