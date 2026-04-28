@@ -559,6 +559,20 @@ class OspreyUkOcpiDataSource(BaseOcpiDataSource):
         return json.loads(response.text)["locations"]
 
 
+class MerUkOcpiDataSource(BaseOcpiDataSource):
+    url = "https://uk.mer.eco/wp-json/ozev/v1/data"
+
+    supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
+    id = "mer_uk"
+    license_attribution = "Mer UK"
+    # https://uk.mer.eco/live-charge-point-data/
+
+    def get_locations_data(self):
+        response = requests.get(self.url)
+        response.raise_for_status()
+        return json.loads(response.text)["data"]["locations"]["data"]
+
+
 class LithuaniaOcpiDataSource(BaseOcpiDataSource):
     id = "lithuania"
     supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
