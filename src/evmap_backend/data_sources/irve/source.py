@@ -18,7 +18,6 @@ class IrveFranceDataSource(DataSource):
         with requests.get(DATA_URL, stream=True) as response:
             response.raise_for_status()
             lines = response.iter_lines(decode_unicode=True)
-            lines = (line.decode("utf-8") for line in lines)
 
             sites = parse_irve_csv(
                 lines,

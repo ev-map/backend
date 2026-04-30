@@ -33,7 +33,7 @@ PLUG_TYPE_MAP: Dict[str, Connector.ConnectorTypes] = {
     "prise_type_autre": Connector.ConnectorTypes.OTHER,
 }
 
-# Connector types that are always sockets (no attached cable)
+# Connector types that sockets by default (no attached cable)
 SOCKET_CONNECTOR_TYPES = {
     Connector.ConnectorTypes.DOMESTIC_E,
     Connector.ConnectorTypes.TYPE_2,
@@ -58,7 +58,7 @@ def _parse_coordinates(row: dict) -> Point | None:
     try:
         lng = float(row.get("consolidated_longitude", "").strip().replace(",", "."))
         lat = float(row.get("consolidated_latitude", "").strip().replace(",", "."))
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, AttributeError):
         return None
 
     if lat == 0 and lng == 0:
