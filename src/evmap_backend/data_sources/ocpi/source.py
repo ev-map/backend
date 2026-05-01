@@ -394,7 +394,6 @@ class EsbUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
 
 
 class ShellRechargeUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
-    # Includes both Shell Recharge and Ubitricity chargers in the UK
     token = os.environ.get("SHELLRECHARGE_UK_ECOMOVEMENT_TOKEN")
     id = "shellrecharge_uk"
     # https://www.shell.co.uk/electric-vehicle-charging/public-charge-point-regulations.html
@@ -404,6 +403,19 @@ class ShellRechargeUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSou
     token = os.environ.get("SHELLRECHARGE_UK_ECOMOVEMENT_TOKEN")
     id = "shellrecharge_uk_realtime"
     locations_data_source = "shellrecharge_uk"
+    # https://www.shell.co.uk/electric-vehicle-charging/public-charge-point-regulations.html
+
+
+class UbitricityUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
+    token = os.environ.get("UBITRICITY_UK_ECOMOVEMENT_TOKEN")
+    id = "ubitricity_uk"
+    # https://www.shell.co.uk/electric-vehicle-charging/public-charge-point-regulations.html
+
+
+class UbitricityUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
+    token = os.environ.get("UBITRICITY_UK_ECOMOVEMENT_TOKEN")
+    id = "ubitricity_uk_realtime"
+    locations_data_source = "ubitricity_uk"
     # https://www.shell.co.uk/electric-vehicle-charging/public-charge-point-regulations.html
 
 
@@ -446,6 +458,58 @@ class SourceEvUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
     id = "source_ev_uk_realtime"
     locations_data_source = "source_ev_uk"
     # https://source-ev.com/legal/request-compliance-data
+
+
+class ChargePointUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
+    token = os.environ.get("CHARGEPOINT_UK_ECOMOVEMENT_TOKEN")
+    id = "chargepoint_uk"
+    # https://www.chargepoint.com/en-gb/blog/navigating-uk-public-charging-regulations-guide-charge-point-operators
+
+
+class ChargePointUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
+    token = os.environ.get("CHARGEPOINT_UK_ECOMOVEMENT_TOKEN")
+    id = "chargepoint_uk_realtime"
+    locations_data_source = "chargepoint_uk"
+    # https://www.chargepoint.com/en-gb/blog/navigating-uk-public-charging-regulations-guide-charge-point-operators
+
+
+class EvPointUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
+    token = os.environ.get("EV_POINT_UK_ECOMOVEMENT_TOKEN")
+    id = "ev_point_uk"
+    # https://www.chargepoint.com/en-gb/blog/navigating-uk-public-charging-regulations-guide-charge-point-operators
+
+
+class EvPointUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
+    token = os.environ.get("EV_POINT_UK_ECOMOVEMENT_TOKEN")
+    id = "ev_point_uk_realtime"
+    locations_data_source = "ev_point_uk"
+    # https://www.chargepoint.com/en-gb/blog/navigating-uk-public-charging-regulations-guide-charge-point-operators
+
+
+class LidlUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
+    token = os.environ.get("LIDL_UK_ECOMOVEMENT_TOKEN")
+    id = "lidl_uk"
+    # https://www.chargepoint.com/en-gb/blog/navigating-uk-public-charging-regulations-guide-charge-point-operators
+
+
+class LidlUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
+    token = os.environ.get("LIDL_UK_ECOMOVEMENT_TOKEN")
+    id = "lidl_uk_realtime"
+    locations_data_source = "lidl_uk"
+    # https://www.chargepoint.com/en-gb/blog/navigating-uk-public-charging-regulations-guide-charge-point-operators
+
+
+class RawChargingUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
+    token = os.environ.get("RAW_CHARGING_UK_ECOMOVEMENT_TOKEN")
+    id = "raw_charging_uk"
+    # https://www.chargepoint.com/en-gb/blog/navigating-uk-public-charging-regulations-guide-charge-point-operators
+
+
+class RawChargingUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
+    token = os.environ.get("RAW_CHARGING_UK_ECOMOVEMENT_TOKEN")
+    id = "raw_charging_uk_realtime"
+    locations_data_source = "raw_charging_uk"
+    # https://www.chargepoint.com/en-gb/blog/navigating-uk-public-charging-regulations-guide-charge-point-operators
 
 
 class ChargyUkOcpiDataSource(BaseOcpiDataSource):
