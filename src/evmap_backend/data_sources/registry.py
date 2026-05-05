@@ -104,6 +104,7 @@ from evmap_backend.data_sources.ocpi.source import (
     TeslaUkOcpiDataSource,
     UbitricityUkOcpiDataSource,
     UbitricityUkOcpiRealtimeDataSource,
+    UrbanFoxUkOcpiDataSource,
 )
 from evmap_backend.data_sources.opendata_swiss.source import (
     OpendataSwissDataSource,
@@ -206,6 +207,7 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     MerUkOcpiDataSource,
     ScottishPowerUkOcpiDataSource,
     GridserveUkOcpiDataSource,
+    UrbanFoxUkOcpiDataSource,
     # Latvia
     Datex2LatviaEcoMovementDataSource,
     Datex2LatviaEcoMovementRealtimeDataSource,

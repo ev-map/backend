@@ -684,6 +684,21 @@ class GridserveUkOcpiDataSource(BaseOcpiDataSource):
         return json.loads(response.text)
 
 
+class UrbanFoxUkOcpiDataSource(BaseOcpiDataSource):
+    locations_url = "https://api.urbanfox.network/api/opendata/locations"
+    tariffs_url = "https://api.urbanfox.network/api/opendata/tariffs"
+
+    supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
+    id = "urban_fox_uk"
+    license_attribution = "Urban Fox Networks (UK) Ltd."
+    # https://urbanfox.network/public-charge-point-regulations-data-access/
+
+    def get_locations_data(self):
+        response = requests.get(self.locations_url)
+        response.raise_for_status()
+        return json.loads(response.text)["data"]
+
+
 class LithuaniaOcpiDataSource(BaseOcpiDataSource):
     id = "lithuania"
     supported_data_types = [DataType.STATIC, DataType.DYNAMIC]

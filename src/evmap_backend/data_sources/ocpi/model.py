@@ -187,12 +187,12 @@ class OcpiConnector(Schema):
 
     id: str | int
     standard: ConnectorType
-    format: ConnectorFormat
+    format: Optional[ConnectorFormat] = None
     max_voltage: Optional[int] = None
     max_amperage: Optional[int] = None
     voltage: Optional[int] = None
     amperage: Optional[int] = None
-    power_type: PowerType
+    power_type: Optional[PowerType] = None
     max_electric_power: Optional[int] = None
 
     # TODO: tariff_ids
@@ -208,6 +208,8 @@ class OcpiConnector(Schema):
                 power_factor = sqrt(3)
             case OcpiConnector.PowerType.AC_1_PHASE | OcpiConnector.PowerType.DC:
                 power_factor = 1
+            case None:
+                return 0
             case _:
                 raise NotImplementedError(
                     "power calculation for 2 phases not implemented"
@@ -221,7 +223,7 @@ class OcpiConnector(Schema):
         return Connector(
             id_from_source=str(self.id),
             connector_type=connector_mapping[self.standard],
-            connector_format=format_mapping[self.format],
+            connector_format=format_mapping[self.format] if self.format else "",
             max_power=self.max_power(),
         )
 
