@@ -5,11 +5,12 @@ from math import sqrt
 from typing import Generic, Iterable, List, Optional, TypeVar
 
 from django.contrib.gis.geos import Point
+from django.core.exceptions import ValidationError
 from ninja import Schema
 from pytz import timezone
 
 from evmap_backend import settings
-from evmap_backend.chargers.fields import normalize_evseid
+from evmap_backend.chargers.fields import normalize_evseid, validate_evseid
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector, Network
 from evmap_backend.data_sources.sync import (
     ChargepointItem,
@@ -276,12 +277,12 @@ class OcpiEvse(Schema):
 
     last_updated: datetime.datetime
 
-    def convert(self, ignore_evseid: bool = False) -> Chargepoint:
+    def convert(
+        self, ignore_evseid: bool = False, uid_as_evseid: bool = False
+    ) -> Chargepoint:
         return Chargepoint(
             id_from_source=str(self.uid),
-            evseid=normalize_evseid(self.evse_id)
-            if self.evse_id is not None and not ignore_evseid
-            else "",
+            evseid=none_to_blank(self.get_evseid(ignore_evseid, uid_as_evseid)),
             physical_reference=none_to_blank(self.physical_reference),
         )
 
@@ -305,6 +306,21 @@ class OcpiEvse(Schema):
                 license_attribution_link if license_attribution_link is not None else ""
             ),
         )
+
+    def get_evseid(
+        self, ignore_evseids: bool = False, uid_as_evseid: bool = False
+    ) -> Optional[str]:
+        if self.evse_id is not None and not ignore_evseids:
+            return normalize_evseid(self.evse_id)
+        elif uid_as_evseid:
+            try:
+                id = normalize_evseid(self.uid)
+                validate_evseid(id)
+                return id
+            except ValidationError:
+                return None
+        else:
+            return None
 
 
 INVALID_STATUSES = [OcpiEvse.OcpiEvseStatus.REMOVED, OcpiEvse.OcpiEvseStatus.PLANNED]
@@ -363,9 +379,17 @@ class OcpiLocation(Schema):
         license_attribution_link: Optional[str] = None,
         with_status: bool = False,
         ignore_evseids: bool = False,
+        uid_as_evseid: bool = False,
     ) -> ChargingSiteItem:
-        evse_id = next((evse.evse_id for evse in self.evses if evse.evse_id), None)
-        if evse_id and not ignore_evseids:
+        evse_id = next(
+            (
+                evse.get_evseid(ignore_evseids, uid_as_evseid)
+                for evse in self.evses
+                if evse.get_evseid(ignore_evseids, uid_as_evseid)
+            ),
+            None,
+        )
+        if evse_id:
             operator_id = normalize_evseid(evse_id)[:5]
             network, _ = Network.get_or_create(
                 evse_operator_id=none_to_blank(operator_id),
@@ -408,7 +432,7 @@ class OcpiLocation(Schema):
                         logging.warning(
                             "Duplicate connector ID %s for EVSE %s",
                             con.id,
-                            evse.evse_id,
+                            evse.get_evseid(ignore_evseids, uid_as_evseid),
                         )
                         continue
                     con_ids.add(con.id)
@@ -425,7 +449,7 @@ class OcpiLocation(Schema):
                 )
                 chargepoints.append(
                     ChargepointItem(
-                        evse.convert(ignore_evseid=ignore_evseids), connectors, status
+                        evse.convert(ignore_evseids, uid_as_evseid), connectors, status
                     )
                 )
         return ChargingSiteItem(site, chargepoints)

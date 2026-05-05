@@ -40,6 +40,7 @@ class BaseOcpiDataSource(DataSource):
     supported_update_methods = [UpdateMethod.PULL]
     license_attribution_link: Optional[str] = None
     ignore_evseids: bool = False
+    uid_as_evseid: bool = False
 
     @abstractmethod
     @classproperty
@@ -71,6 +72,7 @@ class BaseOcpiDataSource(DataSource):
                     self.license_attribution_link,
                     with_status=with_status,
                     ignore_evseids=self.ignore_evseids,
+                    uid_as_evseid=self.uid_as_evseid,
                 )
                 for location in locations
                 if location.is_valid()
@@ -657,6 +659,29 @@ class ScottishPowerUkOcpiDataSource(BaseOcpiDataSource):
         response = requests.get(self.locations_url)
         response.raise_for_status()
         return json.loads(response.text)["data"]
+
+
+class GridserveUkOcpiDataSource(BaseOcpiDataSource):
+    locations_url = "https://api.gridserve.com/ocpi/v1/locations"
+    tariffs_url = "https://api.gridserve.com/ocpi/v1/tariffs"
+
+    api_key = os.environ.get("GRIDSERVE_UK_API_KEY")
+
+    supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
+    id = "gridserve_uk"
+    license_attribution = "GRIDSERVE"
+    uid_as_evseid = True
+    # https://www.gridserve.com/open-data/
+
+    def get_locations_data(self):
+        response = requests.get(
+            self.locations_url,
+            headers={
+                "ec-subscription-key": self.api_key,
+            },
+        )
+        response.raise_for_status()
+        return json.loads(response.text)
 
 
 class LithuaniaOcpiDataSource(BaseOcpiDataSource):
