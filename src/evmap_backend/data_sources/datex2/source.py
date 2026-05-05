@@ -389,7 +389,17 @@ class Datex2MobilithekEnioDataSource(BaseMobilithekDatex2DataSource):
     subscription_id = os.environ.get("MOBILITHEK_ENIO_STATIC_SUBSCRIPTION_ID")
     parser = Datex2JsonParser()
     license_attribution = "ENIO GmbH"
-    # https://mobilithek.info/offers/963506672697769984
+    # https://mobilithek.info/offers/963766220171735040
+
+
+class Datex2MobilithekEnioRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_enio_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_ENIO_DYNAMIC_SUBSCRIPTION_ID")
+    static_data_source = "mobilithek_enio"
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    license_attribution = "ENIO GmbH"
+    # https://mobilithek.info/offers/968541134128902144
 
 
 class Datex2MobilithekPumpDataSource(BaseMobilithekDatex2DataSource):
