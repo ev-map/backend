@@ -257,7 +257,7 @@ def _deduplicate_sites(
     Yield sites, skipping any whose id_from_source has already been seen.
     Logs a warning for each duplicate encountered.
     """
-    seen_ids = set()
+    seen_ids = defaultdict(set)
     for item in sites:
         if item.site.id_from_source in seen_ids:
             logging.warning(
@@ -269,7 +269,20 @@ def _deduplicate_sites(
                 f"Site '{item.site.id_from_source}' with invalid location {item.site.location} — ignoring"
             )
             continue
-        seen_ids.add(item.site.id_from_source)
+
+        deduplicated_chargepoints = []
+        cpids = seen_ids[item.site.id_from_source]
+        for chargepoint in item.chargepoints:
+            if chargepoint.chargepoint.id_from_source in cpids:
+                logging.warning(
+                    f"Duplicate chargepoint ID '{item.site.id_from_source}/{chargepoint.chargepoint.id_from_source}' — ignoring duplicate"
+                )
+                continue
+
+            cpids.add(chargepoint.chargepoint.id_from_source)
+            deduplicated_chargepoints.append(chargepoint)
+        item.chargepoints = deduplicated_chargepoints
+
         yield item
 
 
