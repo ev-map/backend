@@ -554,6 +554,24 @@ class Datex2MobilithekGlsMobilityRealtimeDataSource(BaseMobilithekDatex2DataSour
     # https://mobilithek.info/offers/980563757096464384
 
 
+class Datex2MobilithekLichtBlickDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_lichtblick"
+    subscription_id = os.environ.get("MOBILITHEK_LICHTBLICK_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "LichtBlick eMobility GmbH"
+    # https://mobilithek.info/offers/962721207430316032
+
+
+class Datex2MobilithekLichtBlickRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_lichtblick_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_LICHTBLICK_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_lichtblick"
+    license_attribution = "LichtBlick eMobility GmbH"
+    # https://mobilithek.info/offers/962731482363617280
+
+
 class BaseSpiriiDatex2DataSource(BaseDatex2DataSource):
     parser = Datex2JsonParser()
 
