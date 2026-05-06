@@ -94,6 +94,8 @@ from evmap_backend.data_sources.ocpi.source import (
     MfgUkOcpiDataSource,
     NdwNetherlandsOcpiDataSource,
     OspreyUkOcpiDataSource,
+    PlugNGoUkOcpiDataSource,
+    PlugNGoUkOcpiRealtimeDataSource,
     RawChargingUkOcpiDataSource,
     RawChargingUkOcpiRealtimeDataSource,
     RoadBelgiumOcpiDataSource,
@@ -211,6 +213,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     ScottishPowerUkOcpiDataSource,
     GridserveUkOcpiDataSource,
     UrbanFoxUkOcpiDataSource,
+    PlugNGoUkOcpiDataSource,
+    PlugNGoUkOcpiRealtimeDataSource,
     # Latvia
     Datex2LatviaEcoMovementDataSource,
     Datex2LatviaEcoMovementRealtimeDataSource,

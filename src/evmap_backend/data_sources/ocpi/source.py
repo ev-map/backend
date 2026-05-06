@@ -514,6 +514,19 @@ class RawChargingUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSourc
     # https://www.chargepoint.com/en-gb/blog/navigating-uk-public-charging-regulations-guide-charge-point-operators
 
 
+class PlugNGoUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
+    token = os.environ.get("PLUG_N_GO_UK_ECOMOVEMENT_TOKEN")
+    id = "plug_n_go_uk"
+    # https://plug-n-go.com/ -> PCPR Data requests
+
+
+class PlugNGoUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
+    token = os.environ.get("PLUG_N_GO_UK_ECOMOVEMENT_TOKEN")
+    id = "plug_n_go_uk_realtime"
+    locations_data_source = "plug_n_go_uk"
+    # https://plug-n-go.com/ -> PCPR Data requests
+
+
 class ChargyUkOcpiDataSource(BaseOcpiDataSource):
     locations_url = "https://char.gy/open-ocpi/locations"
     tariffs_url = "https://char.gy/open-ocpi/tariffs/GB/CGY"
