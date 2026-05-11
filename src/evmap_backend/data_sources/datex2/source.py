@@ -572,6 +572,24 @@ class Datex2MobilithekLichtBlickRealtimeDataSource(BaseMobilithekDatex2DataSourc
     # https://mobilithek.info/offers/962731482363617280
 
 
+class Datex2MobilithekEwPricingDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_ew_pricing"
+    subscription_id = os.environ.get("MOBILITHEK_EW_PRICING_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "EW Pricing GmbH"
+    # https://mobilithek.info/offers/989311807176560640
+
+
+class Datex2MobilithekEwPricingRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_ew_pricing_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_EW_PRICING_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_ew_pricing"
+    license_attribution = "EW Pricing GmbH"
+    # https://mobilithek.info/offers/989311073915731968
+
+
 class BaseSpiriiDatex2DataSource(BaseDatex2DataSource):
     parser = Datex2JsonParser()
 
