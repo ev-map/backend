@@ -778,6 +778,19 @@ class Datex2SpainDataSource(BaseDatex2DataSource):
         return response.text
 
 
+class Datex2DenmarkOkDataSource(BaseDatex2DataSource):
+    id = "denmark_ok"
+    license_attribution = "OK A.M.B.A."
+    # https://du-portal-ui.dataudveksler.app.vd.dk/data/1096/overview
+
+    def get_data(self) -> str:
+        response = requests.get(
+            "https://ocpi-emobility.okcloud.dk/datex/locations",
+        )
+        response.raise_for_status()
+        return response.text
+
+
 class BaseMontaPublicDatex2DataSource(DataSource):
     supported_data_types = [DataType.STATIC]
     supported_update_methods = [UpdateMethod.PULL]

@@ -10,6 +10,7 @@ from evmap_backend.data_sources.datex2.source import (
     Datex2BelgiumMontaDataSource,
     Datex2DenmarkEcoMovementDataSource,
     Datex2DenmarkMontaDataSource,
+    Datex2DenmarkOkDataSource,
     Datex2FinlandDataSource,
     Datex2LatviaEcoMovementDataSource,
     Datex2LatviaEcoMovementRealtimeDataSource,
@@ -234,6 +235,7 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     # Denmark
     Datex2DenmarkEcoMovementDataSource,
     Datex2DenmarkMontaDataSource,
+    Datex2DenmarkOkDataSource,
     # Belgium
     Datex2BelgiumEcoMovementDataSource,
     Datex2BelgiumMontaDataSource,
