@@ -134,7 +134,7 @@ def parse_energy_infrastructure_site(
     city = None
 
     location = get_alternatives(
-        location_reference, ["locPointLocation", "locAreaLocation"]
+        location_reference, ["locPointLocation", "locAreaLocation", "pointLocation"]
     )
     if location is not None and "locLocationExtensionG" in location:
         location_extension = location["locLocationExtensionG"]
@@ -182,7 +182,7 @@ def parse_energy_infrastructure_site(
             refill_points += station_refill_points
 
     area_location = get_alternatives(
-        location_reference, ["locAreaLocation", "locPointLocation"]
+        location_reference, ["locAreaLocation", "locPointLocation", "pointLocation"]
     )
     coordinates = (
         area_location["coordinatesForDisplay"]
