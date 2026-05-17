@@ -115,7 +115,7 @@ def site_detail(request, site_id: int, tz: str = None):
         rs = latest_statuses.get(cp.id)
         chargepoints.append(
             ChargepointStatusSchema(
-                evseid=blank_to_none(format_evseid(cp.evseid)),
+                evseid=format_evseid(cp.evseid) if cp.evseid else None,
                 physical_reference=blank_to_none(cp.physical_reference),
                 connectors=[
                     ConnectorSchema(
