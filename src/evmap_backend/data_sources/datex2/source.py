@@ -259,6 +259,24 @@ class Datex2MobilithekLadebusinessRealtimeDataSource(BaseMobilithekDatex2DataSou
     # https://mobilithek.info/offers/903321397006716928
 
 
+class Datex2MobilithekEClearingDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_eclearing"
+    subscription_id = os.environ.get("MOBILITHEK_ECLEARING_STATIC_SUBSCRIPTION_ID")
+    license_attribution = "Smartlab Innovationsgesellschaft mbH, CC-0"
+    parser = Datex2JsonParser()
+    # https://mobilithek.info/offers/996825300704600064
+
+
+class Datex2MobilithekEClearingRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_eclearing_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_ECLEARING_DYNAMIC_SUBSCRIPTION_ID")
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_eclearing"
+    parser = Datex2JsonParser()
+    license_attribution = "Smartlab Innovationsgesellschaft mbH, CC-0"
+    # https://mobilithek.info/offers/996823601386508288
+
+
 class Datex2MobilithekUlmDataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_ulm"
     subscription_id = os.environ.get("MOBILITHEK_ULM_STATIC_SUBSCRIPTION_ID")
