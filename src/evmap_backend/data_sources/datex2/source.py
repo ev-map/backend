@@ -608,6 +608,24 @@ class Datex2MobilithekEwPricingRealtimeDataSource(BaseMobilithekDatex2DataSource
     # https://mobilithek.info/offers/989311073915731968
 
 
+class Datex2MobilithekGpJouleDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_gp_joule"
+    subscription_id = os.environ.get("MOBILITHEK_GP_JOULE_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "GP JOULE Connect GmbH, CC-0"
+    # https://mobilithek.info/offers/997111469996658688
+
+
+class Datex2MobilithekGpJouleRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_gp_joule_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_GP_JOULE_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_gp_joule"
+    license_attribution = "GP JOULE Connect GmbH, CC-0"
+    # https://mobilithek.info/offers/997190851637440512
+
+
 class BaseSpiriiDatex2DataSource(BaseDatex2DataSource):
     parser = Datex2JsonParser()
 
