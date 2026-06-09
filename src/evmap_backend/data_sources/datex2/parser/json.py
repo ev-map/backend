@@ -293,6 +293,9 @@ class Datex2JsonParser:
             root = root["messageContainer"]
         root = root["payload"]
 
+        if isinstance(root, dict):
+            root = [root]
+
         for payload in root:
             for site in payload["aegiEnergyInfrastructureStatusPublication"][
                 "energyInfrastructureSiteStatus"
