@@ -78,7 +78,9 @@ def parse_external_identifier(external_identifier) -> Optional[str]:
             (
                 extid["identifier"]
                 for extid in external_identifier
-                if extid["typeOfIdentifier"]["extendedValueG"] == "evseId"
+                if "typeOfIdentifier" in extid
+                and extid["typeOfIdentifier"]["extendedValueG"] == "evseId"
+                and "identifier" in extid
             ),
             None,
         )
