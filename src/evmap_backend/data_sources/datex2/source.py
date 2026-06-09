@@ -626,6 +626,30 @@ class Datex2MobilithekGpJouleRealtimeDataSource(BaseMobilithekDatex2DataSource):
     # https://mobilithek.info/offers/997190851637440512
 
 
+class Datex2MobilithekTaubertConsultingDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_taubert_consulting"
+    subscription_id = os.environ.get(
+        "MOBILITHEK_TAUBERT_CONSULTING_STATIC_SUBSCRIPTION_ID"
+    )
+    parser = Datex2JsonParser()
+    license_attribution = "Taubert Consulting GmbH, CC-0"
+    # https://mobilithek.info/offers/1000749522967314432
+
+
+class Datex2MobilithekTaubertConsultingRealtimeDataSource(
+    BaseMobilithekDatex2DataSource
+):
+    id = "mobilithek_taubert_consulting_realtime"
+    subscription_id = os.environ.get(
+        "MOBILITHEK_TAUBERT_CONSULTING_DYNAMIC_SUBSCRIPTION_ID"
+    )
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_taubert_consulting"
+    license_attribution = "Taubert Consulting GmbH, CC-0"
+    # https://mobilithek.info/offers/1000746576770711552
+
+
 class BaseSpiriiDatex2DataSource(BaseDatex2DataSource):
     parser = Datex2JsonParser()
 

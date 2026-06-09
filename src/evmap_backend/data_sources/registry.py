@@ -56,6 +56,8 @@ from evmap_backend.data_sources.datex2.source import (
     Datex2MobilithekQwelloRealtimeDataSource,
     Datex2MobilithekSmatricsDataSource,
     Datex2MobilithekSmatricsRealtimeDataSource,
+    Datex2MobilithekTaubertConsultingDataSource,
+    Datex2MobilithekTaubertConsultingRealtimeDataSource,
     Datex2MobilithekTeslaDataSource,
     Datex2MobilithekTeslaRealtimeDataSource,
     Datex2MobilithekUlmDataSource,
@@ -183,6 +185,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2MobilithekEwPricingRealtimeDataSource,
     Datex2MobilithekGpJouleDataSource,
     Datex2MobilithekGpJouleRealtimeDataSource,
+    Datex2MobilithekTaubertConsultingDataSource,
+    Datex2MobilithekTaubertConsultingRealtimeDataSource,
     Datex2AudiChargingHubDataSource,
     Datex2AudiChargingHubRealtimeDataSource,
     # Luxembourg
