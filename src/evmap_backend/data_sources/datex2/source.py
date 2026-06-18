@@ -650,6 +650,30 @@ class Datex2MobilithekTaubertConsultingRealtimeDataSource(
     # https://mobilithek.info/offers/1000746576770711552
 
 
+class Datex2MobilithekVolkswagenGroupChargingDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_vw_group_charging"
+    subscription_id = os.environ.get(
+        "MOBILITHEK_VW_GROUP_CHARGING_STATIC_SUBSCRIPTION_ID"
+    )
+    parser = Datex2JsonParser()
+    license_attribution = "Volkswagen Group Charging, CC-0"
+    # https://mobilithek.info/offers/983008874583728128
+
+
+class Datex2MobilithekVolkswagenGroupChargingRealtimeDataSource(
+    BaseMobilithekDatex2DataSource
+):
+    id = "mobilithek_vw_group_charging_realtime"
+    subscription_id = os.environ.get(
+        "MOBILITHEK_VW_GROUP_CHARGING_DYNAMIC_SUBSCRIPTION_ID"
+    )
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_vw_group_charging"
+    license_attribution = "Volkswagen Group Charging, CC-0"
+    # https://mobilithek.info/offers/983006934617260032
+
+
 class BaseSpiriiDatex2DataSource(BaseDatex2DataSource):
     parser = Datex2JsonParser()
 
