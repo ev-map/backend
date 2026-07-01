@@ -527,6 +527,19 @@ class PlugNGoUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
     # https://plug-n-go.com/ -> PCPR Data requests
 
 
+class AllegoUkOcpiDataSource(BaseEcoMovementUkOcpiDataSource):
+    token = os.environ.get("ALLEGO_UK_ECOMOVEMENT_TOKEN")
+    id = "allego_uk"
+    # ttps://www.allego.eu/charge-point-data/
+
+
+class AllegoUkOcpiRealtimeDataSource(BaseEcoMovementUkOcpiRealtimeDataSource):
+    token = os.environ.get("ALLEGO_UK_ECOMOVEMENT_TOKEN")
+    id = "allego_uk_realtime"
+    locations_data_source = "allego_uk"
+    # ttps://www.allego.eu/charge-point-data/
+
+
 class ChargyUkOcpiDataSource(BaseOcpiDataSource):
     locations_url = "https://char.gy/open-ocpi/locations"
     tariffs_url = "https://char.gy/open-ocpi/tariffs/GB/CGY"

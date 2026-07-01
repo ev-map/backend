@@ -80,6 +80,8 @@ from evmap_backend.data_sources.nobil.source import (
     NobilRealtimeDataSource,
 )
 from evmap_backend.data_sources.ocpi.source import (
+    AllegoUkOcpiDataSource,
+    AllegoUkOcpiRealtimeDataSource,
     BlinkUkOcpiDataSource,
     BlinkUkOcpiRealtimeDataSource,
     BpPulseUkOcpiDataSource,
@@ -242,6 +244,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     UrbanFoxUkOcpiDataSource,
     PlugNGoUkOcpiDataSource,
     PlugNGoUkOcpiRealtimeDataSource,
+    AllegoUkOcpiDataSource,
+    AllegoUkOcpiRealtimeDataSource,
     # Latvia
     Datex2LatviaEcoMovementDataSource,
     Datex2LatviaEcoMovementRealtimeDataSource,
