@@ -674,6 +674,24 @@ class Datex2MobilithekVolkswagenGroupChargingRealtimeDataSource(
     # https://mobilithek.info/offers/983006934617260032
 
 
+class Datex2MobilithekFlaviaDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_flavia"
+    subscription_id = os.environ.get("MOBILITHEK_FLAVIA_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "Flavia IT-Management GmbH"
+    # https://mobilithek.info/offers/1004450433724211200
+
+
+class Datex2MobilithekFlaviaRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_flavia_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_FLAVIA_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_flavia"
+    license_attribution = "Flavia IT-Management GmbH"
+    # https://mobilithek.info/offers/1004756865530970112
+
+
 class BaseSpiriiDatex2DataSource(BaseDatex2DataSource):
     parser = Datex2JsonParser()
 
