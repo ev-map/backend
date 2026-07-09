@@ -692,6 +692,28 @@ class Datex2MobilithekFlaviaRealtimeDataSource(BaseMobilithekDatex2DataSource):
     # https://mobilithek.info/offers/1004756865530970112
 
 
+class Datex2MobilithekAudiChargingHubDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_audi_charging_hub"
+    subscription_id = os.environ.get(
+        "MOBILITHEK_AUDI_CHARGING_HUB_STATIC_SUBSCRIPTION_ID"
+    )
+    parser = Datex2JsonParser()
+    license_attribution = "Audi AG"
+    # https://mobilithek.info/offers/998571342932365312
+
+
+class Datex2MobilithekAudiChargingHubRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_audi_charging_hub_realtime"
+    subscription_id = os.environ.get(
+        "MOBILITHEK_AUDI_CHARGING_HUB_DYNAMIC_SUBSCRIPTION_ID"
+    )
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_audi_charging_hub"
+    license_attribution = "Audi AG"
+    # https://mobilithek.info/offers/998567365272563712
+
+
 class BaseSpiriiDatex2DataSource(BaseDatex2DataSource):
     parser = Datex2JsonParser()
 
@@ -711,20 +733,20 @@ class BaseSpiriiDatex2DataSource(BaseDatex2DataSource):
         return response.text
 
 
-class Datex2AudiChargingHubDataSource(BaseSpiriiDatex2DataSource):
-    id = "audi_charging_hub"
-    license_attribution = "Audi AG"
-    customer_id = 128650
-    # https://mobilithek.info/offers/980858103788171264
-
-
-class Datex2AudiChargingHubRealtimeDataSource(BaseSpiriiDatex2DataSource):
-    id = "audi_charging_hub_realtime"
-    license_attribution = "Audi AG"
-    supported_data_types = [DataType.DYNAMIC]
-    customer_id = 128650
-    static_data_source = "audi_charging_hub"
-    # https://mobilithek.info/offers/980860692042825728
+# class Datex2AudiChargingHubDataSource(BaseSpiriiDatex2DataSource):
+#     id = "audi_charging_hub"
+#     license_attribution = "Audi AG"
+#     customer_id = 128650
+#     # https://mobilithek.info/offers/980858103788171264
+#
+#
+# class Datex2AudiChargingHubRealtimeDataSource(BaseSpiriiDatex2DataSource):
+#     id = "audi_charging_hub_realtime"
+#     license_attribution = "Audi AG"
+#     supported_data_types = [DataType.DYNAMIC]
+#     customer_id = 128650
+#     static_data_source = "audi_charging_hub"
+#     # https://mobilithek.info/offers/980860692042825728
 
 
 class BaseEcoMovementNapDatex2DataSource(BaseDatex2DataSource):

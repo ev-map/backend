@@ -2,8 +2,6 @@ from typing import Dict, List, Type
 
 from evmap_backend.data_sources import DataSource
 from evmap_backend.data_sources.datex2.source import (
-    Datex2AudiChargingHubDataSource,
-    Datex2AudiChargingHubRealtimeDataSource,
     Datex2AustriaDataSource,
     Datex2AustriaRealtimeDataSource,
     Datex2BelgiumEcoMovementDataSource,
@@ -15,6 +13,8 @@ from evmap_backend.data_sources.datex2.source import (
     Datex2LatviaEcoMovementDataSource,
     Datex2LatviaEcoMovementRealtimeDataSource,
     Datex2LuxembourgEcoMovementDataSource,
+    Datex2MobilithekAudiChargingHubDataSource,
+    Datex2MobilithekAudiChargingHubRealtimeDataSource,
     Datex2MobilithekChargecloudDataSource,
     Datex2MobilithekChargecloudRealtimeDataSource,
     Datex2MobilithekEClearingDataSource,
@@ -195,8 +195,8 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     Datex2MobilithekTaubertConsultingRealtimeDataSource,
     Datex2MobilithekVolkswagenGroupChargingDataSource,
     Datex2MobilithekVolkswagenGroupChargingRealtimeDataSource,
-    Datex2AudiChargingHubDataSource,
-    Datex2AudiChargingHubRealtimeDataSource,
+    Datex2MobilithekAudiChargingHubDataSource,
+    Datex2MobilithekAudiChargingHubRealtimeDataSource,
     Datex2MobilithekFlaviaDataSource,
     Datex2MobilithekFlaviaRealtimeDataSource,
     # Luxembourg
