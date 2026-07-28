@@ -38,12 +38,13 @@
         .site-detail .loading { color: #999; }
         .site-detail td.utilization-cell { text-align:center; font-size:11px; padding: 2px 0px; width: 26px; }
     </style>
-    <link href='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css' rel='stylesheet'/>
+    <link href='https://unpkg.com/maplibre-gl@^6.0.0/dist/maplibre-gl.css' rel='stylesheet'/>
 </head>
 <body>
 <div id="map"></div>
-<script src='https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.js'></script>
-<script>
+<script type="module">
+    import * as maplibregl from 'https://unpkg.com/maplibre-gl@^6.0.0/dist/maplibre-gl.mjs';
+
     var map = new maplibregl.Map({
         container: 'map',
         style: 'https://tiles.openfreemap.org/styles/bright', // stylesheet location
