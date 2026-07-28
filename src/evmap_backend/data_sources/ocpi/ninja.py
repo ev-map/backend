@@ -33,11 +33,10 @@ class OcpiTokenAuth(HttpBearer):
                 data_source = get_data_source(conn.data_source)
                 if data_source.is_credentials_sender and t == conn.token_b:
                     return conn
-                if not data_source.is_credentials_sender:
-                    if t == conn.token_a and self.allow_token_a:
-                        return conn
-                    elif t == conn.token_c:
-                        return conn
+                if not data_source.is_credentials_sender and (
+                    t == conn.token_a and self.allow_token_a or t == conn.token_c
+                ):
+                    return conn
             except OcpiConnection.DoesNotExist:
                 pass
         return None

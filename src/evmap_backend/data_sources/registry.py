@@ -1,5 +1,3 @@
-from typing import Dict, List, Type
-
 from evmap_backend.data_sources import DataSource
 from evmap_backend.data_sources.datex2.source import (
     Datex2AustriaDataSource,
@@ -134,7 +132,7 @@ from evmap_backend.data_sources.opendata_swiss.source import (
     OpendataSwissRealtimeDataSource,
 )
 
-DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
+DATA_SOURCE_CLASSES: list[type[DataSource]] = [
     # multiple countries
     GoingElectricDataSource,
     # Austria
@@ -278,14 +276,14 @@ DATA_SOURCE_CLASSES: List[Type[DataSource]] = [
     # France
     IrveFranceDataSource,
 ]
-DATA_SOURCE_REGISTRY: Dict[str, Type[DataSource]] = {
+DATA_SOURCE_REGISTRY: dict[str, type[DataSource]] = {
     cls.id: cls for cls in DATA_SOURCE_CLASSES
 }
 
 
 def setup_data_sources():
     """Perform initialization needed for all data sources"""
-    for source_id, source_class in DATA_SOURCE_REGISTRY.items():
+    for source_class in DATA_SOURCE_REGISTRY.values():
         source_class().setup()
 
 
@@ -299,6 +297,6 @@ def get_data_source(source_id: str) -> DataSource:
     return DATA_SOURCE_REGISTRY[source_id]()
 
 
-def list_available_sources() -> List[str]:
+def list_available_sources() -> list[str]:
     """List all available data source IDs"""
     return list(DATA_SOURCE_REGISTRY.keys())

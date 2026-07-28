@@ -7,8 +7,8 @@ class SimpleDALFFilter(admin.SimpleListFilter):
     def __init__(self, request, params, model, model_admin):
         super().__init__(request, params, model, model_admin)
         self.custom_template_params = {
-            "app_label": model._meta.app_label,  # noqa: SLF001
-            "model_name": model._meta.model_name,  # noqa: SLF001
+            "app_label": model._meta.app_label,
+            "model_name": model._meta.model_name,
             "field_name": self.parameter_name,
             "lookup_kwarg": self.parameter_name,
         }

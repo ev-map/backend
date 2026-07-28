@@ -7,7 +7,6 @@ global greedy 1:1 assignment to ensure deterministic results.
 
 import logging
 from collections import defaultdict
-from typing import Dict, List, Optional, Set, Tuple
 
 from django.db import connection
 
@@ -35,9 +34,9 @@ def _score_distance(distance_m: float, max_distance_m: float) -> float:
 
 
 def _score_network(
-    ge_network_id: Optional[int],
-    site_network_id: Optional[int],
-    network_mapping: Dict[int, Set[int]],
+    ge_network_id: int | None,
+    site_network_id: int | None,
+    network_mapping: dict[int, set[int]],
 ) -> float:
     """
     Score network match.
@@ -55,8 +54,8 @@ def _score_network(
 
 
 def _score_chargepoints(
-    ge_chargepoints: List[GoingElectricChargepoint],
-    site_connectors: List[Connector],
+    ge_chargepoints: list[GoingElectricChargepoint],
+    site_connectors: list[Connector],
 ) -> float:
     """
     Score chargepoint similarity between GE chargepoints and site connectors.
@@ -104,11 +103,11 @@ def _power_matches(power_a: float, power_b: float) -> bool:
 
 def score_match(
     distance_m: float,
-    ge_network_id: Optional[int],
-    site_network_id: Optional[int],
-    network_mapping: Dict[int, Set[int]],
-    ge_chargepoints: List[GoingElectricChargepoint],
-    site_connectors: List[Connector],
+    ge_network_id: int | None,
+    site_network_id: int | None,
+    network_mapping: dict[int, set[int]],
+    ge_chargepoints: list[GoingElectricChargepoint],
+    site_connectors: list[Connector],
     max_distance_m: float = 200.0,
 ) -> float:
     """
@@ -125,23 +124,23 @@ def score_match(
     )
 
 
-def _build_network_mapping() -> Dict[int, Set[int]]:
+def _build_network_mapping() -> dict[int, set[int]]:
     """
     Build a lookup dict: GoingElectricNetwork.id -> set of chargers.Network.id
     from the mapped_networks M2M relationship.
     """
-    mapping: Dict[int, Set[int]] = defaultdict(set)
+    mapping: dict[int, set[int]] = defaultdict(set)
     for ge_network in GoingElectricNetwork.objects.prefetch_related("mapped_networks"):
         for network in ge_network.mapped_networks.all():
             mapping[ge_network.id].add(network.id)
     return dict(mapping)
 
 
-def _prefetch_site_connectors(site_ids: Set[int]) -> Dict[int, List[Connector]]:
+def _prefetch_site_connectors(site_ids: set[int]) -> dict[int, list[Connector]]:
     """
     Fetch all connectors for the given site IDs, grouped by site ID.
     """
-    connectors_by_site: Dict[int, List[Connector]] = defaultdict(list)
+    connectors_by_site: dict[int, list[Connector]] = defaultdict(list)
     for conn in Connector.objects.filter(
         chargepoint__site_id__in=site_ids
     ).select_related("chargepoint"):
@@ -176,16 +175,16 @@ def match_ge_locations(
     network_mapping = _build_network_mapping()
 
     # Prefetch all GE chargepoints grouped by location
-    ge_chargepoints_by_location: Dict[int, List[GoingElectricChargepoint]] = (
+    ge_chargepoints_by_location: dict[int, list[GoingElectricChargepoint]] = (
         defaultdict(list)
     )
     for cp in GoingElectricChargepoint.objects.all():
         ge_chargepoints_by_location[cp.chargelocation_id].append(cp)
 
     # Phase 1: Candidate generation via single spatial join query
-    all_candidate_site_ids: Set[int] = set()
-    ge_candidates: Dict[
-        int, Tuple[Optional[int], List[Tuple[int, float, Optional[int]]]]
+    all_candidate_site_ids: set[int] = set()
+    ge_candidates: dict[
+        int, tuple[int | None, list[tuple[int, float, int | None]]]
     ] = {}  # ge_id -> (network_id, [(site_id, distance_m, site_network_id)])
 
     # Build the GE location ID filter for the queryset
@@ -195,7 +194,7 @@ def match_ge_locations(
         return
 
     # Build a lookup for GE network_id by ge_id
-    ge_network_by_id: Dict[int, Optional[int]] = dict(
+    ge_network_by_id: dict[int, int | None] = dict(
         queryset.values_list("id", "network_id")
     )
 
@@ -243,7 +242,7 @@ def match_ge_locations(
 
     # Score all pairs
     logger.info("Scoring %d GE locations with candidates...", len(ge_candidates))
-    scored_pairs: List[Tuple[float, int, int]] = []  # (score, ge_id, site_id)
+    scored_pairs: list[tuple[float, int, int]] = []  # (score, ge_id, site_id)
 
     for ge_id, (ge_network_id, candidate_list) in ge_candidates.items():
         ge_cps = ge_chargepoints_by_location.get(ge_id, [])
@@ -268,9 +267,9 @@ def match_ge_locations(
     )
     scored_pairs.sort(key=lambda x: x[0], reverse=True)
 
-    claimed_ge_ids: Set[int] = set()
-    claimed_site_ids: Set[int] = set()
-    assignments: List[Tuple[int, int, float]] = []  # (ge_id, site_id, score)
+    claimed_ge_ids: set[int] = set()
+    claimed_site_ids: set[int] = set()
+    assignments: list[tuple[int, int, float]] = []  # (ge_id, site_id, score)
 
     for score, ge_id, site_id in scored_pairs:
         if ge_id in claimed_ge_ids or site_id in claimed_site_ids:
@@ -309,8 +308,8 @@ def match_ge_locations(
 
 
 def suggest_network_mappings(
-    ge_network: Optional[GoingElectricNetwork] = None,
-) -> Dict[int, Dict[int, int]]:
+    ge_network: GoingElectricNetwork | None = None,
+) -> dict[int, dict[int, int]]:
     """
     Analyse already-matched GE locations to infer which chargers.Network
     each GoingElectricNetwork should map to.
@@ -322,7 +321,7 @@ def suggest_network_mappings(
         Dict mapping GoingElectricNetwork.id -> {chargers.Network.id: count}
         where *count* is the number of matched stations supporting that pairing.
     """
-    counts: Dict[int, Dict[int, int]] = defaultdict(lambda: defaultdict(int))
+    counts: dict[int, dict[int, int]] = defaultdict(lambda: defaultdict(int))
 
     qs = GoingElectricChargeLocation.objects.filter(
         matched_site__isnull=False,

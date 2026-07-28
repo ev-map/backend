@@ -33,6 +33,6 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(str(e)))
         except Exception as e:
             self.stdout.write(
-                self.style.ERROR(f"Error streaming data from {source_id}: {str(e)}")
+                self.style.ERROR(f"Error streaming data from {source_id}: {e!s}")
             )
             raise

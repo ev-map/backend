@@ -11,6 +11,8 @@ from evmap_backend.data_sources.registry import get_data_source
 
 api = NinjaAPI(urls_namespace="data_sources")
 
+logger = logging.getLogger(__name__)
+
 
 @api.post("/push/{data_source}")
 def push(request, data_source: str):
@@ -23,7 +25,7 @@ def push(request, data_source: str):
 
     data_source.verify_push(request)
 
-    logging.info(f"Processing push for {data_source.id}...")
+    logger.info(f"Processing push for {data_source.id}...")
 
     body = request.body
     if request.headers.get("Content-Encoding") == "gzip":
@@ -31,15 +33,15 @@ def push(request, data_source: str):
 
     data_source.process_push(body)
 
-    update_state, created = UpdateState.objects.get_or_create(
+    update_state, _created = UpdateState.objects.get_or_create(
         data_source=data_source.id,
-        defaults=dict(last_update=timezone.now(), push=True),
+        defaults={"last_update": timezone.now(), "push": True},
     )
     if timezone.now() - update_state.last_update > timedelta(minutes=1):
         update_state.last_update = timezone.now()
         update_state.push = True
         update_state.save()
-    logging.info(f"Successfully processed push for {data_source.id}")
+    logger.info(f"Successfully processed push for {data_source.id}")
 
     return 200, ""
 

@@ -1,5 +1,5 @@
 import os
-from typing import Iterable
+from collections.abc import Iterable
 
 import requests
 from django.contrib.gis.geos import Point
@@ -39,7 +39,7 @@ def parse_eliso_chargers(
             country=item["country_iso_3166_alpha_2"],
             network=Network.get_or_create(
                 evse_operator_id=item["operator"],
-                defaults=dict(name=item["operator_name"]),
+                defaults={"name": item["operator_name"]},
             )[0],
             location=Point(
                 item["coordinates"]["longitude"], item["coordinates"]["latitude"]

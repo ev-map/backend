@@ -1,7 +1,7 @@
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 
-def find_common_part(strings: Iterable[str], min_length=5) -> Optional[str]:
+def find_common_part(strings: Iterable[str], min_length=5) -> str | None:
     """
     For a given list of strings, find the longest common substring (located anywhere within the string)
     in the given list of strings.

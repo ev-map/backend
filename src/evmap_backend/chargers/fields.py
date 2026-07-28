@@ -1,7 +1,6 @@
 import re
 from enum import StrEnum
 from functools import partial
-from typing import Optional
 
 import opening_hours
 from django.contrib.gis.db.models import GeometryField
@@ -57,7 +56,7 @@ class EVSEIDType(StrEnum):
     POOL = "P"  # pool of charging stations - optional
 
 
-def validate_evseid(value: str, evseid_type: Optional[EVSEIDType] = None):
+def validate_evseid(value: str, evseid_type: EVSEIDType | None = None):
     """
     Validate EVSEID in normalized (separator-free) form.
     Expected: 2 letters country, 3 operator chars, type ('E', 'S', or 'P'), 1–31 chars.
@@ -104,7 +103,7 @@ class EVSEIDField(models.CharField):
     description = "EVSE Identifier (normalized without separators)"
 
     def __init__(
-        self, max_length=37, evseid_type: Optional[EVSEIDType] = None, *args, **kwargs
+        self, max_length=37, evseid_type: EVSEIDType | None = None, *args, **kwargs
     ):
         self.default_validators = [partial(validate_evseid, evseid_type=evseid_type)]
         super().__init__(*args, max_length=max_length, **kwargs)

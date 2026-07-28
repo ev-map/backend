@@ -1,5 +1,4 @@
 import datetime as dt
-from typing import List
 
 import django.http
 from ninja import NinjaAPI, Schema
@@ -18,7 +17,7 @@ class RealtimeStatusSchema(Schema):
     status: RealtimeStatus.Status
 
 
-@api.get("/realtime/{nobil_id}", response=List[RealtimeStatusSchema])
+@api.get("/realtime/{nobil_id}", response=list[RealtimeStatusSchema])
 def realtime(request, nobil_id: str):
     nobil_id_without_country = str(int(nobil_id.split("_")[1]))
     try:

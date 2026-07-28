@@ -15,7 +15,7 @@ positions for chargers at the same location.
 
 import logging
 from collections import defaultdict
-from typing import Dict, Iterable, List, Optional, Tuple
+from collections.abc import Iterable
 
 from django.contrib.gis.geos import Point
 from django.core.exceptions import ValidationError
@@ -41,7 +41,7 @@ COUNTRY_CODE_MAP = {
 }
 
 # OICP plug type to our connector type mapping
-PLUG_TYPE_MAP: Dict[str, Connector.ConnectorTypes] = {
+PLUG_TYPE_MAP: dict[str, Connector.ConnectorTypes] = {
     "Type 2 Outlet": Connector.ConnectorTypes.TYPE_2,
     "Type 2 Connector (Cable Attached)": Connector.ConnectorTypes.TYPE_2,
     "Type 1 Connector (Cable Attached)": Connector.ConnectorTypes.TYPE_1,
@@ -61,7 +61,7 @@ SOCKET_PLUG_TYPES = {
 }
 
 # OICP status to OCPI-style status mapping
-STATUS_MAP: Dict[str, RealtimeStatus.Status] = {
+STATUS_MAP: dict[str, RealtimeStatus.Status] = {
     "Available": RealtimeStatus.Status.AVAILABLE,
     "Occupied": RealtimeStatus.Status.CHARGING,
     "OutOfService": RealtimeStatus.Status.OUTOFORDER,
@@ -81,7 +81,7 @@ DAY_ABBREVIATIONS = {
 }
 
 
-def _parse_coordinates(geo_coordinates: dict) -> Optional[Point]:
+def _parse_coordinates(geo_coordinates: dict) -> Point | None:
     """Parse GeoCoordinates in Google format ('lat lng') to a Point."""
     google = geo_coordinates.get("Google", "")
     parts = google.split()
@@ -103,7 +103,7 @@ def _parse_coordinates(geo_coordinates: dict) -> Optional[Point]:
 _CLUSTER_THRESHOLD = 0.0005
 
 
-def _parse_google_coords(google_coords: str) -> Optional[Tuple[float, float]]:
+def _parse_google_coords(google_coords: str) -> tuple[float, float] | None:
     """Parse a 'lat lng' string into a (lat, lng) tuple, or None."""
     parts = google_coords.split()
     if len(parts) != 2:
@@ -126,7 +126,7 @@ class _SiteClusterer:
 
     def __init__(self):
         # (operator_id, operator_name) -> list of (leader_lat, leader_lng, key_str)
-        self._leaders: Dict[Tuple[str, str], List[Tuple[float, float, str]]] = (
+        self._leaders: dict[tuple[str, str], list[tuple[float, float, str]]] = (
             defaultdict(list)
         )
 
@@ -218,7 +218,7 @@ def _convert_opening_hours(record: dict) -> str:
     return str(OpeningHours(raw).normalize())
 
 
-def _parse_connectors(record: dict) -> List[Connector]:
+def _parse_connectors(record: dict) -> list[Connector]:
     """Parse connectors from an EVSE data record.
 
     Each EVSE record has a list of Plugs and a list of ChargingFacilities.
@@ -280,7 +280,7 @@ def parse_oicp_data(
     positions end up in one site.
     """
     # Group EVSE records by (operator_id, operator_name, cluster_key)
-    stations: Dict[Tuple[str, str, str], List[dict]] = defaultdict(list)
+    stations: dict[tuple[str, str, str], list[dict]] = defaultdict(list)
     clusterer = _SiteClusterer()
 
     for evse_data_entry in data.get("EVSEData", []):
@@ -316,7 +316,7 @@ def parse_oicp_data(
             if evse_operator_id:
                 network, _ = Network.get_or_create(
                     evse_operator_id=evse_operator_id,
-                    defaults=dict(name=none_to_blank(operator_name)),
+                    defaults={"name": none_to_blank(operator_name)},
                 )
         except ValidationError:
             logger.warning(f"invalid evseid: {first_evseid}")

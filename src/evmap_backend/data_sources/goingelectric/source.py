@@ -70,37 +70,37 @@ class GoingElectricDataSource(DataSource):
                     location, created = (
                         GoingElectricChargeLocation.objects.update_or_create(
                             id=data["ge_id"],
-                            defaults=dict(
-                                name=data["name"],
-                                coordinates=Point(
+                            defaults={
+                                "name": data["name"],
+                                "coordinates": Point(
                                     data["coordinates"]["lng"],
                                     data["coordinates"]["lat"],
                                 ),
-                                address_city=(
+                                "address_city": (
                                     data["address"]["city"]
                                     if data["address"]["city"]
                                     else ""
                                 ),
-                                address_country=(
+                                "address_country": (
                                     data["address"]["country"]
                                     if data["address"]["country"]
                                     else ""
                                 ),
-                                address_postcode=(
+                                "address_postcode": (
                                     data["address"]["postcode"]
                                     if data["address"]["postcode"]
                                     else ""
                                 ),
-                                address_street=(
+                                "address_street": (
                                     data["address"]["street"]
                                     if data["address"]["street"]
                                     else ""
                                 ),
-                                network=network,
-                                url=data["url"],
-                                fault_report=data["fault_report"],
-                                verified=data["verified"],
-                            ),
+                                "network": network,
+                                "url": data["url"],
+                                "fault_report": data["fault_report"],
+                                "verified": data["verified"],
+                            },
                         )
                     )
 

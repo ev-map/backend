@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from datetime import timedelta
 from enum import Enum
-from typing import List
 
 from django.http import HttpRequest
 from django.utils.functional import classproperty
@@ -53,12 +52,12 @@ class DataSource(ABC):
 
     @classproperty
     @abstractmethod
-    def supported_data_types(self) -> List[DataType]:
+    def supported_data_types(self) -> list[DataType]:
         pass
 
     @classproperty
     @abstractmethod
-    def supported_update_methods(self) -> List[UpdateMethod]:
+    def supported_update_methods(self) -> list[UpdateMethod]:
         pass
 
     @classproperty
@@ -100,4 +99,3 @@ class DataSource(ABC):
 
         This has to be idempotent, i.e., check whether setup has already been done.
         """
-        pass

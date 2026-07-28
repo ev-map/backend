@@ -1,5 +1,3 @@
-from typing import Dict, Set
-
 from django.contrib.gis.db.models import GeometryField, PointField
 from django.contrib.gis.db.models.functions import Transform
 from django.db import models
@@ -90,7 +88,7 @@ class GoingElectricChargepoint(models.Model):
 
 # Maps GoingElectric connector types to compatible Connector.ConnectorTypes values.
 # GE types are coarser, so some map to multiple possibilities.
-GE_CONNECTOR_TYPE_MAP: Dict[str, Set[str]] = {
+GE_CONNECTOR_TYPE_MAP: dict[str, set[str]] = {
     GoingElectricChargepoint.ConnectorTypes.CCS: {
         Connector.ConnectorTypes.CCS_TYPE_1,
         Connector.ConnectorTypes.CCS_TYPE_2,

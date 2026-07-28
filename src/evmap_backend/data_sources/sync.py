@@ -1,8 +1,8 @@
 import logging
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass
 from itertools import batched
-from typing import Iterable, List, Optional, Tuple
 
 import pgbulk
 from django.db import transaction
@@ -18,21 +18,21 @@ from evmap_backend.realtime.models import RealtimeStatus
 @dataclass
 class ChargepointItem:
     chargepoint: Chargepoint
-    connectors: List[Connector]
-    status: Optional[RealtimeStatus] = None
+    connectors: list[Connector]
+    status: RealtimeStatus | None = None
 
 
 @dataclass
 class ChargingSiteItem:
     site: ChargingSite
-    chargepoints: List[ChargepointItem]
+    chargepoints: list[ChargepointItem]
 
 
 @dataclass
 class RealtimeStatusItem:
     chargepoint_id_from_source: str
     status: RealtimeStatus
-    site_id_from_source: Optional[str] = None
+    site_id_from_source: str | None = None
 
 
 def _get_update_fields(model, exclude_fields):
@@ -47,6 +47,8 @@ def _get_update_fields(model, exclude_fields):
 SITE_UPDATE_FIELDS = None
 CP_UPDATE_FIELDS = None
 CONN_UPDATE_FIELDS = None
+
+logger = logging.getLogger(__name__)
 
 
 def _get_cached_update_fields():
@@ -67,7 +69,7 @@ def _get_cached_update_fields():
 
 def _sync_batch(
     data_source: str,
-    batch: Tuple[ChargingSiteItem, ...],
+    batch: tuple[ChargingSiteItem, ...],
     seen_site_ids: set,
     existing_site_ids: set,
 ) -> int:
@@ -152,11 +154,11 @@ def _sync_batch(
 
 
 def _sync_connectors(
-    original_cps: List[Chargepoint],
-    cp_connectors: List[List[Connector]],
+    original_cps: list[Chargepoint],
+    cp_connectors: list[list[Connector]],
     cp_map: dict,
-    batch_cp_ids: List[int],
-    conn_update_fields: List[str],
+    batch_cp_ids: list[int],
+    conn_update_fields: list[str],
 ):
     """
     Sync connectors for all chargepoints in the batch.
@@ -260,12 +262,12 @@ def _deduplicate_sites(
     seen_ids = defaultdict(set)
     for item in sites:
         if item.site.id_from_source in seen_ids:
-            logging.warning(
+            logger.warning(
                 f"Duplicate site ID '{item.site.id_from_source}' — ignoring duplicate"
             )
             continue
         if item.site.location.y in [-90.0, 90.0]:
-            logging.warning(
+            logger.warning(
                 f"Site '{item.site.id_from_source}' with invalid location {item.site.location} — ignoring"
             )
             continue
@@ -274,7 +276,7 @@ def _deduplicate_sites(
         cpids = seen_ids[item.site.id_from_source]
         for chargepoint in item.chargepoints:
             if chargepoint.chargepoint.id_from_source in cpids:
-                logging.warning(
+                logger.warning(
                     f"Duplicate chargepoint ID '{item.site.id_from_source}/{chargepoint.chargepoint.id_from_source}' — ignoring duplicate"
                 )
                 continue
@@ -338,11 +340,11 @@ def sync_chargers(
             ChargingSite.objects.filter(id__in=sites_to_delete).delete()
             total_sites_deleted = len(sites_to_delete)
 
-        logging.info(
+        logger.info(
             f"{total_sites_created} sites created, {total_sites_deleted} sites deleted"
         )
         if total_statuses_created:
-            logging.info(f"{total_statuses_created} statuses created")
+            logger.info(f"{total_statuses_created} statuses created")
 
 
 def sync_statuses(
@@ -366,13 +368,13 @@ def sync_statuses(
                 total_statuses_created += statuses_created
                 progress_bar.update(len(batch))
 
-        logging.info(f"Created {total_statuses_created} statuses")
+        logger.info(f"Created {total_statuses_created} statuses")
 
 
 def _sync_statuses_batch(
     realtime_data_source: str,
     chargepoint_data_source: str,
-    batch: Tuple[RealtimeStatusItem, ...],
+    batch: tuple[RealtimeStatusItem, ...],
 ) -> int:
     """
     Sync a batch of statuses using bulk operations.
@@ -443,7 +445,7 @@ def _sync_statuses_batch(
             cp_id = next(iter(items_by_id.values()))
 
         if cp_id is None:
-            logging.warning(
+            logger.warning(
                 f"Chargepoint {item.site_id_from_source}/{item.chargepoint_id_from_source} not found, ignoring status update"
             )
             continue

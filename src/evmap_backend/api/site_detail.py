@@ -89,7 +89,7 @@ def _get_hourly_utilization(site_id: int, tz: str) -> list[list[float]] | None:
 @api.get(
     "/sites/{site_id}", response=SiteDetailSchema, auth=[django_auth, ApiKeyAuth()]
 )
-def site_detail(request, site_id: int, tz: str = None):
+def site_detail(request, site_id: int, tz: str | None = None):
     if tz is None:
         tz = settings.TIME_ZONE
     try:

@@ -70,7 +70,7 @@ class CountryCodeFilter(SimpleDALFFilter):
             .values_list("evse_operator_id", flat=True)
         )
         country_codes = sorted(
-            set(code[:2].upper() for code in evse_op_ids if len(code) >= 2)
+            code[:2].upper() for code in evse_op_ids if len(code) >= 2
         )
         return [(c, c) for c in country_codes]
 

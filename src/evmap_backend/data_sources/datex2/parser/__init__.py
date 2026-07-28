@@ -1,8 +1,8 @@
 import datetime
 import enum
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Optional, Tuple
 
 from django.contrib.gis.geos import Point
 from django.core.exceptions import ValidationError
@@ -23,9 +23,9 @@ from evmap_backend.realtime.models import RealtimeStatus
 
 @dataclass
 class Datex2MultilingualString:
-    values: Dict[str, str]
+    values: dict[str, str]
 
-    def first(self) -> Optional[str]:
+    def first(self) -> str | None:
         return next(iter(self.values.values())) if len(self.values) > 0 else None
 
 
@@ -125,8 +125,8 @@ ALTERNATIVE_EVSEID_PATTERN = re.compile(r"^[A-Z]{2}\.[A-Z0-9]{3}\.[A-Z0-9*]{1,32
 @dataclass
 class Datex2RefillPoint:
     id: str
-    connectors: List[Datex2Connector]
-    external_identifier: Optional[str] = None
+    connectors: list[Datex2Connector]
+    external_identifier: str | None = None
     name: Datex2MultilingualString = None
 
     def convert(self) -> ChargepointItem:
@@ -208,10 +208,10 @@ class Datex2RefillPoint:
 @dataclass
 class Datex2EnergyInfrastructureSite:
     id: str
-    name: Optional[Datex2MultilingualString]
-    description: Optional[Datex2MultilingualString]
+    name: Datex2MultilingualString | None
+    description: Datex2MultilingualString | None
     # TODO: operatingHours
-    location: Tuple[float, float]
+    location: tuple[float, float]
 
     # address
     street: str
@@ -220,27 +220,27 @@ class Datex2EnergyInfrastructureSite:
     country: str
 
     operator_name: Datex2MultilingualString
-    operator_phone: Optional[str]
-    refill_points: List[Datex2RefillPoint]
+    operator_phone: str | None
+    refill_points: list[Datex2RefillPoint]
     additional_information: Datex2MultilingualString = None
 
     def convert(
         self,
         data_source: str,
         license_attribution: str,
-        license_attribution_link: Optional[str],
-        default_country: Optional[str],
+        license_attribution_link: str | None,
+        default_country: str | None,
     ) -> ChargingSiteItem:
         evseid = self.refill_points[0].get_evseid() if self.refill_points else None
         if evseid:
             operator_id = normalize_evseid(evseid)[:5]
-            network, created = Network.get_or_create(
+            network, _created = Network.get_or_create(
                 evse_operator_id=operator_id,
-                defaults=dict(
-                    name=none_to_blank(
+                defaults={
+                    "name": none_to_blank(
                         self.operator_name.first() if self.operator_name else None
                     )
-                ),
+                },
             )
         else:
             network = None
@@ -301,15 +301,15 @@ class Datex2RefillPointStatus:
         UNKNOWN = "unknown"
 
     refill_point_id: str
-    last_updated: Optional[datetime.datetime]
+    last_updated: datetime.datetime | None
     status: Status
 
     def convert(
         self,
         data_source: str,
         license_attribution: str,
-        license_attribution_link: Optional[str],
-    ) -> Tuple[str, RealtimeStatus]:
+        license_attribution_link: str | None,
+    ) -> tuple[str, RealtimeStatus]:
         return self.refill_point_id, RealtimeStatus(
             status=status_map[self.status],
             timestamp=(
@@ -343,13 +343,13 @@ status_map = {
 @dataclass
 class Datex2EnergyInfrastructureSiteStatus:
     site_id: str
-    refill_point_statuses: List[Datex2RefillPointStatus]
+    refill_point_statuses: list[Datex2RefillPointStatus]
 
     def convert(
         self,
         data_source: str,
         license_attribution: str,
-        license_attribution_link: Optional[str],
+        license_attribution_link: str | None,
     ) -> Iterable[RealtimeStatusItem]:
         for rps in self.refill_point_statuses:
             cp_id, status = rps.convert(
@@ -362,9 +362,7 @@ class Datex2EnergyInfrastructureSiteStatus:
             )
 
 
-def parse_datetime(
-    text: Optional[str], default_timezone=None
-) -> Optional[datetime.datetime]:
+def parse_datetime(text: str | None, default_timezone=None) -> datetime.datetime | None:
     if text is None:
         return None
     dt = datetime.datetime.fromisoformat(text)

@@ -1,6 +1,6 @@
 import datetime
 import json
-from typing import Iterable, Optional, Tuple
+from collections.abc import Iterable
 
 from tqdm import tqdm
 
@@ -31,26 +31,24 @@ def parse_multilingual_string(elem) -> Datex2MultilingualString:
     if isinstance(elem, list):
         values = {value["lang"]: value["value"] for value in elem}
     else:
-        values = {elem["lang"]: elem["value"] if "value" in elem else ""}
+        values = {elem["lang"]: elem.get("value", "")}
 
     return Datex2MultilingualString(values=values)
 
 
-def parse_point_coordinates(elem: dict) -> Tuple[float, float]:
+def parse_point_coordinates(elem: dict) -> tuple[float, float]:
     return (elem["longitude"], elem["latitude"])
 
 
 def parse_connector(elem) -> Datex2Connector:
     val = elem["connectorType"]["value"]
-    if val == "iec62196T2Combo":
-        val = "iec62196T2COMBO"
-    elif val == "iec62196T1Combo":
+    if val == "iec62196T2Combo" or val == "iec62196T1Combo":
         val = "iec62196T2COMBO"
     elif val == "extendedG" or val == "domestic_g":
         val = "domesticG"
     return Datex2Connector(
         connector_type=Datex2Connector.ConnectorType(val),
-        max_power=elem["maxPowerAtSocket"] if "maxPowerAtSocket" in elem else None,
+        max_power=elem.get("maxPowerAtSocket", None),
     )
 
 
@@ -68,7 +66,7 @@ def parse_refill_point(elem) -> Datex2RefillPoint:
     )
 
 
-def parse_external_identifier(external_identifier) -> Optional[str]:
+def parse_external_identifier(external_identifier) -> str | None:
     if external_identifier is None:
         return None
     elif isinstance(external_identifier, str):
@@ -101,7 +99,7 @@ def parse_address(address_lines: list) -> str:
 
 def parse_energy_infrastructure_site(
     elem: dict, station_as_chargepoint=False
-) -> Optional[Datex2EnergyInfrastructureSite]:
+) -> Datex2EnergyInfrastructureSite | None:
     if (
         "energyInfrastructureStation" not in elem
         or len(elem["energyInfrastructureStation"]) == 0
@@ -221,7 +219,7 @@ def parse_energy_infrastructure_site(
 
 
 def parse_refill_point_status(
-    elem: dict, last_updated: datetime.datetime = None, default_timezone=None
+    elem: dict, last_updated: datetime.datetime | None = None, default_timezone=None
 ) -> Datex2RefillPointStatus:
     if "lastUpdated" in elem:
         last_updated = parse_datetime(elem["lastUpdated"], default_timezone)

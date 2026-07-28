@@ -14,7 +14,7 @@ def populate_networks(apps, schema_editor):
     for charge_location in tqdm(GoingElectricChargeLocation.objects.all()):
         network_name = charge_location.network_name
         if network_name:
-            network, created = GoingElectricNetwork.objects.get_or_create(
+            network, _created = GoingElectricNetwork.objects.get_or_create(
                 name=network_name
             )
             charge_location.network = network

@@ -37,3 +37,6 @@ dev = [
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "tests.settings"
 testpaths = ["src/tests"]
+
+[tool.ruff.lint]
+ignore = ["RUF012"]

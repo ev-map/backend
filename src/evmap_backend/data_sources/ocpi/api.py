@@ -1,6 +1,5 @@
 import datetime as dt
 import logging
-from typing import List, Union
 
 import pytz
 from django.core.exceptions import BadRequest
@@ -31,18 +30,19 @@ from evmap_backend.helpers.database import none_to_blank
 from evmap_backend.realtime.models import RealtimeStatus
 
 api = NinjaAPI(urls_namespace="ocpi", auth=OcpiTokenAuth())
+logger = logging.getLogger(__name__)
 
 
 @api.exception_handler(ValidationError)
 def custom_validation_errors(request, exc):
     print(request.body)
-    logging.error(exc.errors)
+    logger.error(exc.errors)
     return api.create_response(request, {"detail": exc.errors}, status=422)
 
 
 @api.get(
     "/versions",
-    response=OcpiResponse[List[OcpiVersion]],
+    response=OcpiResponse[list[OcpiVersion]],
     auth=OcpiTokenAuth(allow_token_a=True),
 )
 def versions(request):
@@ -98,7 +98,7 @@ def version_detail(request, ocpi_version: str):
 
 @api.post(
     "/{ocpi_version}/credentials",
-    response=OcpiResponse[Union[OcpiCredentials22, OcpiCredentials21]],
+    response=OcpiResponse[OcpiCredentials22 | OcpiCredentials21],
     auth=OcpiTokenAuth(allow_token_a=True),
 )
 def post_credentials(request, ocpi_version: str, credentials: OcpiCredentials22):

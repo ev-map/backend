@@ -2,7 +2,7 @@ import gzip
 import json
 import os
 from abc import abstractmethod
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 import requests
 from django.utils.functional import classproperty
@@ -38,7 +38,7 @@ def deduplicate_chargers(chargers: Iterable[OcpiLocation]) -> Iterable[OcpiLocat
 class BaseOcpiDataSource(DataSource):
     supported_data_types = [DataType.STATIC]
     supported_update_methods = [UpdateMethod.PULL]
-    license_attribution_link: Optional[str] = None
+    license_attribution_link: str | None = None
     ignore_evseids: bool = False
     uid_as_evseid: bool = False
 
@@ -50,7 +50,6 @@ class BaseOcpiDataSource(DataSource):
     @abstractmethod
     def get_locations_data(self) -> Iterable[dict]:
         """Get the data from the data source"""
-        pass
 
     def postprocess_locations(
         self, locations: Iterable[OcpiLocation]
@@ -83,7 +82,7 @@ class BaseOcpiDataSource(DataSource):
 class BaseOcpiRealtimeDataSource(DataSource):
     supported_data_types = [DataType.DYNAMIC]
     supported_update_methods = [UpdateMethod.PULL]
-    license_attribution_link: Optional[str] = None
+    license_attribution_link: str | None = None
 
     @abstractmethod
     @classproperty
@@ -93,7 +92,6 @@ class BaseOcpiRealtimeDataSource(DataSource):
     @abstractmethod
     def get_statuses_data(self) -> Iterable[dict]:
         """Get the data from the data source"""
-        pass
 
     @property
     @abstractmethod
@@ -123,7 +121,7 @@ class BaseOcpiConnectionDataSource(DataSource):
 
     supported_data_types = [DataType.STATIC, DataType.DYNAMIC, DataType.PRICING]
     supported_update_methods = [UpdateMethod.PULL, UpdateMethod.OCPI_PUSH]
-    license_attribution_link: Optional[str] = None
+    license_attribution_link: str | None = None
     is_credentials_sender: bool = False
     role = "NSP"
     country_code = os.environ.get("OCPI_COUNTRY_CODE")
@@ -290,8 +288,7 @@ class BaseEcoMovementUkOcpiDataSource(BaseOcpiDataSource):
             )
             response.raise_for_status()
             result = json.loads(response.text)["data"]
-            for item in result:
-                yield item
+            yield from result
             if len(result) < limit:
                 break
             offset += limit

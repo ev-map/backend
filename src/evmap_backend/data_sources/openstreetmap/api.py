@@ -1,5 +1,4 @@
 import datetime as dt
-from typing import List
 
 from ninja import NinjaAPI, Schema
 
@@ -21,7 +20,7 @@ class OsmNodeSchema(Schema):
 
 class DumpSchema(Schema):
     count: int
-    elements: List[OsmNodeSchema]
+    elements: list[OsmNodeSchema]
 
 
 @api.get("/dump", response=DumpSchema)

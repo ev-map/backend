@@ -1,8 +1,8 @@
 import datetime
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum, IntEnum
-from typing import Iterable, List, Optional
 
 import dateutil
 import pytz
@@ -133,28 +133,28 @@ class NobilConnector:
         MODE_3 = 3
         MODE_4 = 4
 
-    vehicle_type: Optional[VehicleType]
-    accessibility: Optional[Accessibility]
-    energy_carrier: Optional[EnergyCarrier]
-    connector: Optional[Connector]
-    charging_capacity: Optional[ChargingCapacity]
-    voltage: Optional[int]
-    amperage: Optional[int]
-    payment_method: Optional[PaymentMethod]
-    timestamp: Optional[datetime.datetime]
-    power_consumption: Optional[int]
-    connector_sensor_status: Optional[ConnectorSensorStatus]
-    connector_error_status: Optional[ConnectorErrorStatus]
-    connector_status: Optional[ConnectorStatus]
-    evse_uid: Optional[str]
-    fixed_cable: Optional[bool]
-    evse_id: Optional[str]
-    connector_id: Optional[str]
-    charge_mode: Optional[ChargeMode]
-    reservable: Optional[bool]
-    manufacturer: Optional[str]
+    vehicle_type: VehicleType | None
+    accessibility: Accessibility | None
+    energy_carrier: EnergyCarrier | None
+    connector: Connector | None
+    charging_capacity: ChargingCapacity | None
+    voltage: int | None
+    amperage: int | None
+    payment_method: PaymentMethod | None
+    timestamp: datetime.datetime | None
+    power_consumption: int | None
+    connector_sensor_status: ConnectorSensorStatus | None
+    connector_error_status: ConnectorErrorStatus | None
+    connector_status: ConnectorStatus | None
+    evse_uid: str | None
+    fixed_cable: bool | None
+    evse_id: str | None
+    connector_id: str | None
+    charge_mode: ChargeMode | None
+    reservable: bool | None
+    manufacturer: str | None
 
-    def convert(self) -> List[Connector]:
+    def convert(self) -> list[Connector]:
         if self.connector in [
             NobilConnector.Connector.BIOGAS,
             NobilConnector.Connector.HYDROGEN,
@@ -294,20 +294,20 @@ class NobilChargerStation:
     time_limit: bool
     real_time_information: bool
     public_funding: PublicFunding
-    ocpi_id: Optional[str]
-    description_of_location: Optional[str]
-    owned_by: Optional[str]
-    operator: Optional[str]
+    ocpi_id: str | None
+    description_of_location: str | None
+    owned_by: str | None
+    operator: str | None
     image: str
-    user_comment: Optional[str]
-    contact_info: Optional[str]
-    connectors: List[NobilConnector]
+    user_comment: str | None
+    contact_info: str | None
+    connectors: list[NobilConnector]
 
     def convert(
         self,
         data_source: str,
         license_attribution: str,
-        license_attribution_link: Optional[str] = None,
+        license_attribution_link: str | None = None,
     ) -> ChargingSiteItem:
         operator_id = None
         if self.connectors[0].evse_id:
@@ -321,7 +321,7 @@ class NobilChargerStation:
         if operator_id:
             network, _ = Network.get_or_create(
                 evse_operator_id=none_to_blank(operator_id),
-                defaults=dict(name=none_to_blank(self.operator)),
+                defaults={"name": none_to_blank(self.operator)},
             )
         else:
             network = None
@@ -416,14 +416,14 @@ def valattr(attrs, type):
         return None
 
 
-def to_int(val: Optional[str]) -> Optional[int]:
+def to_int(val: str | None) -> int | None:
     if val is None or not val.isnumeric():
         return None
     else:
         return int(val)
 
 
-def to_bool(val: Optional[int]) -> Optional[bool]:
+def to_bool(val: int | None) -> bool | None:
     if val is None:
         return None
     else:

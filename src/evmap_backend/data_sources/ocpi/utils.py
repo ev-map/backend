@@ -16,8 +16,16 @@ def auth_header(token: str, encode: bool = True) -> str:
         return f"Token {token}"
 
 
+class OcpiException(Exception):
+    pass
+
+
 def _ocpi_request(
-    url: str, token: str, method: str, body: str = None, extra_auth_header: str = None
+    url: str,
+    token: str,
+    method: str,
+    body: str | None = None,
+    extra_auth_header: str | None = None,
 ) -> tuple[Any, Response]:
     headers = {"Authorization": auth_header(token, encode=True)}
     if body is not None:
@@ -47,24 +55,24 @@ def _ocpi_request(
     json = response.json()
 
     if json["status_code"] != 1000:
-        raise Exception(f"OCPI error {json['status_code']}: {json['status_message']}")
+        raise OcpiException(
+            f"OCPI error {json['status_code']}: {json['status_message']}"
+        )
     return response, json
 
 
-def ocpi_get(url: str, token: str, extra_auth_header: str = None):
-    response, json = _ocpi_request(
-        url, token, "GET", extra_auth_header=extra_auth_header
-    )
+def ocpi_get(url: str, token: str, extra_auth_header: str | None = None):
+    _, json = _ocpi_request(url, token, "GET", extra_auth_header=extra_auth_header)
     return json["data"]
 
 
-def ocpi_get_paginated(url: str, token: str, extra_auth_header: str = None):
+def ocpi_get_paginated(url: str, token: str, extra_auth_header: str | None = None):
     response, json = _ocpi_request(
         url, token, "GET", extra_auth_header=extra_auth_header
     )
 
     if not isinstance(json["data"], list):
-        raise Exception("OCPI paginated response data is not a list")
+        raise TypeError("OCPI paginated response data is not a list")
 
     for item in json["data"]:
         yield item
@@ -80,5 +88,5 @@ def ocpi_get_paginated(url: str, token: str, extra_auth_header: str = None):
 
 def ocpi_post(url: str, token: str, body: Schema):
     dump_json = body.model_dump_json()
-    response, json = _ocpi_request(url, token, "POST", dump_json)
+    _, json = _ocpi_request(url, token, "POST", dump_json)
     return json["data"]

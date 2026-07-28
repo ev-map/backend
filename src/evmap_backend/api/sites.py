@@ -16,7 +16,7 @@ def sites(
     sw_lng: float,
     ne_lat: float,
     ne_lng: float,
-    cluster_grid: float = None,
+    cluster_grid: float | None = None,
 ):
     if cluster_grid:
         region = snap_bbox_to_grid(

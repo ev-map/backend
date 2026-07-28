@@ -1,13 +1,14 @@
 import logging
-from typing import List, Optional
 
 from django.db.models import OuterRef, QuerySet, Subquery
 
 from evmap_backend import settings
 
+logger = logging.getLogger(__name__)
+
 
 def distinct_on(
-    queryset: QuerySet, distinct_fields: List[str], order_field: str, order_reverse=True
+    queryset: QuerySet, distinct_fields: list[str], order_field: str, order_reverse=True
 ):
     order = f"-{order_field}" if order_reverse else order_field
     db_engine = settings.DATABASES["default"]["ENGINE"]
@@ -15,7 +16,7 @@ def distinct_on(
         # use native DISTINCT BY functionality in Postgres
         return queryset.order_by(*distinct_fields, order).distinct(*distinct_fields)
     else:
-        logging.warning(
+        logger.warning(
             "distinct_on: Using inefficient subquery-based implementation for non-Postgres database"
         )
         # Use subquery to find first element by order_field for each distinct_field
@@ -28,13 +29,13 @@ def distinct_on(
         return queryset.filter(**{order_field: Subquery(subquery)})
 
 
-def none_to_blank(val: Optional[str]) -> str:
+def none_to_blank(val: str | None) -> str:
     if val is None:
         return ""
     else:
         return val
 
 
-def blank_to_none(val: str) -> Optional[str]:
+def blank_to_none(val: str) -> str | None:
     """Convert empty strings to None for API output."""
     return val if val else None

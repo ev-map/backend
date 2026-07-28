@@ -1,5 +1,5 @@
 import datetime
-from typing import Iterable, Optional, Tuple
+from collections.abc import Iterable
 from xml.etree.ElementTree import Element
 
 from defusedxml import ElementTree
@@ -46,16 +46,16 @@ def find_payload(root: Element) -> Element:
         tag("egi:EnergyInfrastructureTablePublication"),
         tag("egi:EnergyInfrastructureStatusPublication"),
     ]:
-        if (result := root.find("con:payload", ns)) is not None:
-            root = result
-        elif (result := root.find("d2p:payload", ns)) is not None:
+        if (result := root.find("con:payload", ns)) is not None or (
+            result := root.find("d2p:payload", ns)
+        ) is not None:
             root = result
         else:
             raise ValueError("payload not found")
     return root
 
 
-def parse_multilingual_string(elem: Element) -> Optional[Datex2MultilingualString]:
+def parse_multilingual_string(elem: Element) -> Datex2MultilingualString | None:
     values_elem = elem.find("com:values", ns)
     values = {}
     if values_elem is not None:
@@ -65,14 +65,14 @@ def parse_multilingual_string(elem: Element) -> Optional[Datex2MultilingualStrin
     return Datex2MultilingualString(values=values)
 
 
-def parse_single_or_multilingual_string(elem: Element) -> Optional[str]:
+def parse_single_or_multilingual_string(elem: Element) -> str | None:
     if elem.text is not None:
         return elem.text
     else:
         return parse_multilingual_string(elem).first()
 
 
-def parse_point_coordinates(elem: Element) -> Tuple[float, float]:
+def parse_point_coordinates(elem: Element) -> tuple[float, float]:
     return (
         float(elem.find("loc:longitude", ns).text),
         float(elem.find("loc:latitude", ns).text),
@@ -145,7 +145,7 @@ def parse_energy_infrastructure_station_status(
 
 
 def parse_refill_point_status(
-    elem: Element, last_updated: datetime.datetime = None, default_timezone=None
+    elem: Element, last_updated: datetime.datetime | None = None, default_timezone=None
 ) -> Datex2RefillPointStatus:
     last_updated_elem = elem.find("fac:lastUpdated", ns)
     if last_updated_elem is not None:

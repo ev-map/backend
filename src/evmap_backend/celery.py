@@ -21,13 +21,7 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
     from evmap_backend.data_sources.models import UpdateState
     from evmap_backend.data_sources.registry import DATA_SOURCE_CLASSES
 
-    update_states = {}
-    try:
-        update_states = {
-            s.data_source: s.last_update for s in UpdateState.objects.all()
-        }
-    except Exception:
-        logger.debug("Could not read UpdateState table, skipping beat schedule seeding")
+    update_states = {s.data_source: s.last_update for s in UpdateState.objects.all()}
 
     count = 0
     for cls in DATA_SOURCE_CLASSES:
@@ -42,7 +36,7 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
             "args": (cls.id,),
             "last_run_at": last_update
             if last_update is not None
-            else datetime.datetime.min,
+            else datetime.datetime.min.replace(tzinfo=datetime.UTC),
         }
 
         sender.conf.beat_schedule[f"pull-{cls.id}"] = entry

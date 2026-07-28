@@ -1,5 +1,3 @@
-from typing import Dict, Tuple
-
 from django.contrib.gis.db import models
 from django.contrib.gis.db.models import GeometryField
 from django.contrib.gis.db.models.functions import Transform
@@ -41,8 +39,8 @@ class Network(models.Model):
 
     @classmethod
     def get_or_create(
-        cls, evse_operator_id: str, defaults: Dict[str, object]
-    ) -> Tuple["Network", bool]:
+        cls, evse_operator_id: str, defaults: dict[str, object]
+    ) -> tuple["Network", bool]:
         if evse_operator_id in cls._network_cache:
             return cls._network_cache[evse_operator_id], False
 

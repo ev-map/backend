@@ -12,7 +12,7 @@ import csv
 import logging
 import re
 from collections import defaultdict
-from typing import Dict, Iterable, List
+from collections.abc import Iterable
 
 from django.contrib.gis.geos import Point
 from django.core.exceptions import ValidationError
@@ -25,7 +25,7 @@ from evmap_backend.helpers.database import none_to_blank
 logger = logging.getLogger(__name__)
 
 # IRVE prise_type_* boolean columns -> ConnectorType mapping
-PLUG_TYPE_MAP: Dict[str, Connector.ConnectorTypes] = {
+PLUG_TYPE_MAP: dict[str, Connector.ConnectorTypes] = {
     "prise_type_ef": Connector.ConnectorTypes.DOMESTIC_E,
     "prise_type_2": Connector.ConnectorTypes.TYPE_2,
     "prise_type_combo_ccs": Connector.ConnectorTypes.CCS_TYPE_2,
@@ -69,7 +69,7 @@ def _parse_coordinates(row: dict) -> Point | None:
     return Point(lng, lat)
 
 
-def _parse_connectors(row: dict) -> List[Connector]:
+def _parse_connectors(row: dict) -> list[Connector]:
     """Build connectors from the prise_type_* boolean columns in a single row."""
     power_kw = _parse_float(row.get("puissance_nominale", "0"))
     max_power = power_kw * 1000  # convert kW to W
@@ -131,7 +131,7 @@ def parse_irve_csv(
     reader = csv.DictReader(lines, delimiter=",")
 
     # Group rows by station ID
-    stations: Dict[str, List[dict]] = defaultdict(list)
+    stations: dict[str, list[dict]] = defaultdict(list)
     for row in reader:
         station_id = row.get("id_station_itinerance", "").strip()
         if not station_id:
@@ -159,7 +159,7 @@ def parse_irve_csv(
                 operator_name = none_to_blank(first_row.get("nom_operateur"))
                 network, _ = Network.get_or_create(
                     evse_operator_id=evse_operator_id,
-                    defaults=dict(name=operator_name),
+                    defaults={"name": operator_name},
                 )
         except ValidationError:
             # Station IDs may not always be valid EVSEIDs

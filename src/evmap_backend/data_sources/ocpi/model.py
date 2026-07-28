@@ -1,8 +1,8 @@
 import datetime
 import enum
 import logging
+from collections.abc import Iterable
 from math import sqrt
-from typing import Generic, Iterable, List, Optional, TypeVar
 
 from django.contrib.gis.geos import Point
 from django.core.exceptions import ValidationError
@@ -22,10 +22,10 @@ from evmap_backend.realtime.models import RealtimeStatus
 
 # OCPI spec: https://evroaming.org/wp-content/uploads/2025/02/OCPI-2.3.0.pdf
 
-DataT = TypeVar("DataT")
+logger = logging.getLogger(__name__)
 
 
-class OcpiResponse(Schema, Generic[DataT]):
+class OcpiResponse[DataT](Schema):
     data: DataT
     status_code: int
     status_message: str
@@ -45,7 +45,7 @@ class OcpiEndpoint(Schema):
 
 class OcpiVersionDetail(Schema):
     version: str
-    endpoints: List[OcpiEndpoint]
+    endpoints: list[OcpiEndpoint]
 
 
 class OcpiImage(Schema):
@@ -59,8 +59,8 @@ class OcpiImage(Schema):
 
 class OcpiBusinessDetails(Schema):
     name: str
-    website: Optional[str] = None
-    logo: Optional[OcpiImage] = None
+    website: str | None = None
+    logo: OcpiImage | None = None
 
 
 class OcpiCredentialsRole(Schema):
@@ -73,8 +73,8 @@ class OcpiCredentialsRole(Schema):
 class OcpiCredentials22(Schema):
     token: str
     url: str
-    hub_party_id: Optional[str] = None
-    roles: List[OcpiCredentialsRole]
+    hub_party_id: str | None = None
+    roles: list[OcpiCredentialsRole]
 
 
 class OcpiCredentials21(Schema):
@@ -187,13 +187,13 @@ class OcpiConnector(Schema):
 
     id: str | int
     standard: ConnectorType
-    format: Optional[ConnectorFormat] = None
-    max_voltage: Optional[int] = None
-    max_amperage: Optional[int] = None
-    voltage: Optional[int] = None
-    amperage: Optional[int] = None
-    power_type: Optional[PowerType] = None
-    max_electric_power: Optional[int] = None
+    format: ConnectorFormat | None = None
+    max_voltage: int | None = None
+    max_amperage: int | None = None
+    voltage: int | None = None
+    amperage: int | None = None
+    power_type: PowerType | None = None
+    max_electric_power: int | None = None
 
     # TODO: tariff_ids
 
@@ -271,11 +271,11 @@ class OcpiEvse(Schema):
             return cls.UNKNOWN
 
     uid: str | int
-    evse_id: Optional[str] = None
-    physical_reference: Optional[str] = None
+    evse_id: str | None = None
+    physical_reference: str | None = None
     status: OcpiEvseStatus
     # TODO: status_schedule
-    connectors: Optional[List[OcpiConnector]] = None
+    connectors: list[OcpiConnector] | None = None
 
     last_updated: datetime.datetime
 
@@ -292,8 +292,8 @@ class OcpiEvse(Schema):
         self,
         data_source: str,
         license_attribution: str,
-        license_attribution_link: Optional[str] = None,
-        time_zone: Optional[str] = None,
+        license_attribution_link: str | None = None,
+        time_zone: str | None = None,
     ) -> RealtimeStatus:
         return RealtimeStatus(
             status=status_mapping[self.status],
@@ -311,7 +311,7 @@ class OcpiEvse(Schema):
 
     def get_evseid(
         self, ignore_evseids: bool = False, uid_as_evseid: bool = False
-    ) -> Optional[str]:
+    ) -> str | None:
         if self.evse_id is not None and not ignore_evseids:
             return normalize_evseid(self.evse_id)
         elif uid_as_evseid:
@@ -357,18 +357,18 @@ class OcpiOperator(Schema):
 
 class OcpiLocation(Schema):
     id: str | int
-    country: Optional[str] = None
-    country_code: Optional[str] = None
-    name: Optional[str] = None
-    address: Optional[str] = None
-    city: Optional[str] = None
-    postal_code: Optional[str] = None
-    state: Optional[str] = None
-    coordinates: Optional[GeoLocation] = None
-    evses: Optional[List[OcpiEvse]] = None
-    operator: Optional[OcpiOperator] = None
-    suboperator: Optional[OcpiOperator] = None
-    time_zone: Optional[str] = None
+    country: str | None = None
+    country_code: str | None = None
+    name: str | None = None
+    address: str | None = None
+    city: str | None = None
+    postal_code: str | None = None
+    state: str | None = None
+    coordinates: GeoLocation | None = None
+    evses: list[OcpiEvse] | None = None
+    operator: OcpiOperator | None = None
+    suboperator: OcpiOperator | None = None
+    time_zone: str | None = None
 
     # TODO: opening_times
 
@@ -378,7 +378,7 @@ class OcpiLocation(Schema):
         self,
         data_source: str,
         license_attribution: str,
-        license_attribution_link: Optional[str] = None,
+        license_attribution_link: str | None = None,
         with_status: bool = False,
         ignore_evseids: bool = False,
         uid_as_evseid: bool = False,
@@ -395,11 +395,11 @@ class OcpiLocation(Schema):
             operator_id = normalize_evseid(evse_id)[:5]
             network, _ = Network.get_or_create(
                 evse_operator_id=none_to_blank(operator_id),
-                defaults=dict(
-                    name=none_to_blank(
+                defaults={
+                    "name": none_to_blank(
                         self.operator.name if self.operator is not None else None
                     )
-                ),
+                },
             )
         else:
             network = None
@@ -431,7 +431,7 @@ class OcpiLocation(Schema):
                 connectors = []
                 for con in evse.connectors:
                     if con.id in con_ids:
-                        logging.warning(
+                        logger.warning(
                             "Duplicate connector ID %s for EVSE %s",
                             con.id,
                             evse.get_evseid(ignore_evseids, uid_as_evseid),
@@ -465,7 +465,7 @@ class OcpiLocation(Schema):
         self,
         data_source: str,
         license_attribution: str,
-        license_attribution_link: Optional[str] = None,
+        license_attribution_link: str | None = None,
     ) -> Iterable[RealtimeStatusItem]:
         for evse in self.evses:
             yield RealtimeStatusItem(

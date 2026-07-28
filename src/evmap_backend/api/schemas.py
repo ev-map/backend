@@ -1,20 +1,18 @@
-from typing import List, Optional, Tuple
-
 from django.db.models import Max, QuerySet
 from ninja import Schema
 
 
 class ChargingSiteSchema(Schema):
     id: int
-    network: Optional[str]
-    location: Tuple[float, float]
-    name: Optional[str]
-    operator: Optional[str]
+    network: str | None
+    location: tuple[float, float]
+    name: str | None
+    operator: str | None
     max_power: float
     data_source: str
 
     @classmethod
-    def build_from_queryset(cls, qs: QuerySet) -> List["ChargingSiteSchema"]:
+    def build_from_queryset(cls, qs: QuerySet) -> list["ChargingSiteSchema"]:
         qs = qs.annotate(
             max_power=Max("chargepoints__connectors__max_power")
         ).select_related("network")
@@ -35,18 +33,18 @@ class ChargingSiteSchema(Schema):
 class ClusterSchema(Schema):
     center: tuple[float, float]
     count: int
-    ids: Optional[list[int]]
+    ids: list[int] | None
     max_power: float
 
 
 class ChargingSitesSchema(Schema):
     sites: list[ChargingSiteSchema]
-    clusters: Optional[list[ClusterSchema]]
+    clusters: list[ClusterSchema] | None
 
 
 class RealtimeStatusSchema(Schema):
     evseid: str
-    physical_reference: Optional[str]
+    physical_reference: str | None
     status: str
     power: float
     connector: str
@@ -58,16 +56,16 @@ class RealtimeStatusesSchema(Schema):
 
 class ConnectorSchema(Schema):
     connector_type: str
-    connector_format: Optional[str] = None
+    connector_format: str | None = None
     max_power: float  # in kW
 
 
 class ChargepointStatusSchema(Schema):
-    evseid: Optional[str] = None
-    physical_reference: Optional[str] = None
+    evseid: str | None = None
+    physical_reference: str | None = None
     connectors: list[ConnectorSchema]
-    status: Optional[str] = None
-    status_timestamp: Optional[str] = None
+    status: str | None = None
+    status_timestamp: str | None = None
 
 
 class GoingElectricMatch(Schema):
@@ -78,15 +76,15 @@ class GoingElectricMatch(Schema):
 class SiteDetailSchema(Schema):
     id: int
     name: str
-    location: Tuple[float, float]
-    street: Optional[str] = None
-    zipcode: Optional[str] = None
-    city: Optional[str] = None
+    location: tuple[float, float]
+    street: str | None = None
+    zipcode: str | None = None
+    city: str | None = None
     country: str
-    network: Optional[str] = None
-    operator: Optional[str] = None
-    opening_hours: Optional[str] = None
+    network: str | None = None
+    operator: str | None = None
+    opening_hours: str | None = None
     data_source: str
-    goingelectric: Optional[GoingElectricMatch] = None
+    goingelectric: GoingElectricMatch | None = None
     chargepoints: list[ChargepointStatusSchema]
-    utilization: Optional[list[list[float]]] = None  # 7x24: [day_of_week][hour], Mon=0
+    utilization: list[list[float]] | None = None  # 7x24: [day_of_week][hour], Mon=0

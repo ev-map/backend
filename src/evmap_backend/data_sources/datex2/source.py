@@ -2,7 +2,6 @@ import datetime
 import logging
 import os
 from abc import abstractmethod
-from typing import Optional
 from urllib.parse import unquote_to_bytes
 
 import pytz
@@ -20,11 +19,13 @@ from evmap_backend.data_sources.models import UpdateState
 from evmap_backend.data_sources.sync import sync_chargers, sync_statuses
 from evmap_backend.settings import BASE_DIR
 
+logger = logging.getLogger(__name__)
+
 
 class BaseDatex2DataSource(DataSource):
     supported_data_types = [DataType.STATIC]
     supported_update_methods = [UpdateMethod.PULL]
-    license_attribution_link: Optional[str] = None
+    license_attribution_link: str | None = None
     parser = Datex2XmlParser()
     default_timezone = None
     default_country = None
@@ -32,7 +33,6 @@ class BaseDatex2DataSource(DataSource):
     @abstractmethod
     def get_data(self) -> str:
         """Get the data from the data source"""
-        pass
 
     @property
     def static_data_source(self) -> str:
@@ -48,7 +48,7 @@ class BaseDatex2DataSource(DataSource):
             root = self.get_data()
             self._parse_data(root)
         except NotModifiedError:
-            logging.info("Not modified")
+            logger.info("Not modified")
 
     def process_push(self, body: bytes):
         root = body.decode("utf-8")
@@ -89,11 +89,8 @@ class BaseDatex2DataSource(DataSource):
             raise NotImplementedError()
 
 
-mobilithek_store = Store(
-    load_pem_x509_certificates(
-        open(BASE_DIR / "evmap_backend/certificates/mobilithek.pem", "rb").read()
-    )
-)
+with open(BASE_DIR / "evmap_backend/certificates/mobilithek.pem", "rb") as file:
+    mobilithek_store = Store(load_pem_x509_certificates(file.read()))
 
 
 class NotModifiedError(Exception):
@@ -112,9 +109,9 @@ class BaseMobilithekDatex2DataSource(BaseDatex2DataSource):
     def get_data(self) -> str:
         try:
             update_state = UpdateState.objects.get(data_source=self.id)
-            last_update = update_state.last_update.astimezone(datetime.timezone.utc)
+            last_update = update_state.last_update.astimezone(datetime.UTC)
         except UpdateState.DoesNotExist:
-            last_update = datetime.datetime(1970, 1, 1, tzinfo=datetime.timezone.utc)
+            last_update = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
         response = requests.get(
             "https://mobilithek.info:8443/mobilithek/api/v1.0/subscription",
             params={
