@@ -902,11 +902,12 @@ class Datex2SpainDataSource(BaseDatex2DataSource):
 class Datex2DenmarkOkDataSource(BaseDatex2DataSource):
     id = "denmark_ok"
     license_attribution = "OK A.M.B.A."
+    token = os.environ.get("OK_DENMARK_TOKEN")
     # https://du-portal-ui.dataudveksler.app.vd.dk/data/1096/overview
 
     def get_data(self) -> str:
         response = requests.get(
-            "https://ocpi-emobility.okcloud.dk/datex/locations",
+            f"https://ocpi-emobility.okcloud.dk/datex/locations?token={self.token}",
         )
         response.raise_for_status()
         return response.text
