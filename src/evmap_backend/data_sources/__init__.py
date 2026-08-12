@@ -78,7 +78,7 @@ class DataSource(ABC):
             return None
 
         if DataType.DYNAMIC in cls.supported_data_types:
-            return timedelta(minutes=10)
+            return timedelta(minutes=60)
 
         return timedelta(days=1)
 
