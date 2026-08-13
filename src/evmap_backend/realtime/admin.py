@@ -3,7 +3,7 @@ from django.core.paginator import Paginator
 from django.db import connection
 from django.utils.functional import cached_property
 
-from evmap_backend.realtime.models import RealtimeStatus
+from evmap_backend.realtime.models import CurrentStatus, PreviousStatus
 
 
 class LargeTablePaginator(Paginator):
@@ -42,8 +42,29 @@ class RealtimeStatusAdmin(admin.ModelAdmin):
     list_filter = ["status", "timestamp", "data_source"]
     paginator = LargeTablePaginator
     show_full_result_count = False
+
+
+class CurrentStatusAdmin(RealtimeStatusAdmin):
+    list_display = [
+        "chargepoint__evseid",
+        "chargepoint__site__name",
+        "status",
+        "timestamp",
+        "data_source",
+    ]
+    ordering = ["chargepoint"]
+
+
+class PreviousStatusAdmin(RealtimeStatusAdmin):
+    list_display = [
+        "chargepoint__evseid",
+        "chargepoint__site__name",
+        "status",
+        "timestamp",
+        "data_source",
+    ]
     ordering = ["-timestamp"]
 
 
-# Register your models here.
-admin.site.register(RealtimeStatus, RealtimeStatusAdmin)
+admin.site.register(CurrentStatus, CurrentStatusAdmin)
+admin.site.register(PreviousStatus, PreviousStatusAdmin)

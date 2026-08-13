@@ -18,7 +18,7 @@ from evmap_backend.data_sources.sync import (
     RealtimeStatusItem,
 )
 from evmap_backend.helpers.database import none_to_blank
-from evmap_backend.realtime.models import RealtimeStatus
+from evmap_backend.realtime.models import CurrentStatus
 
 
 @dataclass
@@ -309,8 +309,8 @@ class Datex2RefillPointStatus:
         data_source: str,
         license_attribution: str,
         license_attribution_link: str | None,
-    ) -> tuple[str, RealtimeStatus]:
-        return self.refill_point_id, RealtimeStatus(
+    ) -> tuple[str, CurrentStatus]:
+        return self.refill_point_id, CurrentStatus(
             status=status_map[self.status],
             timestamp=(
                 self.last_updated if self.last_updated is not None else timezone.now()
@@ -324,19 +324,19 @@ class Datex2RefillPointStatus:
 
 
 status_map = {
-    Datex2RefillPointStatus.Status.AVAILABLE: RealtimeStatus.Status.AVAILABLE,
-    Datex2RefillPointStatus.Status.BLOCKED: RealtimeStatus.Status.BLOCKED,
-    Datex2RefillPointStatus.Status.CHARGING: RealtimeStatus.Status.CHARGING,
-    Datex2RefillPointStatus.Status.FAULTED: RealtimeStatus.Status.OUTOFORDER,
-    Datex2RefillPointStatus.Status.INOPERATIVE: RealtimeStatus.Status.INOPERATIVE,
-    Datex2RefillPointStatus.Status.OCCUPIED: RealtimeStatus.Status.CHARGING,
-    Datex2RefillPointStatus.Status.OUTOFORDER: RealtimeStatus.Status.OUTOFORDER,
-    Datex2RefillPointStatus.Status.OUTOFSTOCK: RealtimeStatus.Status.OUTOFORDER,
-    Datex2RefillPointStatus.Status.PLANNED: RealtimeStatus.Status.PLANNED,
-    Datex2RefillPointStatus.Status.REMOVED: RealtimeStatus.Status.REMOVED,
-    Datex2RefillPointStatus.Status.RESERVED: RealtimeStatus.Status.RESERVED,
-    Datex2RefillPointStatus.Status.UNAVAILABLE: RealtimeStatus.Status.UNKNOWN,
-    Datex2RefillPointStatus.Status.UNKNOWN: RealtimeStatus.Status.UNKNOWN,
+    Datex2RefillPointStatus.Status.AVAILABLE: CurrentStatus.Status.AVAILABLE,
+    Datex2RefillPointStatus.Status.BLOCKED: CurrentStatus.Status.BLOCKED,
+    Datex2RefillPointStatus.Status.CHARGING: CurrentStatus.Status.CHARGING,
+    Datex2RefillPointStatus.Status.FAULTED: CurrentStatus.Status.OUTOFORDER,
+    Datex2RefillPointStatus.Status.INOPERATIVE: CurrentStatus.Status.INOPERATIVE,
+    Datex2RefillPointStatus.Status.OCCUPIED: CurrentStatus.Status.CHARGING,
+    Datex2RefillPointStatus.Status.OUTOFORDER: CurrentStatus.Status.OUTOFORDER,
+    Datex2RefillPointStatus.Status.OUTOFSTOCK: CurrentStatus.Status.OUTOFORDER,
+    Datex2RefillPointStatus.Status.PLANNED: CurrentStatus.Status.PLANNED,
+    Datex2RefillPointStatus.Status.REMOVED: CurrentStatus.Status.REMOVED,
+    Datex2RefillPointStatus.Status.RESERVED: CurrentStatus.Status.RESERVED,
+    Datex2RefillPointStatus.Status.UNAVAILABLE: CurrentStatus.Status.UNKNOWN,
+    Datex2RefillPointStatus.Status.UNKNOWN: CurrentStatus.Status.UNKNOWN,
 }
 
 

@@ -11,15 +11,14 @@ from django.forms import model_to_dict
 from tqdm import tqdm
 
 from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
-from evmap_backend.helpers.database import distinct_on
-from evmap_backend.realtime.models import RealtimeStatus
+from evmap_backend.realtime.models import CurrentStatus, PreviousStatus
 
 
 @dataclass
 class ChargepointItem:
     chargepoint: Chargepoint
     connectors: list[Connector]
-    status: RealtimeStatus | None = None
+    status: CurrentStatus | None = None
 
 
 @dataclass
@@ -31,7 +30,7 @@ class ChargingSiteItem:
 @dataclass
 class RealtimeStatusItem:
     chargepoint_id_from_source: str
-    status: RealtimeStatus
+    status: CurrentStatus
     site_id_from_source: str | None = None
 
 
@@ -378,22 +377,19 @@ def _sync_statuses_batch(
 ) -> int:
     """
     Sync a batch of statuses using bulk operations.
-    Returns the number of statuses created in this batch.
+    Returns the number of historical status records created in this batch.
     """
     if len(batch) == 0:
         return 0
 
-    # Fetch all chargepoint IDs for this batch in one query
     ids = []
     if batch[0].site_id_from_source is not None:
-        # items specify both site ID and chargepoint ID
         for item in batch:
             if item.site_id_from_source is None:
                 raise ValueError("inconsistent site_id_from_source")
             ids.append(item.site_id_from_source)
         query = Q(site__id_from_source__in=ids)
     else:
-        # items specify only chargepoint ID
         for item in batch:
             if item.site_id_from_source is not None:
                 raise ValueError("inconsistent site_id_from_source")
@@ -408,21 +404,16 @@ def _sync_statuses_batch(
     for site_id_from_source, cp_id_from_source, cp_id in cp_rows:
         chargepoint_map[cp_id_from_source][site_id_from_source] = cp_id
 
-    # Fetch the latest status for each chargepoint
-    latest_statuses_qs = distinct_on(
-        RealtimeStatus.objects.filter(
-            data_source=realtime_data_source,
-            chargepoint_id__in=[id for _, _, id in cp_rows],
-        ),
-        distinct_fields=["chargepoint_id"],
-        order_field="timestamp",
+    current_statuses_qs = CurrentStatus.objects.filter(
+        chargepoint_id__in=[cp_id for _, _, cp_id in cp_rows],
     )
+    current_status_map = {
+        status.chargepoint_id: status for status in current_statuses_qs
+    }
 
-    # Build a mapping of chargepoint_id -> latest status
-    latest_status_map = {status.chargepoint_id: status for status in latest_statuses_qs}
-
-    # Collect statuses to create
-    statuses_to_create = []
+    current_statuses_to_create = []
+    current_statuses_to_update = []
+    previous_statuses_to_create = []
 
     for item in batch:
         try:
@@ -450,17 +441,67 @@ def _sync_statuses_batch(
             )
             continue
 
-        latest_status = latest_status_map.get(cp_id)
-        if latest_status is None or (
-            item.status.timestamp > latest_status.timestamp
-            and item.status.status != latest_status.status
-        ):
-            item.status.chargepoint_id = cp_id
-            item.status.data_source = realtime_data_source
-            statuses_to_create.append(item.status)
+        current_status = current_status_map.get(cp_id)
+        if current_status is None:
+            new_current_status = CurrentStatus(
+                chargepoint_id=cp_id,
+                status=item.status.status,
+                timestamp=item.status.timestamp,
+                data_source=realtime_data_source,
+                license_attribution=item.status.license_attribution,
+                license_attribution_link=item.status.license_attribution_link,
+            )
+            current_statuses_to_create.append(new_current_status)
+            current_status_map[cp_id] = new_current_status
+            previous_statuses_to_create.append(
+                PreviousStatus(
+                    chargepoint_id=cp_id,
+                    status=item.status.status,
+                    timestamp=item.status.timestamp,
+                    data_source=realtime_data_source,
+                    license_attribution=item.status.license_attribution,
+                    license_attribution_link=item.status.license_attribution_link,
+                )
+            )
+            continue
 
-    # Bulk insert new statuses using COPY for speed
-    if statuses_to_create:
-        pgbulk.copy(RealtimeStatus, statuses_to_create)
+        if item.status.timestamp <= current_status.timestamp:
+            continue
 
-    return len(statuses_to_create)
+        if item.status.status != current_status.status:
+            previous_statuses_to_create.append(
+                PreviousStatus(
+                    chargepoint_id=cp_id,
+                    status=item.status.status,
+                    timestamp=item.status.timestamp,
+                    data_source=realtime_data_source,
+                    license_attribution=item.status.license_attribution,
+                    license_attribution_link=item.status.license_attribution_link,
+                )
+            )
+
+        current_status.status = item.status.status
+        current_status.timestamp = item.status.timestamp
+        current_status.data_source = realtime_data_source
+        current_status.license_attribution = item.status.license_attribution
+        current_status.license_attribution_link = item.status.license_attribution_link
+        current_statuses_to_update.append(current_status)
+        current_status_map[cp_id] = current_status
+
+    if current_statuses_to_create:
+        CurrentStatus.objects.bulk_create(current_statuses_to_create)
+    if current_statuses_to_update:
+        CurrentStatus.objects.bulk_update(
+            current_statuses_to_update,
+            [
+                "status",
+                "timestamp",
+                "data_source",
+                "license_attribution",
+                "license_attribution_link",
+            ],
+        )
+    if previous_statuses_to_create:
+        pgbulk.copy(PreviousStatus, previous_statuses_to_create)
+
+    return len(previous_statuses_to_create)

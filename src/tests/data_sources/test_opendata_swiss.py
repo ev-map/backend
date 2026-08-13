@@ -12,7 +12,7 @@ from evmap_backend.data_sources.opendata_swiss.parser import (
     parse_oicp_data,
     parse_oicp_status,
 )
-from evmap_backend.realtime.models import RealtimeStatus
+from evmap_backend.realtime.models import CurrentStatus
 
 
 class TestParseCoordinates:
@@ -516,7 +516,7 @@ class TestParseOicpStatus:
         assert len(statuses) == 1
         assert statuses[0].site_id_from_source is None
         assert statuses[0].chargepoint_id_from_source == "CH*CCI*E22078"
-        assert statuses[0].status.status == RealtimeStatus.Status.AVAILABLE
+        assert statuses[0].status.status == CurrentStatus.Status.AVAILABLE
 
     def test_status_mapping(self):
         status_data = {
@@ -546,8 +546,8 @@ class TestParseOicpStatus:
         assert len(statuses) == 5
 
         status_map = {s.chargepoint_id_from_source: s.status.status for s in statuses}
-        assert status_map["CH*TST*E0"] == RealtimeStatus.Status.AVAILABLE
-        assert status_map["CH*TST*E1"] == RealtimeStatus.Status.CHARGING
-        assert status_map["CH*TST*E2"] == RealtimeStatus.Status.OUTOFORDER
-        assert status_map["CH*TST*E3"] == RealtimeStatus.Status.RESERVED
-        assert status_map["CH*TST*E4"] == RealtimeStatus.Status.UNKNOWN
+        assert status_map["CH*TST*E0"] == CurrentStatus.Status.AVAILABLE
+        assert status_map["CH*TST*E1"] == CurrentStatus.Status.CHARGING
+        assert status_map["CH*TST*E2"] == CurrentStatus.Status.OUTOFORDER
+        assert status_map["CH*TST*E3"] == CurrentStatus.Status.RESERVED
+        assert status_map["CH*TST*E4"] == CurrentStatus.Status.UNKNOWN

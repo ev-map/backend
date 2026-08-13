@@ -5,7 +5,6 @@ import time
 
 import aiohttp
 import requests
-from asgiref.sync import sync_to_async
 from django.utils import timezone
 
 from evmap_backend.chargers.models import Chargepoint
@@ -13,7 +12,7 @@ from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.models import UpdateState
 from evmap_backend.data_sources.nobil.parser import parse_nobil_chargers
 from evmap_backend.data_sources.sync import sync_chargers
-from evmap_backend.realtime.models import RealtimeStatus
+from evmap_backend.realtime.models import CurrentStatus, PreviousStatus
 
 
 class NobilDataSource(DataSource):
@@ -88,21 +87,37 @@ class NobilRealtimeDataSource(DataSource):
                         int(evse_data["nobilId"].split("_")[1])
                     )
                     try:
-                        chargepoint = await sync_to_async(Chargepoint.objects.get)(
+                        chargepoint = await Chargepoint.objects.aget(
                             site__data_source="nobil",
                             site__id_from_source=nobil_id_without_country,
                             id_from_source=evse_data["evseUId"],
                         )
 
-                        obj = RealtimeStatus(
+                        # Determine status value and timestamp
+                        status_value = CurrentStatus.Status[evse_data["status"]]
+                        ts = timezone.now()
+
+                        # Save previous status
+                        hist = PreviousStatus(
                             chargepoint=chargepoint,
-                            status=RealtimeStatus.Status[evse_data["status"]],
+                            status=status_value,
                             data_source=self.id,
                             license_attribution=self.license_attribution,
                             license_attribution_link=self.license_attribution_link,
-                            timestamp=timezone.now(),
+                            timestamp=ts,
                         )
-                        await sync_to_async(obj.save)()
+                        await hist.asave()
+
+                        await CurrentStatus.objects.aupdate_or_create(
+                            chargepoint=chargepoint,
+                            defaults={
+                                "status": status_value,
+                                "timestamp": ts,
+                                "data_source": self.id,
+                                "license_attribution": self.license_attribution,
+                                "license_attribution_link": self.license_attribution_link,
+                            },
+                        )
 
                         now = time.perf_counter()
                         if (
@@ -110,9 +125,7 @@ class NobilRealtimeDataSource(DataSource):
                             or now - updatestate_last_update > 60
                         ):
                             # save the update state, but only once per minute
-                            await sync_to_async(
-                                UpdateState(data_source=self.id, push=True).save
-                            )()
+                            await UpdateState(data_source=self.id, push=True).asave()
                     except Chargepoint.DoesNotExist:
                         print("ignoring update")
 

@@ -5,13 +5,8 @@ from evmap_backend.chargers.models import Chargepoint
 
 class RealtimeStatus(models.Model):
     class Meta:
+        abstract = True
         get_latest_by = "timestamp"
-        indexes = [
-            models.Index(fields=["-timestamp"]),
-            models.Index(fields=["chargepoint", "-timestamp"]),
-            models.Index(fields=["data_source", "-timestamp"]),
-            models.Index(fields=["data_source", "chargepoint", "-timestamp"]),
-        ]
 
     class Status(models.TextChoices):
         """
@@ -43,3 +38,33 @@ class RealtimeStatus(models.Model):
     data_source = models.CharField(max_length=255)
     license_attribution = models.TextField(blank=True)
     license_attribution_link = models.URLField(blank=True)
+
+    def __str__(self):
+        return f"{self.chargepoint_id}: {self.status} @ {self.timestamp}"
+
+
+class PreviousStatus(RealtimeStatus):
+    class Meta(RealtimeStatus.Meta):
+        indexes = [
+            models.Index(fields=["-timestamp"]),
+            models.Index(fields=["chargepoint", "-timestamp"]),
+            models.Index(fields=["data_source", "-timestamp"]),
+            models.Index(fields=["data_source", "chargepoint", "-timestamp"]),
+        ]
+
+
+class CurrentStatus(RealtimeStatus):
+    chargepoint = models.OneToOneField(
+        Chargepoint, on_delete=models.CASCADE, related_name="current_status"
+    )
+
+    class Meta(RealtimeStatus.Meta):
+        constraints = [
+            models.UniqueConstraint(
+                fields=["chargepoint"],
+                name="unique_current_status_per_chargepoint",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["chargepoint"]),
+        ]

@@ -30,7 +30,7 @@ from evmap_backend.data_sources.sync import (
     RealtimeStatusItem,
 )
 from evmap_backend.helpers.database import none_to_blank
-from evmap_backend.realtime.models import RealtimeStatus
+from evmap_backend.realtime.models import CurrentStatus
 
 logger = logging.getLogger(__name__)
 
@@ -61,12 +61,12 @@ SOCKET_PLUG_TYPES = {
 }
 
 # OICP status to OCPI-style status mapping
-STATUS_MAP: dict[str, RealtimeStatus.Status] = {
-    "Available": RealtimeStatus.Status.AVAILABLE,
-    "Occupied": RealtimeStatus.Status.CHARGING,
-    "OutOfService": RealtimeStatus.Status.OUTOFORDER,
-    "Reserved": RealtimeStatus.Status.RESERVED,
-    "Unknown": RealtimeStatus.Status.UNKNOWN,
+STATUS_MAP: dict[str, CurrentStatus.Status] = {
+    "Available": CurrentStatus.Status.AVAILABLE,
+    "Occupied": CurrentStatus.Status.CHARGING,
+    "OutOfService": CurrentStatus.Status.OUTOFORDER,
+    "Reserved": CurrentStatus.Status.RESERVED,
+    "Unknown": CurrentStatus.Status.UNKNOWN,
 }
 
 # Day name mapping for opening hours conversion to OSM format
@@ -380,9 +380,9 @@ def parse_oicp_status(
                 continue
 
             evse_status = record.get("EVSEStatus", "Unknown")
-            status = STATUS_MAP.get(evse_status, RealtimeStatus.Status.UNKNOWN)
+            status = STATUS_MAP.get(evse_status, CurrentStatus.Status.UNKNOWN)
 
-            realtime_status = RealtimeStatus(
+            realtime_status = CurrentStatus(
                 status=status,
                 timestamp=now,
                 data_source=data_source,

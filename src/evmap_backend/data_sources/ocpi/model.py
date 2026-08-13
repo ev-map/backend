@@ -18,7 +18,7 @@ from evmap_backend.data_sources.sync import (
     RealtimeStatusItem,
 )
 from evmap_backend.helpers.database import none_to_blank
-from evmap_backend.realtime.models import RealtimeStatus
+from evmap_backend.realtime.models import CurrentStatus
 
 # OCPI spec: https://evroaming.org/wp-content/uploads/2025/02/OCPI-2.3.0.pdf
 
@@ -294,8 +294,8 @@ class OcpiEvse(Schema):
         license_attribution: str,
         license_attribution_link: str | None = None,
         time_zone: str | None = None,
-    ) -> RealtimeStatus:
-        return RealtimeStatus(
+    ) -> CurrentStatus:
+        return CurrentStatus(
             status=status_mapping[self.status],
             timestamp=(
                 timezone(time_zone).localize(self.last_updated)
@@ -334,15 +334,15 @@ class PatchOcpiEvse(Schema):
 
 
 status_mapping = {
-    OcpiEvse.OcpiEvseStatus.AVAILABLE: RealtimeStatus.Status.AVAILABLE,
-    OcpiEvse.OcpiEvseStatus.BLOCKED: RealtimeStatus.Status.BLOCKED,
-    OcpiEvse.OcpiEvseStatus.CHARGING: RealtimeStatus.Status.CHARGING,
-    OcpiEvse.OcpiEvseStatus.INOPERATIVE: RealtimeStatus.Status.INOPERATIVE,
-    OcpiEvse.OcpiEvseStatus.OUTOFORDER: RealtimeStatus.Status.OUTOFORDER,
-    OcpiEvse.OcpiEvseStatus.PLANNED: RealtimeStatus.Status.PLANNED,
-    OcpiEvse.OcpiEvseStatus.REMOVED: RealtimeStatus.Status.REMOVED,
-    OcpiEvse.OcpiEvseStatus.RESERVED: RealtimeStatus.Status.RESERVED,
-    OcpiEvse.OcpiEvseStatus.UNKNOWN: RealtimeStatus.Status.UNKNOWN,
+    OcpiEvse.OcpiEvseStatus.AVAILABLE: CurrentStatus.Status.AVAILABLE,
+    OcpiEvse.OcpiEvseStatus.BLOCKED: CurrentStatus.Status.BLOCKED,
+    OcpiEvse.OcpiEvseStatus.CHARGING: CurrentStatus.Status.CHARGING,
+    OcpiEvse.OcpiEvseStatus.INOPERATIVE: CurrentStatus.Status.INOPERATIVE,
+    OcpiEvse.OcpiEvseStatus.OUTOFORDER: CurrentStatus.Status.OUTOFORDER,
+    OcpiEvse.OcpiEvseStatus.PLANNED: CurrentStatus.Status.PLANNED,
+    OcpiEvse.OcpiEvseStatus.REMOVED: CurrentStatus.Status.REMOVED,
+    OcpiEvse.OcpiEvseStatus.RESERVED: CurrentStatus.Status.RESERVED,
+    OcpiEvse.OcpiEvseStatus.UNKNOWN: CurrentStatus.Status.UNKNOWN,
 }
 
 

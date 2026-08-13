@@ -5,8 +5,7 @@ from ninja import NinjaAPI, Schema
 
 from evmap_backend.apikeys.ninja import ApiKeyAuth
 from evmap_backend.chargers.models import ChargingSite
-from evmap_backend.helpers.database import distinct_on
-from evmap_backend.realtime.models import RealtimeStatus
+from evmap_backend.realtime.models import CurrentStatus
 
 api = NinjaAPI(urls_namespace="nobil", auth=ApiKeyAuth())
 
@@ -14,7 +13,7 @@ api = NinjaAPI(urls_namespace="nobil", auth=ApiKeyAuth())
 class RealtimeStatusSchema(Schema):
     evseUid: str
     timestamp: dt.datetime
-    status: RealtimeStatus.Status
+    status: CurrentStatus.Status
 
 
 @api.get("/realtime/{nobil_id}", response=list[RealtimeStatusSchema])
@@ -26,16 +25,12 @@ def realtime(request, nobil_id: str):
         )
     except ChargingSite.DoesNotExist:
         raise django.http.Http404
-    latest_data_per_evse = distinct_on(
-        RealtimeStatus.objects.filter(chargepoint__site=charging_site),
-        ["chargepoint"],
-        "timestamp",
-    )
+    latest_data = CurrentStatus.objects.filter(chargepoint__site=charging_site)
     return [
         {
             "evseUid": data.chargepoint.id_from_source,
             "timestamp": data.timestamp,
-            "status": RealtimeStatus.Status(data.status).name,
+            "status": CurrentStatus.Status(data.status).name,
         }
-        for data in latest_data_per_evse
+        for data in latest_data
     ]

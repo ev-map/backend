@@ -8,8 +8,8 @@ from evmap_backend.apikeys.ninja import ApiKeyAuth
 from evmap_backend.chargers.fields import format_evseid
 from evmap_backend.chargers.models import ChargingSite
 from evmap_backend.data_sources.goingelectric.models import GoingElectricChargeLocation
-from evmap_backend.helpers.database import blank_to_none, distinct_on
-from evmap_backend.realtime.models import RealtimeStatus
+from evmap_backend.helpers.database import blank_to_none
+from evmap_backend.realtime.models import CurrentStatus
 
 from .schemas import (
     ChargepointStatusSchema,
@@ -30,7 +30,7 @@ def _get_hourly_utilization(site_id: int, tz: str) -> list[list[float]] | None:
     Uses a raw PostgreSQL query because:
     - We need generate_series() to create hourly time buckets.
     - For each (chargepoint, bucket) we need the last known status via LATERAL join
-      (RealtimeStatus only records changes, so we carry forward the last observation).
+      (PreviousStatus records historical changes, so we carry forward the last observation).
     """
     query = """
         WITH chargepoints AS (
@@ -54,11 +54,11 @@ def _get_hourly_utilization(site_id: int, tz: str) -> list[list[float]] | None:
                 ls.status
             FROM grid g
             LEFT JOIN LATERAL (
-                SELECT rs.status
-                FROM realtime_realtimestatus rs
-                WHERE rs.chargepoint_id = g.chargepoint_id
-                  AND rs.timestamp <= g.bucket + interval '1 hour'
-                ORDER BY rs.timestamp DESC
+                SELECT ps.status
+                FROM realtime_previousstatus ps
+                WHERE ps.chargepoint_id = g.chargepoint_id
+                  AND ps.timestamp <= g.bucket + interval '1 hour'
+                ORDER BY ps.timestamp DESC
                 LIMIT 1
             ) ls ON TRUE
         )
@@ -101,13 +101,16 @@ def site_detail(request, site_id: int, tz: str | None = None):
     except ChargingSite.DoesNotExist:
         raise HttpError(404, "Site not found")
 
-    # Get latest realtime status per chargepoint
+    # Get current realtime status per chargepoint
     chargepoint_ids = [cp.id for cp in site.chargepoints.all()]
     latest_statuses = {}
     if chargepoint_ids:
-        qs = RealtimeStatus.objects.filter(chargepoint_id__in=chargepoint_ids)
-        for rs in distinct_on(qs, ["chargepoint"], "timestamp"):
-            latest_statuses[rs.chargepoint_id] = rs
+        latest_statuses = {
+            status.chargepoint_id: status
+            for status in CurrentStatus.objects.filter(
+                chargepoint_id__in=chargepoint_ids
+            )
+        }
 
     # Build chargepoint list
     chargepoints = []

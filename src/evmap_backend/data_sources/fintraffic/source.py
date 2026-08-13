@@ -9,7 +9,7 @@ from evmap_backend.chargers.fields import normalize_evseid
 from evmap_backend.chargers.models import Chargepoint
 from evmap_backend.data_sources import DataSource, DataType, UpdateMethod
 from evmap_backend.data_sources.models import UpdateState
-from evmap_backend.realtime.models import RealtimeStatus
+from evmap_backend.realtime.models import CurrentStatus, PreviousStatus
 
 logger = logging.getLogger(__name__)
 
@@ -46,27 +46,32 @@ class FintrafficRealtimeDataSource(DataSource):
                 site__data_source="fintraffic", evseid=evseid
             )
 
-            current_status = (
-                RealtimeStatus.objects.filter(chargepoint=chargepoint)
-                .order_by("-timestamp")
-                .first()
-            )
+            # Determine status and timestamp
+            status_value = CurrentStatus.Status[evse_data["status"]]
+            ts = timezone.now()
 
-            if (
-                current_status is not None
-                and current_status.status == RealtimeStatus.Status[evse_data["status"]]
-            ):
-                logger.debug("ignoring update, no change")
-                return
-
-            RealtimeStatus(
+            # Save previous status
+            hist = PreviousStatus(
                 chargepoint=chargepoint,
-                status=RealtimeStatus.Status[evse_data["status"]],
+                status=status_value,
                 data_source=self.id,
                 license_attribution=self.license_attribution,
                 license_attribution_link=self.license_attribution_link,
-                timestamp=timezone.now(),
-            ).save()
+                timestamp=ts,
+            )
+            hist.save()
+
+            # Upsert current status
+            CurrentStatus.objects.update_or_create(
+                chargepoint=chargepoint,
+                defaults={
+                    "status": status_value,
+                    "timestamp": ts,
+                    "data_source": self.id,
+                    "license_attribution": self.license_attribution,
+                    "license_attribution_link": self.license_attribution_link,
+                },
+            )
 
             now = time.perf_counter()
             if (

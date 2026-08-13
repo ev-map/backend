@@ -27,7 +27,7 @@ from evmap_backend.data_sources.ocpi.source import BaseOcpiConnectionDataSource
 from evmap_backend.data_sources.ocpi.utils import ocpi_get
 from evmap_backend.data_sources.registry import get_data_source
 from evmap_backend.helpers.database import none_to_blank
-from evmap_backend.realtime.models import RealtimeStatus
+from evmap_backend.realtime.models import CurrentStatus, PreviousStatus
 
 api = NinjaAPI(urls_namespace="ocpi", auth=OcpiTokenAuth())
 logger = logging.getLogger(__name__)
@@ -198,7 +198,8 @@ def patch_evse(
                 "Chargepoint does not belong to the authenticated data source"
             )
 
-        RealtimeStatus(
+        # Append historical record
+        PreviousStatus(
             chargepoint=chargepoint,
             status=status_mapping[evse.status],
             timestamp=evse.last_updated,
@@ -206,6 +207,20 @@ def patch_evse(
             license_attribution=source.license_attribution,
             license_attribution_link=none_to_blank(source.license_attribution_link),
         ).save()
+
+        # Upsert current status
+        CurrentStatus.objects.update_or_create(
+            chargepoint=chargepoint,
+            defaults={
+                "status": status_mapping[evse.status],
+                "timestamp": evse.last_updated,
+                "data_source": chargepoint.site.data_source,
+                "license_attribution": source.license_attribution,
+                "license_attribution_link": none_to_blank(
+                    source.license_attribution_link
+                ),
+            },
+        )
 
         UpdateState(data_source=source.id, push=True).save()
 
