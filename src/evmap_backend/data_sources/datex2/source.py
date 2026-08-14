@@ -711,6 +711,24 @@ class Datex2MobilithekAudiChargingHubRealtimeDataSource(BaseMobilithekDatex2Data
     # https://mobilithek.info/offers/998567365272563712
 
 
+class Datex2MobilithekRoadDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_road"
+    subscription_id = os.environ.get("MOBILITHEK_ROAD_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "Road B.V."
+    # https://mobilithek.info/offers/1021366453630017536
+
+
+class Datex2MobilithekRoadRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_road_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_ROAD_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_road"
+    license_attribution = "Road B.V."
+    # https://mobilithek.info/offers/1021364001002217472
+
+
 class BaseSpiriiDatex2DataSource(BaseDatex2DataSource):
     parser = Datex2JsonParser()
 

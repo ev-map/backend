@@ -158,7 +158,7 @@ def parse_energy_infrastructure_site(
                     default=refill_point,
                 )
             )
-            for refill_point in station["refillPoint"]
+            for refill_point in station.get("refillPoint", [])
         ]
 
         if station_as_chargepoint:
