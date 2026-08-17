@@ -256,6 +256,9 @@ class Datex2EnergyInfrastructureSite:
         ):
             name = cp
         else:
+            name = None
+
+        if name is None:
             name = ""
 
         site = ChargingSite(
