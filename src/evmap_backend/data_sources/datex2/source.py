@@ -931,6 +931,19 @@ class Datex2DenmarkOkDataSource(BaseDatex2DataSource):
         return response.text
 
 
+class Datex2BelgiumIndigoDataSource(BaseDatex2DataSource):
+    id = "belgium_indigo"
+    license_attribution = "Group INDIGO, ODbL 1.0"
+    # https://transportdata.be/en/dataset/indigo-open-data-evcharging
+
+    def get_data(self) -> str:
+        response = requests.get(
+            "https://transportdata.be/dataset/27f1357d-71ee-48cb-84a1-96f3f4f034b8/resource/d4bc8ddd-c80f-4330-98e5-d86e5b2147c3/download/indigo-data-evcharging-static-datexii.xml",
+        )
+        response.raise_for_status()
+        return response.text
+
+
 class BaseMontaPublicDatex2DataSource(DataSource):
     supported_data_types = [DataType.STATIC]
     supported_update_methods = [UpdateMethod.PULL]
