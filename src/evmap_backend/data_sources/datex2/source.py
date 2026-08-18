@@ -931,6 +931,19 @@ class Datex2DenmarkOkDataSource(BaseDatex2DataSource):
         return response.text
 
 
+class Datex2DenmarkTotalEnergiesDataSource(BaseDatex2DataSource):
+    id = "denmark_totalenergies"
+    license_attribution = "TotalEnergies Marketing Danmark A/S"
+    # https://du-portal-ui.dataudveksler.app.vd.dk/data/1152/overview
+
+    def get_data(self) -> str:
+        response = requests.get(
+            "https://api-te.bluebell.dk/datex2/v3/TEE/EnergyInfrastructureTablePublication",
+        )
+        response.raise_for_status()
+        return response.text
+
+
 class Datex2BelgiumIndigoDataSource(BaseDatex2DataSource):
     id = "belgium_indigo"
     license_attribution = "Group INDIGO, ODbL 1.0"

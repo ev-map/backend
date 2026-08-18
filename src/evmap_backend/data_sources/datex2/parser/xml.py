@@ -204,12 +204,12 @@ def parse_energy_infrastructure_site(elem: Element) -> Datex2EnergyInfrastructur
             refill_points.append(parse_refill_point(refill_point))
 
     location = elem.find("fac:locationReference", ns)
-    loc_extension = location.find("loc:_pointLocationExtension", ns)
-    if loc_extension is None:
-        loc_extension = location.find("loc:_locationReferenceExtension", ns)
-        facility_location = loc_extension.find("loc:facilityLocation", ns)
-    else:
-        facility_location = loc_extension.find("locx:facilityLocation", ns)
+    loc_extension = find_alternatives(
+        location, ["loc:_pointLocationExtension", "loc:_locationReferenceExtension"]
+    )
+    facility_location = find_alternatives(
+        loc_extension, ["loc:facilityLocation", "locx:facilityLocation"]
+    )
     address = facility_location.find("locx:address", ns)
     point_by_coordinates = location.find("loc:pointByCoordinates", ns)
     if point_by_coordinates is not None:
