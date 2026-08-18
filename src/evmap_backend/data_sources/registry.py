@@ -72,6 +72,8 @@ from evmap_backend.data_sources.datex2.source import (
     Datex2MobilithekVolkswagenGroupChargingRealtimeDataSource,
     Datex2MobilithekWirelaneDataSource,
     Datex2MobilithekWirelaneRealtimeDataSource,
+    Datex2PortugalDataSource,
+    Datex2PortugalRealtimeDataSource,
     Datex2SloveniaDataSource,
     Datex2SloveniaRealtimeDataSource,
     Datex2SpainDataSource,
@@ -285,6 +287,9 @@ DATA_SOURCE_CLASSES: list[type[DataSource]] = [
     Datex2SpainDataSource,
     # France
     IrveFranceDataSource,
+    # Portugal
+    Datex2PortugalDataSource,
+    Datex2PortugalRealtimeDataSource,
 ]
 DATA_SOURCE_REGISTRY: dict[str, type[DataSource]] = {
     cls.id: cls for cls in DATA_SOURCE_CLASSES
