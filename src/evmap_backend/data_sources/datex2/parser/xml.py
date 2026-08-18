@@ -1,4 +1,5 @@
 import datetime
+import re
 from collections.abc import Iterable
 from xml.etree.ElementTree import Element
 
@@ -170,19 +171,35 @@ def parse_address(address: Element) -> str:
     return " ".join(texts)
 
 
+def find_alternatives(elem: Element, tags: Iterable[str]):
+    if elem is None:
+        return None
+    for tag in tags:
+        if subelem := elem.find(tag, ns):
+            return subelem
+    return None
+
+
 def parse_energy_infrastructure_site(elem: Element) -> Datex2EnergyInfrastructureSite:
-    operator = elem.find("fac:operator", ns)
-    contactInfo = operator.find("fac:organisationUnit", ns).find(
-        "fac:contactInformation", ns
+    stations = elem.findall("egi:energyInfrastructureStation", ns)
+
+    operator = find_alternatives(elem, ["fac:operator", "egi:energyProvider"])
+    if operator is None:
+        operator = find_alternatives(
+            stations[0], ["fac:operator", "egi:energyProvider"]
+        )
+    org_unit = operator.find("fac:organisationUnit", ns)
+    contactInfo = (
+        org_unit.find("fac:contactInformation", ns) if org_unit is not None else None
     )
     phone = (
         text_if_exists(contactInfo, "fac:telephoneNumber")
         if contactInfo is not None
-        else None
+        else text_if_exists(operator, "fac:telephoneNumber")
     )
 
     refill_points = []
-    for station in elem.findall("egi:energyInfrastructureStation", ns):
+    for station in stations:
         for refill_point in station.findall("egi:refillPoint", ns):
             refill_points.append(parse_refill_point(refill_point))
 
@@ -221,6 +238,10 @@ class Datex2XmlParser:
         self.realtime_station_as_site = realtime_station_as_site
 
     def parse(self, xml) -> Iterable[Datex2EnergyInfrastructureSite]:
+        for http_ns in ns.values():
+            # some sources use https instead of http, so we need to replace the namespace in the xml string
+            https_ns = http_ns.replace("http", "https")
+            xml = re.sub(f'xmlns:(\\w+)="{https_ns}"', f'xmlns:\\1="{http_ns}"', xml)
         root = ElementTree.fromstring(xml)
         root = find_payload(root)
 

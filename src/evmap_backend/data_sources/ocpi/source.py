@@ -725,10 +725,13 @@ class UrbanFoxUkOcpiDataSource(BaseOcpiDataSource):
 class LithuaniaOcpiDataSource(BaseOcpiDataSource):
     id = "lithuania"
     supported_data_types = [DataType.STATIC, DataType.DYNAMIC]
-    locations_url = "https://ev.vialietuva.lt/ocpi/2.2.1/locations"
-    tariffs_url = "https://ev.vialietuva.lt/ocpi/2.2.1/tariffs"
+    locations_url = "https://ev.vialietuva.lt/ocpi/2.3.0/locations"
+    tariffs_url = "https://ev.vialietuva.lt/ocpi/2.3.0/tariffs"
     license_attribution = "Via Lietuva, CC-BY 4.0"
-    # https://ev.lakd.lt/en/open_source
+    ignore_evseids = (
+        True  # EVSEIDs given here are not actual EVSEIDs with valid operator IDs
+    )
+    # https://ev.vialietuva.lt/en/data-provision
 
     def get_locations_data(self):
         response = requests.get(self.locations_url)

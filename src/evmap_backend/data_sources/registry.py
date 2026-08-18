@@ -110,6 +110,7 @@ from evmap_backend.data_sources.ocpi.source import (
     IonityUkOcpiRealtimeDataSource,
     LidlUkOcpiDataSource,
     LidlUkOcpiRealtimeDataSource,
+    LithuaniaOcpiDataSource,
     MerUkOcpiDataSource,
     MfgUkOcpiDataSource,
     NdwNetherlandsOcpiDataSource,
@@ -257,7 +258,8 @@ DATA_SOURCE_CLASSES: list[type[DataSource]] = [
     Datex2LatviaEcoMovementDataSource,
     Datex2LatviaEcoMovementRealtimeDataSource,
     # Lithuania
-    # LithuaniaOcpiDataSource,  # Data is malformed (duplicate IDs)
+    LithuaniaOcpiDataSource,
+    # Datex2LithuaniaDataSource,  # not compliant with Datex2 standard (e.g., using non-standard connector names)
     # Slovenia
     Datex2SloveniaDataSource,
     Datex2SloveniaRealtimeDataSource,
