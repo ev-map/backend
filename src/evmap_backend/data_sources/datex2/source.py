@@ -737,6 +737,14 @@ class Datex2MobilithekEweDataSource(BaseMobilithekDatex2DataSource):
     # https://mobilithek.info/offers/1024264572575293440
 
 
+class Datex2MobilithekEweRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_ewe_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_EWE_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "EWE, CC-0"
+    # https://mobilithek.info/offers/1006184570533171200
+
+
 class BaseSpiriiDatex2DataSource(BaseDatex2DataSource):
     parser = Datex2JsonParser()
 
