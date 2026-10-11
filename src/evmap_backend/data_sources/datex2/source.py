@@ -741,8 +741,28 @@ class Datex2MobilithekEweRealtimeDataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_ewe_realtime"
     subscription_id = os.environ.get("MOBILITHEK_EWE_DYNAMIC_SUBSCRIPTION_ID")
     parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_ewe"
     license_attribution = "EWE, CC-0"
     # https://mobilithek.info/offers/1006184570533171200
+
+
+class Datex2MobilithekInergiaDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_inergia"
+    subscription_id = os.environ.get("MOBILITHEK_INERGIA_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "INERGIA GmbH, CC-0"
+    # https://mobilithek.info/offers/1043944773714128896
+
+
+class Datex2MobilithekInergiaRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_inergia_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_INERGIA_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_inergia"
+    license_attribution = "INERGIA GmbH, CC-0"
+    # https://mobilithek.info/offers/1043947032435105792
 
 
 class BaseSpiriiDatex2DataSource(BaseDatex2DataSource):
