@@ -765,6 +765,24 @@ class Datex2MobilithekInergiaRealtimeDataSource(BaseMobilithekDatex2DataSource):
     # https://mobilithek.info/offers/1043947032435105792
 
 
+class Datex2MobilithekEnerandoDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_enerando"
+    subscription_id = os.environ.get("MOBILITHEK_ENERANDO_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "ENERANDO Technologies GmbH"
+    # https://mobilithek.info/offers/1037036344672452608
+
+
+class Datex2MobilithekEnerandoRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_enerando_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_ENERANDO_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_enerando"
+    license_attribution = "ENERANDO Technologies GmbH"
+    # https://mobilithek.info/offers/1037038702374617088
+
+
 class BaseSpiriiDatex2DataSource(BaseDatex2DataSource):
     parser = Datex2JsonParser()
 
