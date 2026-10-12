@@ -281,7 +281,6 @@ class NobilChargerStation:
     county_id: str
     county: str
     num_chargepoints: int
-    available_chargepoints: int
     created: datetime.datetime
     updated: datetime.datetime
     station_status: int
@@ -456,7 +455,6 @@ def parse_nobil_chargers(json_data) -> Iterable[NobilChargerStation]:
             operator=csmd["Operator"],
             num_chargepoints=csmd["Number_charging_points"],
             image=csmd["Image"] if csmd["Image"] != "no.image.svg" else "",
-            available_chargepoints=csmd["Available_charging_points"],
             user_comment=csmd["User_comment"],
             contact_info=csmd["Contact_info"],
             created=datetime.datetime.strptime(csmd["Created"], DATE_FORMAT).replace(
