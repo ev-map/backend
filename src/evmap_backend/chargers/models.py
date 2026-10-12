@@ -148,10 +148,24 @@ class Connector(models.Model):
         CHADEMO = "CHAdeMO", "CHAdeMO"
         MCS = "MCS", "MCS"
 
-        SCHUKO = "Schuko", "Schuko (Type F)"
-        DOMESTIC_J = "Domestic J", "Domestic (Type J - Switzerland Type 13)"
+        DOMESTIC_A = "Domestic A", "Domestic (Type A - North America, Japan)"
+        DOMESTIC_B = "Domestic B", "Domestic (Type B - North America)"
+        DOMESTIC_C = "Domestic C", "Domestic (Type C - Euro plug)"
+        DOMESTIC_D = "Domestic D", "Domestic (Type D - India)"
         DOMESTIC_E = "Domestic E", "Domestic (Type E - France, Belgium)"
-        # TODO: add other household plugs
+        SCHUKO = "Schuko", 'Domestic (Type F - Europe "Schuko")'
+        DOMESTIC_G = "Domestic G", "Domestic (Type G - UK)"
+        DOMESTIC_H = "Domestic H", "Domestic (Type H - Israel)"
+        DOMESTIC_I = (
+            "Domestic I",
+            "Domestic (Type I - Australia, New Zealand, China, Argentina)",
+        )
+        DOMESTIC_J = "Domestic J", "Domestic (Type J - Switzerland Type 13)"
+        DOMESTIC_K = "Domestic K", "Domestic (Type K - Denmark)"
+        DOMESTIC_L = "Domestic L", "Domestic (Type L - Italy, Chile)"
+        DOMESTIC_M = "Domestic M", "Domestic (Type M - South Africa)"
+        DOMESTIC_N = "Domestic N", "Domestic (Type N - Brazil, South Africa)"
+        DOMESTIC_O = "Domestic O", "Domestic (Type O - Thailand)"
 
         NACS = "NACS", "NACS (Tesla US)"
         TESLA_SUPERCHARGER_EU = (
