@@ -220,42 +220,6 @@ class Datex2MobilithekEnbwRealtimeDataSource(BaseMobilithekDatex2DataSource):
     # https://mobilithek.info/offers/907575401287241728
 
 
-class Datex2MobilithekLadenetzDataSource(BaseMobilithekDatex2DataSource):
-    id = "mobilithek_ladenetz"
-    subscription_id = os.environ.get("MOBILITHEK_LADENETZ_STATIC_SUBSCRIPTION_ID")
-    license_attribution = "Smartlab Innovationsgesellschaft mbH, CC-0"
-    ignore_encoding = True
-    # https://mobilithek.info/offers/902547569133924352
-
-
-class Datex2MobilithekLadenetzRealtimeDataSource(BaseMobilithekDatex2DataSource):
-    id = "mobilithek_ladenetz_realtime"
-    subscription_id = os.environ.get("MOBILITHEK_LADENETZ_DYNAMIC_SUBSCRIPTION_ID")
-    supported_data_types = [DataType.DYNAMIC]
-    static_data_source = "mobilithek_ladenetz"
-    parser = Datex2XmlParser(realtime_station_as_site=True)
-    license_attribution = "Smartlab Innovationsgesellschaft mbH, CC-0"
-    # https://mobilithek.info/offers/903240716507836416
-
-
-class Datex2MobilithekLadebusinessDataSource(BaseMobilithekDatex2DataSource):
-    id = "mobilithek_ladebusiness"
-    subscription_id = os.environ.get("MOBILITHEK_LADEBUSINESS_STATIC_SUBSCRIPTION_ID")
-    license_attribution = "Smartlab Innovationsgesellschaft mbH, CC-0"
-    ignore_encoding = True
-    # https://mobilithek.info/offers/903241622921695232
-
-
-class Datex2MobilithekLadebusinessRealtimeDataSource(BaseMobilithekDatex2DataSource):
-    id = "mobilithek_ladebusiness_realtime"
-    subscription_id = os.environ.get("MOBILITHEK_LADEBUSINESS_DYNAMIC_SUBSCRIPTION_ID")
-    supported_data_types = [DataType.DYNAMIC]
-    static_data_source = "mobilithek_ladebusiness"
-    parser = Datex2XmlParser(realtime_station_as_site=True)
-    license_attribution = "Smartlab Innovationsgesellschaft mbH, CC-0"
-    # https://mobilithek.info/offers/903321397006716928
-
-
 class Datex2MobilithekEClearingDataSource(BaseMobilithekDatex2DataSource):
     id = "mobilithek_eclearing"
     subscription_id = os.environ.get("MOBILITHEK_ECLEARING_STATIC_SUBSCRIPTION_ID")
