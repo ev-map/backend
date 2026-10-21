@@ -326,7 +326,11 @@ class OcpiEvse(Schema):
         self, ignore_evseids: bool = False, uid_as_evseid: bool = False
     ) -> str | None:
         if self.evse_id is not None and not ignore_evseids:
-            return normalize_evseid(self.evse_id)
+            try:
+                validate_evseid(self.evse_id)
+                return normalize_evseid(self.evse_id)
+            except ValidationError:
+                return None
         elif uid_as_evseid:
             try:
                 id = normalize_evseid(self.uid)
