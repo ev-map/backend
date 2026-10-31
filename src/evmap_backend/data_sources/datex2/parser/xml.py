@@ -21,9 +21,11 @@ ns = {
     "com": "http://datex2.eu/schema/3/common",
     "con": "http://datex2.eu/schema/3/messageContainer",
     "egi": "http://datex2.eu/schema/3/energyInfrastructure",
+    "aegi": "http://datex2.eu/schema/3/afirEnergyInfrastructure",
     "loc": "http://datex2.eu/schema/3/locationReferencing",
     "locx": "http://datex2.eu/schema/3/locationExtension",
     "fac": "http://datex2.eu/schema/3/facilities",
+    "afac": "http://datex2.eu/schema/3/afirFacilities",
 }
 
 
@@ -56,7 +58,10 @@ def find_payload(root: Element) -> Element:
     return root
 
 
-def parse_multilingual_string(elem: Element) -> Datex2MultilingualString | None:
+def parse_multilingual_string(elem: Element | None) -> Datex2MultilingualString | None:
+    if elem is None:
+        return None
+
     values_elem = elem.find("com:values", ns)
     values = {}
     if values_elem is not None:
@@ -67,7 +72,7 @@ def parse_multilingual_string(elem: Element) -> Datex2MultilingualString | None:
 
 
 def parse_single_or_multilingual_string(elem: Element) -> str | None:
-    if elem.text is not None:
+    if elem.text is not None and elem.text.strip() != "":
         return elem.text
     else:
         return parse_multilingual_string(elem).first()
@@ -81,27 +86,41 @@ def parse_point_coordinates(elem: Element) -> tuple[float, float]:
 
 
 def parse_connector(elem) -> Datex2Connector:
-    charging_mode = text_if_exists(elem, "egi:chargingMode")
+    charging_mode = find_alternatives(elem, ["egi:chargingMode", "aegi:chargingMode"])
     return Datex2Connector(
         connector_type=Datex2Connector.ConnectorType(
-            elem.find("egi:connectorType", ns).text
+            find_alternatives(elem, ["egi:connectorType", "aegi:connectorType"]).text
         ),
         charging_mode=(
-            Datex2Connector.ChargingMode(charging_mode) if charging_mode else None
+            Datex2Connector.ChargingMode(charging_mode.text)
+            if charging_mode is not None
+            else None
         ),
-        max_power=float(elem.find("egi:maxPowerAtSocket", ns).text),
+        max_power=float(
+            find_alternatives(
+                elem, ["egi:maxPowerAtSocket", "aegi:maxPowerAtSocket"]
+            ).text
+        ),
     )
 
 
 def parse_refill_point(elem: Element) -> Datex2RefillPoint:
     name = elem.find("fac:name", ns)
+    connectors = findall_alternatives(elem, ["egi:connector", "aegi:connector"])
+    external_identifier = elem.find("fac:externalIdentifier", ns)
+    if external_identifier is None and len(connectors) == 1:
+        external_identifier = (
+            connectors[0]
+            .find("aegi:externalIdentifier", ns)
+            .find("afac:identifier", ns)
+        )
+
     return Datex2RefillPoint(
-        external_identifier=text_if_exists(elem, "fac:externalIdentifier"),
+        external_identifier=external_identifier.text
+        if external_identifier is not None
+        else None,
         id=elem.attrib["id"],
-        connectors=[
-            parse_connector(connector)
-            for connector in elem.findall("egi:connector", ns)
-        ],
+        connectors=[parse_connector(connector) for connector in connectors],
         name=parse_multilingual_string(name) if name is not None else None,
     )
 
@@ -110,18 +129,28 @@ def parse_energy_infrastructure_site_status(
     elem: Element,
     default_timezone=None,
 ) -> Datex2EnergyInfrastructureSiteStatus:
-    last_updated_elem = elem.find("fac:lastUpdated", ns)
+    last_updated_elem = find_alternatives(elem, ["fac:lastUpdated", "afac:lastUpdated"])
     last_updated = (
         parse_datetime(last_updated_elem.text, default_timezone)
         if last_updated_elem
         else None
     )
     return Datex2EnergyInfrastructureSiteStatus(
-        site_id=elem.find("fac:reference", ns).attrib["id"],
+        site_id=find_alternatives(elem, ["fac:reference", "afac:reference"]).attrib[
+            "id"
+        ],
         refill_point_statuses=[
             parse_refill_point_status(refill_point, last_updated, default_timezone)
-            for station in elem.findall("egi:energyInfrastructureStationStatus", ns)
-            for refill_point in station.findall("egi:refillPointStatus", ns)
+            for station in findall_alternatives(
+                elem,
+                [
+                    "egi:energyInfrastructureStationStatus",
+                    "aegi:energyInfrastructureStationStatus",
+                ],
+            )
+            for refill_point in findall_alternatives(
+                station, ["egi:refillPointStatus", "aegi:refillPointStatus"]
+            )
         ],
     )
 
@@ -130,17 +159,21 @@ def parse_energy_infrastructure_station_status(
     elem: Element,
     default_timezone=None,
 ) -> Datex2EnergyInfrastructureSiteStatus:
-    last_updated_elem = elem.find("fac:lastUpdated", ns)
+    last_updated_elem = find_alternatives(elem, ["fac:lastUpdated", "afac:lastUpdated"])
     last_updated = (
         parse_datetime(last_updated_elem.text, default_timezone)
         if last_updated_elem
         else None
     )
     return Datex2EnergyInfrastructureSiteStatus(
-        site_id=elem.find("fac:reference", ns).attrib["id"],
+        site_id=find_alternatives(elem, ["fac:reference", "afac:reference"]).attrib[
+            "id"
+        ],
         refill_point_statuses=[
             parse_refill_point_status(refill_point, last_updated, default_timezone)
-            for refill_point in elem.findall("egi:refillPointStatus", ns)
+            for refill_point in findall_alternatives(
+                elem, ["egi:refillPointStatus", "aegi:refillPointStatus"]
+            )
         ],
     )
 
@@ -148,13 +181,17 @@ def parse_energy_infrastructure_station_status(
 def parse_refill_point_status(
     elem: Element, last_updated: datetime.datetime | None = None, default_timezone=None
 ) -> Datex2RefillPointStatus:
-    last_updated_elem = elem.find("fac:lastUpdated", ns)
+    last_updated_elem = find_alternatives(elem, ["fac:lastUpdated", "afac:lastUpdated"])
     if last_updated_elem is not None:
         last_updated = parse_datetime(last_updated_elem.text, default_timezone)
     return Datex2RefillPointStatus(
-        refill_point_id=elem.find("fac:reference", ns).attrib["id"],
+        refill_point_id=find_alternatives(
+            elem, ["fac:reference", "afac:reference"]
+        ).attrib["id"],
         last_updated=last_updated,
-        status=Datex2RefillPointStatus.Status(elem.find("egi:status", ns).text),
+        status=Datex2RefillPointStatus.Status(
+            find_alternatives(elem, ["egi:status", "aegi:status"]).text
+        ),
     )
 
 
@@ -175,42 +212,67 @@ def find_alternatives(elem: Element, tags: Iterable[str]):
     if elem is None:
         return None
     for tag in tags:
-        if subelem := elem.find(tag, ns):
+        if (subelem := elem.find(tag, ns)) is not None:
             return subelem
     return None
 
 
+def findall_alternatives(elem: Element, tags: Iterable[str]):
+    if elem is None:
+        return []
+
+    results = []
+    for tag in tags:
+        results += elem.findall(tag, ns)
+    return results
+
+
 def parse_energy_infrastructure_site(elem: Element) -> Datex2EnergyInfrastructureSite:
-    stations = elem.findall("egi:energyInfrastructureStation", ns)
+    stations = findall_alternatives(
+        elem, ["egi:energyInfrastructureStation", "aegi:energyInfrastructureStation"]
+    )
 
     operator = find_alternatives(elem, ["fac:operator", "egi:energyProvider"])
     if operator is None:
         operator = find_alternatives(
             stations[0], ["fac:operator", "egi:energyProvider"]
         )
-    org_unit = operator.find("fac:organisationUnit", ns)
-    contactInfo = (
-        org_unit.find("fac:contactInformation", ns) if org_unit is not None else None
-    )
-    phone = (
-        text_if_exists(contactInfo, "fac:telephoneNumber")
-        if contactInfo is not None
-        else text_if_exists(operator, "fac:telephoneNumber")
-    )
+    if operator is not None:
+        org_unit = operator.find("fac:organisationUnit", ns)
+        contactInfo = (
+            org_unit.find("fac:contactInformation", ns)
+            if org_unit is not None
+            else None
+        )
+        phone = (
+            text_if_exists(contactInfo, "fac:telephoneNumber")
+            if contactInfo is not None
+            else text_if_exists(operator, "fac:telephoneNumber")
+        )
+    else:
+        phone = None
 
     refill_points = []
     for station in stations:
-        for refill_point in station.findall("egi:refillPoint", ns):
+        for refill_point in findall_alternatives(
+            station, ["egi:refillPoint", "aegi:refillPoint"]
+        ):
             refill_points.append(parse_refill_point(refill_point))
 
-    location = elem.find("fac:locationReference", ns)
+    location = find_alternatives(elem, ["fac:locationReference", "aegi:entrance"])
     loc_extension = find_alternatives(
-        location, ["loc:_pointLocationExtension", "loc:_locationReferenceExtension"]
+        location,
+        [
+            "loc:_pointLocationExtension",
+            "loc:_locationReferenceExtension",
+            "loc:_locationExtension",
+        ],
     )
     facility_location = find_alternatives(
-        loc_extension, ["loc:facilityLocation", "locx:facilityLocation"]
+        loc_extension,
+        ["loc:facilityLocation", "locx:facilityLocation", "loc:afirFacilityLocation"],
     )
-    address = facility_location.find("locx:address", ns)
+    address = find_alternatives(facility_location, ["locx:address", "afac:address"])
     point_by_coordinates = location.find("loc:pointByCoordinates", ns)
     if point_by_coordinates is not None:
         point_coordinates = point_by_coordinates.find("loc:pointCoordinates", ns)
@@ -224,10 +286,12 @@ def parse_energy_infrastructure_site(elem: Element) -> Datex2EnergyInfrastructur
         description=None,
         location=parse_point_coordinates(point_coordinates),
         zipcode=address.find("locx:postcode", ns).text,
-        city=parse_single_or_multilingual_string(city) if city is not None else None,
+        city=parse_single_or_multilingual_string(city),
         street=parse_address(address),
         country=country_code.text if country_code is not None else None,
-        operator_name=parse_multilingual_string(operator.find("fac:name", ns)),
+        operator_name=parse_multilingual_string(operator.find("fac:name", ns))
+        if operator is not None
+        else None,
         operator_phone=phone,
         refill_points=refill_points,
     )
@@ -245,9 +309,15 @@ class Datex2XmlParser:
         root = ElementTree.fromstring(xml)
         root = find_payload(root)
 
-        for table in root.findall("egi:energyInfrastructureTable", ns):
+        for table in findall_alternatives(
+            root, ["egi:energyInfrastructureTable", "aegi:energyInfrastructureTable"]
+        ):
             for site in tqdm(
-                table.findall("egi:energyInfrastructureSite", ns), disable=None
+                findall_alternatives(
+                    table,
+                    ["egi:energyInfrastructureSite", "aegi:energyInfrastructureSite"],
+                ),
+                disable=None,
             ):
                 yield parse_energy_infrastructure_site(site)
 
@@ -257,10 +327,21 @@ class Datex2XmlParser:
         root = ElementTree.fromstring(xml)
         root = find_payload(root)
 
-        for site in root.findall("egi:energyInfrastructureSiteStatus", ns):
+        for site in findall_alternatives(
+            root,
+            [
+                "egi:energyInfrastructureSiteStatus",
+                "aegi:energyInfrastructureSiteStatus",
+            ],
+        ):
             if self.realtime_station_as_site:
-                for station in site.findall(
-                    "egi:energyInfrastructureStationStatus", ns
+                for station in findall_alternatives(
+                    site,
+                    [
+                        "egi:energyInfrastructureStationStatus",
+                        "aegi:energyInfrastructureStationStatus",
+                    ],
+                    ns,
                 ):
                     yield parse_energy_infrastructure_station_status(
                         station, default_timezone

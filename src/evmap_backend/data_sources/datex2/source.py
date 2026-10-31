@@ -975,6 +975,42 @@ class Datex2BelgiumIndigoDataSource(BaseDatex2DataSource):
         return response.text
 
 
+class Datex2BelgiumEnergyVisionDataSource(BaseDatex2DataSource):
+    id = "belgium_energyvision"
+    license_attribution = "EnergyVision"
+    api_key = os.environ.get("ENERGYVISION_BELGIUM_API_KEY")
+    # https://transportdata.be/en/dataset/energyvision-public-charging-network-afir-datex
+
+    def get_data(self) -> str:
+        response = requests.get(
+            "https://datex.cpo.energyvision.be/datex/energy-infrastructure-table",
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+            },
+        )
+        response.raise_for_status()
+        return response.text
+
+
+class Datex2BelgiumEnergyVisionRealtimeDataSource(BaseDatex2DataSource):
+    id = "belgium_energyvision_realtime"
+    license_attribution = "EnergyVision"
+    api_key = os.environ.get("ENERGYVISION_BELGIUM_API_KEY")
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "belgium_energyvision"
+    # https://transportdata.be/en/dataset/energyvision-public-charging-network-afir-datex
+
+    def get_data(self) -> str:
+        response = requests.get(
+            "https://datex.cpo.energyvision.be/datex/energy-infrastructure-status",
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+            },
+        )
+        response.raise_for_status()
+        return response.text
+
+
 class Datex2PortugalDataSource(BaseDatex2DataSource):
     id = "portugal"
     license_attribution = "Mobi-E"
