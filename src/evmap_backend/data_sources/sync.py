@@ -15,6 +15,12 @@ from evmap_backend.realtime.models import CurrentStatus, PreviousStatus
 
 
 @dataclass
+class SyncPage:
+    sites: Iterable["ChargingSiteItem"]
+    statuses: Iterable["RealtimeStatusItem"]
+
+
+@dataclass
 class ChargepointItem:
     chargepoint: Chargepoint
     connectors: list[Connector]
@@ -251,40 +257,45 @@ def _sync_connectors(
     delete_qs.delete()
 
 
-def _deduplicate_sites(
-    sites: Iterable[ChargingSiteItem],
-) -> Iterable[ChargingSiteItem]:
-    """
-    Yield sites, skipping any whose id_from_source has already been seen.
-    Logs a warning for each duplicate encountered.
-    """
-    seen_ids = defaultdict(set)
-    for item in sites:
-        if item.site.id_from_source in seen_ids:
-            logger.warning(
-                f"Duplicate site ID '{item.site.id_from_source}' — ignoring duplicate"
-            )
-            continue
-        if item.site.location.y in [-90.0, 90.0]:
-            logger.warning(
-                f"Site '{item.site.id_from_source}' with invalid location {item.site.location} — ignoring"
-            )
-            continue
+class SiteDeduplicator:
+    """Stateful deduplicator that preserves seen IDs across repeated calls."""
 
-        deduplicated_chargepoints = []
-        cpids = seen_ids[item.site.id_from_source]
-        for chargepoint in item.chargepoints:
-            if chargepoint.chargepoint.id_from_source in cpids:
+    def __init__(self):
+        self.seen_ids = defaultdict(set)
+
+    def __call__(self, sites: Iterable[ChargingSiteItem]) -> Iterable[ChargingSiteItem]:
+        for item in sites:
+            if item.site.id_from_source in self.seen_ids:
                 logger.warning(
-                    f"Duplicate chargepoint ID '{item.site.id_from_source}/{chargepoint.chargepoint.id_from_source}' — ignoring duplicate"
+                    f"Duplicate site ID '{item.site.id_from_source}' — ignoring duplicate"
+                )
+                continue
+            if item.site.location.y in [-90.0, 90.0]:
+                logger.warning(
+                    f"Site '{item.site.id_from_source}' with invalid location {item.site.location} — ignoring"
                 )
                 continue
 
-            cpids.add(chargepoint.chargepoint.id_from_source)
-            deduplicated_chargepoints.append(chargepoint)
-        item.chargepoints = deduplicated_chargepoints
+            deduplicated_chargepoints = []
+            cpids = self.seen_ids[item.site.id_from_source]
+            for chargepoint in item.chargepoints:
+                if chargepoint.chargepoint.id_from_source in cpids:
+                    logger.warning(
+                        f"Duplicate chargepoint ID '{item.site.id_from_source}/{chargepoint.chargepoint.id_from_source}' — ignoring duplicate"
+                    )
+                    continue
 
-        yield item
+                cpids.add(chargepoint.chargepoint.id_from_source)
+                deduplicated_chargepoints.append(chargepoint)
+            item.chargepoints = deduplicated_chargepoints
+            yield item
+
+
+def _deduplicate_sites(
+    sites: Iterable[ChargingSiteItem],
+) -> Iterable[ChargingSiteItem]:
+    """Backward-compatible wrapper around the stateful deduplicator."""
+    yield from SiteDeduplicator()(sites)
 
 
 def sync_chargers(
@@ -505,3 +516,79 @@ def _sync_statuses_batch(
         pgbulk.copy(PreviousStatus, previous_statuses_to_create)
 
     return len(previous_statuses_to_create)
+
+
+def sync_chargers_and_statuses(
+    data_source: str,
+    pages: Iterable[SyncPage],
+    delete_missing: bool = True,
+):
+    """
+    Sync a stream of mixed static/dynamic pages without materializing the full dataset.
+    """
+    with transaction.atomic():
+        existing_site_ids = set(
+            ChargingSite.objects.filter(data_source=data_source).values_list(
+                "id", flat=True
+            )
+        )
+        seen_site_ids = set()
+        total_sites_created = 0
+        total_statuses_created = 0
+        site_batch = []
+        status_batch = []
+        site_deduplicator = SiteDeduplicator()
+        batch_size = 1000
+
+        with tqdm(desc="Syncing sites and statuses", disable=None) as progress_bar:
+            for page in pages:
+                for site in site_deduplicator(page.sites):
+                    site_batch.append(site)
+                    if len(site_batch) >= batch_size:
+                        created = _sync_batch(
+                            data_source,
+                            tuple(site_batch),
+                            seen_site_ids,
+                            existing_site_ids,
+                        )
+                        total_sites_created += created
+                        site_batch.clear()
+
+                for status in page.statuses:
+                    status_batch.append(status)
+                    if len(status_batch) >= batch_size:
+                        total_statuses_created += _sync_statuses_batch(
+                            data_source,
+                            data_source,
+                            tuple(status_batch),
+                        )
+                        status_batch.clear()
+
+                progress_bar.update(1)
+
+            if site_batch:
+                created = _sync_batch(
+                    data_source,
+                    tuple(site_batch),
+                    seen_site_ids,
+                    existing_site_ids,
+                )
+                total_sites_created += created
+            if status_batch:
+                total_statuses_created += _sync_statuses_batch(
+                    data_source,
+                    data_source,
+                    tuple(status_batch),
+                )
+
+        sites_to_delete = existing_site_ids - seen_site_ids
+        total_sites_deleted = 0
+        if sites_to_delete and delete_missing:
+            ChargingSite.objects.filter(id__in=sites_to_delete).delete()
+            total_sites_deleted = len(sites_to_delete)
+
+        logger.info(
+            f"{total_sites_created} sites created, {total_sites_deleted} sites deleted"
+        )
+        if total_statuses_created:
+            logger.info(f"{total_statuses_created} statuses created")

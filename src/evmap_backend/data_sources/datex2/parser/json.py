@@ -127,6 +127,8 @@ def parse_energy_infrastructure_site(
 
     if "locationReference" in elem:
         location_reference = elem["locationReference"]
+    elif "entrance" in elem:
+        location_reference = elem["entrance"][0]
     else:
         location_reference = elem["energyInfrastructureStation"][0]["locationReference"]
 
@@ -289,7 +291,8 @@ class Datex2JsonParser:
         root = json.loads(data)
         if "messageContainer" in root:
             root = root["messageContainer"]
-        root = root["payload"]
+        if "payload" in root:
+            root = root["payload"]
 
         if isinstance(root, dict):
             root = [root]

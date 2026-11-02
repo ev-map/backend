@@ -10,7 +10,9 @@ from cryptography.x509.verification import VerificationError
 from django.http import HttpRequest
 from django.utils import timezone
 
-from evmap_backend.data_sources.datex2.source import BaseMobilithekDatex2DataSource
+from evmap_backend.data_sources.datex2.source.mobilithek import (
+    BaseMobilithekDatex2DataSource,
+)
 
 
 @pytest.fixture

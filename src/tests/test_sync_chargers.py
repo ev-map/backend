@@ -8,8 +8,12 @@ from evmap_backend.chargers.models import Chargepoint, ChargingSite, Connector
 from evmap_backend.data_sources.sync import (
     ChargepointItem,
     ChargingSiteItem,
+    RealtimeStatusItem,
+    SyncPage,
     sync_chargers,
+    sync_chargers_and_statuses,
 )
+from evmap_backend.realtime.models import CurrentStatus
 
 
 def site_item(site, chargepoints):
@@ -369,3 +373,107 @@ class TestSyncChargers:
 
         assert ChargingSite.objects.count() == 1
         assert ChargingSite.objects.filter(data_source="source_2").count() == 1
+
+    def test_sync_chargers_and_statuses_mixed_pages(
+        self, data_source, create_site, create_chargepoint, create_connector
+    ):
+        """Test syncing sites and statuses from the same page stream."""
+        site = create_site("site_1")
+        cp = create_chargepoint("cp_1")
+        conn = create_connector("conn_1")
+
+        sync_chargers_and_statuses(
+            data_source,
+            [
+                SyncPage(
+                    sites=[site_item(site, [(cp, [conn])])],
+                    statuses=[
+                        RealtimeStatusItem(
+                            site_id_from_source="site_1",
+                            chargepoint_id_from_source="cp_1",
+                            status=CurrentStatus(
+                                status=CurrentStatus.Status.AVAILABLE,
+                                timestamp=pytest.importorskip(
+                                    "django.utils.timezone"
+                                ).now(),
+                            ),
+                        )
+                    ],
+                )
+            ],
+        )
+
+        assert (
+            ChargingSite.objects.filter(
+                data_source=data_source, id_from_source="site_1"
+            ).count()
+            == 1
+        )
+        assert (
+            Chargepoint.objects.filter(
+                site__data_source=data_source, id_from_source="cp_1"
+            ).count()
+            == 1
+        )
+        assert (
+            CurrentStatus.objects.filter(
+                chargepoint__site__data_source=data_source,
+                chargepoint__id_from_source="cp_1",
+            ).count()
+            == 1
+        )
+
+        sync_chargers_and_statuses(
+            data_source,
+            [
+                SyncPage(
+                    sites=[],
+                    statuses=[],
+                )
+            ],
+            delete_missing=True,
+        )
+
+        assert ChargingSite.objects.filter(data_source=data_source).count() == 0
+
+    def test_sync_chargers_and_statuses_deduplicates_across_pages(
+        self, data_source, create_site, create_chargepoint, create_connector
+    ):
+        """Test that duplicate site IDs are skipped across page boundaries while keeping delete_missing semantics."""
+        site = create_site("site_1")
+        cp1 = create_chargepoint("cp_1")
+        conn1 = create_connector("conn_1")
+        cp2 = create_chargepoint("cp_2")
+        conn2 = create_connector("conn_2")
+
+        sync_chargers_and_statuses(
+            data_source,
+            [
+                SyncPage(
+                    sites=[site_item(site, [(cp1, [conn1])])],
+                    statuses=[],
+                ),
+                SyncPage(
+                    sites=[site_item(site, [(cp2, [conn2])])],
+                    statuses=[],
+                ),
+            ],
+        )
+
+        assert (
+            ChargingSite.objects.filter(
+                data_source=data_source, id_from_source="site_1"
+            ).count()
+            == 1
+        )
+        assert Chargepoint.objects.filter(site__data_source=data_source).count() == 1
+
+        sync_chargers_and_statuses(
+            data_source,
+            [
+                SyncPage(sites=[], statuses=[]),
+            ],
+            delete_missing=True,
+        )
+
+        assert ChargingSite.objects.filter(data_source=data_source).count() == 0
