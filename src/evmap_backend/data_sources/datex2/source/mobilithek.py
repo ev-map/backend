@@ -649,3 +649,21 @@ class Datex2MobilithekVirtaRealtimeDataSource(BaseMobilithekDatex2DataSource):
     static_data_source = "mobilithek_virta"
     license_attribution = "Virta International GmbH, CC-0"
     # https://mobilithek.info/offers/1042472664437800960
+
+
+class Datex2MobilithekInnoceptDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_innocept"
+    subscription_id = os.environ.get("MOBILITHEK_INNOCEPT_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "innocept mobility GmbH"
+    # https://mobilithek.info/offers/1019404392733597696
+
+
+class Datex2MobilithekInnoceptRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_innocept_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_INNOCEPT_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_innocept"
+    license_attribution = "innocept mobility GmbH"
+    # https://mobilithek.info/offers/1026876702612758528
