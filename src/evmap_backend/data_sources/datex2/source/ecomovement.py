@@ -14,6 +14,7 @@ link_regex = re.compile('<([^>]+)>; rel="next"')
 
 
 class Datex2LuxembourgEcoMovementDataSource(BaseDatex2DataSource):
+    license_attribution = "Eco-Movement BV"
     id = "luxembourg_ecomovement"
     token = os.environ.get("ECOMOVEMENT_LUXEMBOURG_TOKEN")
     # https://data.public.lu/en/datasets/bornes-de-chargement-publiques-pour-voitures-electriques-du-plusieurs-operateurs-1/
