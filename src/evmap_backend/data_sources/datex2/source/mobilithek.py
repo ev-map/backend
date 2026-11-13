@@ -280,7 +280,7 @@ class Datex2MobilithekM8MitDataSource(BaseMobilithekDatex2DataSource):
     subscription_id = os.environ.get("MOBILITHEK_M8MIT_STATIC_SUBSCRIPTION_ID")
     parser = Datex2JsonParser()
     license_attribution = "msu solutions GmbH"
-    # https://mobilithek.info/offers/970305056590979072
+    # https://mobilithek.info/offers/1056537528692871168
 
 
 class Datex2MobilithekM8MitRealtimeDataSource(BaseMobilithekDatex2DataSource):
@@ -290,7 +290,7 @@ class Datex2MobilithekM8MitRealtimeDataSource(BaseMobilithekDatex2DataSource):
     supported_data_types = [DataType.DYNAMIC]
     static_data_source = "mobilithek_m8mit"
     license_attribution = "msu solutions GmbH"
-    # https://mobilithek.info/offers/970388804493828096
+    # https://mobilithek.info/offers/1056536080202764288
 
 
 class Datex2MobilithekEluMobilityDataSource(BaseMobilithekDatex2DataSource):
