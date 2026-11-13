@@ -68,6 +68,7 @@ class Datex2Connector:
         NACS = "teslaConnectorAmerica"
         TESLA_R = "teslaR"
         TESLA_S = "teslaS"
+        MCS = "mcs"
         OTHER = "other"
 
     class ChargingMode(enum.StrEnum):
@@ -111,6 +112,7 @@ connector_mapping = {
     Datex2Connector.ConnectorType.TESLA_CONNECTOR_EUROPE: Connector.ConnectorTypes.TESLA_SUPERCHARGER_EU,
     Datex2Connector.ConnectorType.NACS: Connector.ConnectorTypes.NACS,
     Datex2Connector.ConnectorType.TESLA_R: Connector.ConnectorTypes.TESLA_ROADSTER_HPC,
+    Datex2Connector.ConnectorType.MCS: Connector.ConnectorTypes.MCS,
 }
 
 
