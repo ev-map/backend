@@ -109,11 +109,9 @@ def parse_refill_point(elem: Element) -> Datex2RefillPoint:
     connectors = findall_alternatives(elem, ["egi:connector", "aegi:connector"])
     external_identifier = elem.find("fac:externalIdentifier", ns)
     if external_identifier is None and len(connectors) == 1:
-        external_identifier = (
-            connectors[0]
-            .find("aegi:externalIdentifier", ns)
-            .find("afac:identifier", ns)
-        )
+        external_identifier = connectors[0].find("aegi:externalIdentifier", ns)
+        if external_identifier is not None:
+            external_identifier = external_identifier.find("afac:identifier", ns)
 
     return Datex2RefillPoint(
         external_identifier=external_identifier.text

@@ -127,7 +127,7 @@ def parse_energy_infrastructure_site(
 
     if "locationReference" in elem:
         location_reference = elem["locationReference"]
-    elif "entrance" in elem:
+    elif "entrance" in elem and len(elem["entrance"]) > 0:
         location_reference = elem["entrance"][0]
     else:
         location_reference = elem["energyInfrastructureStation"][0]["locationReference"]
