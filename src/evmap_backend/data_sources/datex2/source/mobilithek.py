@@ -667,3 +667,21 @@ class Datex2MobilithekInnoceptRealtimeDataSource(BaseMobilithekDatex2DataSource)
     static_data_source = "mobilithek_innocept"
     license_attribution = "innocept mobility GmbH"
     # https://mobilithek.info/offers/1026876702612758528
+
+
+class Datex2MobilithekLadeGmbhDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_ladegmbh"
+    subscription_id = os.environ.get("MOBILITHEK_LADEGMBH_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "LADE GmbH, CC-0"
+    # https://mobilithek.info/offers/980420688527192064
+
+
+class Datex2MobilithekLadeGmbhRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_ladegmbh_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_LADEGMBH_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_ladegmbh"
+    license_attribution = "LADE GmbH"
+    # https://mobilithek.info/offers/980444960654061568
