@@ -815,3 +815,161 @@ class Datex2MobilithekRmBeteiligungsgesellschaftRealtimeDataSource(
     static_data_source = "mobilithek_rm_beteiligungsgesellschaft"
     license_attribution = "Eulektro GmbH"
     # https://mobilithek.info/offers/993498817080557568
+
+
+class Datex2MobilithekChargepoolDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_chargepool"
+    subscription_id = os.environ.get("MOBILITHEK_CHARGEPOOL_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "Eulektro GmbH"
+    # https://mobilithek.info/offers/1060215716988231680
+
+
+class Datex2MobilithekChargepoolRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_chargepool_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_CHARGEPOOL_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_chargepool"
+    license_attribution = "Eulektro GmbH"
+    # https://mobilithek.info/offers/1060218026031869952
+
+
+class Datex2MobilithekSolarBewegtDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_solar_bewegt"
+    subscription_id = os.environ.get("MOBILITHEK_SOLAR_BEWEGT_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "Eulektro GmbH"
+    # https://mobilithek.info/offers/1060222741423841280
+
+
+class Datex2MobilithekSolarBewegtRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_solar_bewegt_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_SOLAR_BEWEGT_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_solar_bewegt"
+    license_attribution = "Eulektro GmbH"
+    # https://mobilithek.info/offers/1060223932656689152
+
+
+class Datex2MobilithekHobaGreenEnergyDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_hoba_green_energy"
+    subscription_id = os.environ.get(
+        "MOBILITHEK_HOBA_GREEN_ENERGY_STATIC_SUBSCRIPTION_ID"
+    )
+    parser = Datex2JsonParser()
+    license_attribution = "Eulektro GmbH"
+    # https://mobilithek.info/offers/1060556049575829504
+
+
+class Datex2MobilithekHobaGreenEnergyRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_hoba_green_energy_realtime"
+    subscription_id = os.environ.get(
+        "MOBILITHEK_HOBA_GREEN_ENERGY_DYNAMIC_SUBSCRIPTION_ID"
+    )
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_hoba_green_energy"
+    license_attribution = "Eulektro GmbH"
+    # https://mobilithek.info/offers/1060225932525596672
+
+
+class Datex2MobilithekEsploroProjectsDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_esploro_projects"
+    subscription_id = os.environ.get(
+        "MOBILITHEK_ESPLORO_PROJECTS_STATIC_SUBSCRIPTION_ID"
+    )
+    parser = Datex2JsonParser()
+    license_attribution = "Eulektro GmbH"
+    # https://mobilithek.info/offers/1060228070026801152
+
+
+class Datex2MobilithekEsploroProjectsRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_esploro_projects_realtime"
+    subscription_id = os.environ.get(
+        "MOBILITHEK_ESPLORO_PROJECTS_DYNAMIC_SUBSCRIPTION_ID"
+    )
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_esploro_projects"
+    license_attribution = "Eulektro GmbH"
+    # https://mobilithek.info/offers/1060228999438430208
+
+
+class Datex2MobilithekProxItDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_prox_it"
+    subscription_id = os.environ.get("MOBILITHEK_PROX_IT_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "Eulektro GmbH"
+    # https://mobilithek.info/offers/1060239661468250112
+
+
+class Datex2MobilithekProxItRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_prox_it_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_PROX_IT_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_prox_it"
+    license_attribution = "Eulektro GmbH"
+    # https://mobilithek.info/offers/1060250437344063488
+
+
+class Datex2MobilithekTigerEnergyProjectDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_tiger_energy_project"
+    subscription_id = os.environ.get(
+        "MOBILITHEK_TIGER_ENERGY_PROJECT_STATIC_SUBSCRIPTION_ID"
+    )
+    parser = Datex2JsonParser()
+    license_attribution = "Eulektro GmbH"
+    # https://mobilithek.info/offers/1060236646233841664
+
+
+class Datex2MobilithekTigerEnergyProjectRealtimeDataSource(
+    BaseMobilithekDatex2DataSource
+):
+    id = "mobilithek_tiger_energy_project_realtime"
+    subscription_id = os.environ.get(
+        "MOBILITHEK_TIGER_ENERGY_PROJECT_DYNAMIC_SUBSCRIPTION_ID"
+    )
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_tiger_energy_project"
+    license_attribution = "Eulektro GmbH"
+    # https://mobilithek.info/offers/1060237475736969216
+
+
+class Datex2MobilithekRehlEnergyDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_rehl_energy"
+    subscription_id = os.environ.get("MOBILITHEK_REHL_ENERGY_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "Eulektro GmbH"
+    # https://mobilithek.info/offers/1060233991591325696
+
+
+class Datex2MobilithekRehlEnergyRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_rehl_energy_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_REHL_ENERGY_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_rehl_energy"
+    license_attribution = "Eulektro GmbH"
+    # https://mobilithek.info/offers/1060234518513348608
+
+
+class Datex2MobilithekSmartopsDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_smartops"
+    subscription_id = os.environ.get("MOBILITHEK_SMARTOPS_STATIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    license_attribution = "Eulektro GmbH"
+    # https://mobilithek.info/offers/1060231700205707264
+
+
+class Datex2MobilithekSmartopsRealtimeDataSource(BaseMobilithekDatex2DataSource):
+    id = "mobilithek_smartops_realtime"
+    subscription_id = os.environ.get("MOBILITHEK_SMARTOPS_DYNAMIC_SUBSCRIPTION_ID")
+    parser = Datex2JsonParser()
+    supported_data_types = [DataType.DYNAMIC]
+    static_data_source = "mobilithek_smartops"
+    license_attribution = "Eulektro GmbH"
+    # https://mobilithek.info/offers/1060232582687268864
